@@ -10,6 +10,7 @@ service cloud.firestore {
   match /workshopContent/{id}{allow read:if facilitator();allow write:if false;}
   match /admins/{email}{allow read:if signedIn() && request.auth.token.email==email;allow write:if false;}
   // InspiredLearning shares Auth, but learner records are strictly owner-scoped.
+  match /learningPrivacy/{uid}{allow read:if google() && (request.auth.uid==uid || facilitator());allow write:if false;}
   match /learningLearners/{uid}{
    allow read:if google() && request.auth.uid==uid;
    allow write:if false;

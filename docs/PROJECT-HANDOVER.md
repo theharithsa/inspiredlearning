@@ -9,3 +9,9 @@ Credentials reside in existing Firebase Secret Manager, never in this document. 
 Initial deployment evidence and DNS state are recorded in the task delivery and repository history. The stable Firebase URL is the certificate verification origin. Custom-domain DNS propagation must not block workshop access through Firebase.
 
 Release verification and pending GoDaddy records: [RELEASE-CHECKS.md](RELEASE-CHECKS.md). Core portal deployment is complete; custom-domain mapping awaits owner sign-in. PDFs are generated on demand from versioned certificate records rather than stored as permanent downloadable objects.
+
+## Admin support release
+
+Global facilitators now use `/#/admin` (captains retain `/#/staff`). Supported controls include attendance/publication, lookup by email/UID/certificate, reasoned PDF preview, profile corrections, versioned certificate name/title/date replacement, revoke/reinstate and live paginated student request review. Full procedure: [RUNBOOK.md](RUNBOOK.md). Test matrix: [USE-CASE-VALIDATION.md](USE-CASE-VALIDATION.md).
+
+Removal scope is explicitly approved: InspiredLearning history and certificates only, with shared Google Auth and Live data preserved. `learningPrivacy/{uid}` provides resumable erasure and blocked session IDs; scheduled retry recovers interrupted work. Reactivation is an explicit learner action for future workshops. Shared rules add owner/facilitator marker reads, with no client writes. Live deletion recognizes completed erasure as an alternative to an archived completion; never accept in-progress erasure as sufficient.

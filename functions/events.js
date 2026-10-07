@@ -138,5 +138,15 @@ export const retryLearningEvents = onSchedule(
       .limit(50)
       .get();
     for (const row of rows.docs) await deliver(row.ref);
+    const pending = await db
+      .collection("learningPrivacy")
+      .where("state", "==", "erasing")
+      .limit(10)
+      .get();
+    const { completeErasure } = await import("./erasure.js");
+    for (const row of pending.docs)
+      await measured("account.removal.retry", { uid: "system" }, (c) =>
+        completeErasure(db, row.id, { uid: "system" }, c),
+      );
   },
 );

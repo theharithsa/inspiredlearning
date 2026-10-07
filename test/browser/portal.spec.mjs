@@ -161,18 +161,34 @@ test("facilitator verifies attendance, closes workshop and publishes completion 
     .getByLabel("Attendance / correction reason")
     .fill("Verified attendance at both workshop sessions.");
   await a.page.getByRole("button", { name: "Confirm attended (1)" }).click();
-  await expect(a.page.getByRole("status")).toContainText(
-    "attendance records saved",
-  );
+  await expect(
+    a.page
+      .getByRole("status")
+      .filter({
+        hasText: /reinstated|corrected|revoked|attendance|published|current/i,
+      }),
+  ).toContainText("attendance records saved");
   await a.page.getByRole("button", { name: "Close live workshop" }).click();
   await a.page
     .getByRole("button", { name: "Publish verified results (1)" })
     .click();
-  await expect(a.page.getByRole("status")).toContainText("records published");
+  await expect(
+    a.page
+      .getByRole("status")
+      .filter({
+        hasText: /reinstated|corrected|revoked|attendance|published|current/i,
+      }),
+  ).toContainText("records published");
   await a.page
     .getByRole("button", { name: "Publish verified results (1)" })
     .click();
-  await expect(a.page.getByRole("status")).toContainText("already current");
+  await expect(
+    a.page
+      .getByRole("status")
+      .filter({
+        hasText: /reinstated|corrected|revoked|attendance|published|current/i,
+      }),
+  ).toContainText("already current");
   const r = (
     await db.doc(`learningLearners/${learnerUid}/workshops/${sid}`).get()
   ).data();
@@ -312,7 +328,7 @@ test("learner profile and correction request reach facilitator review", async ({
   await a.page
     .getByLabel("Review / correction note")
     .fill("Reviewed with learner; original certificate name is correct.");
-  await a.page.getByRole("button", { name: "Mark reviewed" }).click();
+  await a.page.getByRole("button", { name: "Resolve correction" }).click();
   await expect(a.page.getByText("No pending requests.")).toBeVisible();
   await a.page.screenshot({
     path: "/tmp/inspiredlearning-staff.png",
@@ -329,7 +345,13 @@ test("revocation updates verification and points, and records survive deletion",
     .getByLabel("Attendance / correction reason")
     .fill("Attendance record corrected after facilitator review.");
   await a.page.getByRole("button", { name: "Revoke", exact: true }).click();
-  await expect(a.page.getByRole("status")).toContainText("revoked");
+  await expect(
+    a.page
+      .getByRole("status")
+      .filter({
+        hasText: /reinstated|corrected|revoked|attendance|published|current/i,
+      }),
+  ).toContainText("revoked");
   await a.context.close();
   const s = await actor(browser, "learner@example.invalid", "/verify/" + cert);
   await expect(
@@ -372,4 +394,379 @@ test("revocation updates verification and points, and records survive deletion",
       { timeout: 60000, intervals: [1000] },
     )
     .toBe(true);
+});
+
+test("administrator navigation is role gated and archived certificates can be reinstated, previewed and corrected", async ({
+  browser,
+}) => {
+  const learner = await actor(browser, "learner@example.invalid");
+  await expect(
+    learner.page.getByRole("link", { name: "Admin controls" }),
+  ).toHaveCount(0);
+  await learner.page.goto("/#/admin");
+  await expect(learner.page.getByRole("alert")).toContainText(
+    "Administrator access required",
+  );
+  await learner.context.close();
+  const a = await actor(browser, fac, "/admin");
+  await expect(
+    a.page.getByRole("heading", { name: "Admin control centre." }),
+  ).toBeVisible();
+  await expect(
+    a.page.getByRole("link", { name: "Admin controls" }),
+  ).toBeVisible();
+  await a.page
+    .getByLabel("Learner email, account reference or certificate ID")
+    .fill("learner@example.invalid");
+  await a.page.getByRole("button", { name: "Find record" }).click();
+  await a.page
+    .getByLabel("Review / correction note")
+    .fill("Attendance reverified with learner after archival.");
+  await a.page
+    .getByRole("button", { name: "Reinstate completion and certificate" })
+    .click();
+  await expect(
+    a.page
+      .getByRole("status")
+      .filter({
+        hasText: /reinstated|corrected|revoked|attendance|published|current/i,
+      }),
+  ).toContainText("reinstated");
+  cert = (
+    await db.doc(`learningLearners/${learnerUid}/workshops/${sid}`).get()
+  ).data().certificateId;
+  const download = a.page.waitForEvent("download");
+  await a.page.getByRole("button", { name: "Preview certificate PDF" }).click();
+  const pdf = await download;
+  expect(
+    fs
+      .readFileSync(await pdf.path())
+      .subarray(0, 4)
+      .toString(),
+  ).toBe("%PDF");
+  await a.page
+    .getByLabel("Verified certificate name")
+    .fill("Verified Learner Name");
+  await a.page
+    .getByRole("button", { name: "Replace certificate with corrected details" })
+    .click();
+  await expect(
+    a.page
+      .getByRole("status")
+      .filter({
+        hasText: /reinstated|corrected|revoked|attendance|published|current/i,
+      }),
+  ).toContainText("Certificate details corrected");
+  const updated = (
+    await db.doc(`learningLearners/${learnerUid}/workshops/${sid}`).get()
+  ).data();
+  expect(updated.certificateId).not.toBe(cert);
+  expect(
+    (await db.doc(`learningCertificates/${cert}`).get()).data().status,
+  ).toBe("revoked");
+  cert = updated.certificateId;
+  expect(
+    (await db.doc(`learningLearners/${learnerUid}`).get()).data()
+      .learningPoints,
+  ).toBe(100);
+  await a.page.getByLabel("Learner display name").fill("Updated Display Name");
+  await a.page
+    .getByRole("button", { name: "Correct learner display name" })
+    .click();
+  await expect(
+    a.page
+      .getByRole("status")
+      .filter({
+        hasText: /reinstated|corrected|revoked|attendance|published|current/i,
+      }),
+  ).toContainText("Display name corrected");
+  expect((await db.doc(`learningCertificates/${cert}`).get()).data().name).toBe(
+    "Verified Learner Name",
+  );
+  await a.page.screenshot({
+    path: "/tmp/inspiredlearning-admin-controls.png",
+    fullPage: true,
+  });
+  await a.context.close();
+});
+test("mobile learner sees saved profile, downloads corrected certificate and has no horizontal page overflow", async ({
+  browser,
+}) => {
+  const s = await actor(browser, "learner@example.invalid", "/profile", true);
+  await expect(s.page.getByLabel("Display name")).toHaveValue(
+    "Updated Display Name",
+  );
+  await s.page.goto("/#/certificates");
+  await expect(
+    s.page.getByRole("heading", { name: "Learning worth keeping." }),
+  ).toBeVisible();
+  const download = s.page.waitForEvent("download");
+  await s.page.getByRole("button", { name: "Download PDF" }).click();
+  expect(
+    fs
+      .readFileSync(await (await download).path())
+      .subarray(0, 4)
+      .toString(),
+  ).toBe("%PDF");
+  expect(
+    await s.page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+  await s.context.close();
+});
+test("student sees administrator decline and reopened correction request status", async ({
+  browser,
+}) => {
+  const s = await actor(browser, "learner@example.invalid", "/profile");
+  await s.page
+    .getByLabel("Details", { exact: true })
+    .fill("Please review my display name again.");
+  await s.page.getByRole("button", { name: "Send request" }).click();
+  await expect(s.page.getByRole("status")).toContainText("Request submitted");
+  await s.context.close();
+  const a = await actor(browser, fac, "/admin");
+  await a.page
+    .getByLabel("Review / correction note")
+    .fill("Please provide the verified spelling.");
+  await a.page.getByRole("button", { name: "Decline request" }).click();
+  await expect(a.page.getByText("No pending requests.")).toBeVisible();
+  await a.page
+    .getByRole("button", { name: "Request history", exact: true })
+    .click();
+  const row = a.page
+    .locator("article")
+    .filter({ hasText: "Please review my display name again." });
+  await row.getByRole("button", { name: "Reopen request" }).click();
+  await a.page
+    .getByRole("button", { name: "Pending requests", exact: true })
+    .click();
+  await expect(
+    a.page.getByText("Please review my display name again.", { exact: true }),
+  ).toBeVisible();
+  await a.context.close();
+  const again = await actor(browser, "learner@example.invalid", "/profile");
+  await expect(
+    again.page.getByText("Please provide the verified spelling.", {
+      exact: true,
+    }),
+  ).toBeVisible();
+  await again.context.close();
+});
+test("sign-out and account switching clear private history and administrative controls", async ({
+  browser,
+}) => {
+  const s = await actor(browser, "learner@example.invalid", "/profile");
+  await expect(s.page.getByLabel("Display name")).toHaveValue(
+    "Updated Display Name",
+  );
+  await s.page.getByRole("button", { name: "Sign out", exact: true }).click();
+  await expect(
+    s.page.getByRole("button", { name: "Continue with Google →" }),
+  ).toBeVisible();
+  const uid = await s.page.evaluate(() =>
+    import("/test/browser-auth.ts").then((m) =>
+      m.login("other@example.invalid"),
+    ),
+  );
+  expect(uid).toBe(secondUid);
+  await s.page.goto("/#/profile");
+  await expect(s.page.getByLabel("Display name")).not.toHaveValue(
+    "Updated Display Name",
+  );
+  await expect(
+    s.page.getByText("Please review my display name again.", { exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    s.page.getByRole("link", { name: "Admin controls" }),
+  ).toHaveCount(0);
+  await s.context.close();
+});
+test("approved student removal deletes learning records and certificates while retaining Google identity and Live registration", async ({
+  browser,
+}) => {
+  await db.doc("sessions/RETAIN01").set({ title: "Retained Live workshop" });
+  await db
+    .doc(`sessions/RETAIN01/students/${learnerUid}`)
+    .set({ name: "Retained Learner", teamId: "mumbai-1a", role: "COO" });
+  const s = await actor(browser, "learner@example.invalid", "/profile");
+  await s.page.getByLabel("Request type").selectOption("erasure");
+  await s.page
+    .getByLabel("Details", { exact: true })
+    .fill("Please remove only my InspiredLearning history.");
+  await s.page.getByRole("button", { name: "Send request" }).click();
+  await expect(s.page.getByRole("status")).toContainText("Request submitted");
+  await s.context.close();
+  const a = await actor(browser, fac, "/admin");
+  await a.page
+    .getByLabel("Review / correction note")
+    .fill("Verified owner and portal-only scope.");
+  await a.page.getByRole("button", { name: "Approve removal" }).click();
+  const confirmation = a.page.getByLabel(
+    "Type the learner account reference to confirm",
+  );
+  await confirmation.fill("WRONG");
+  await expect(
+    a.page.getByRole("button", { name: "Permanently remove learning records" }),
+  ).toBeDisabled();
+  await confirmation.fill(learnerUid);
+  await a.page
+    .getByRole("button", { name: "Permanently remove learning records" })
+    .click();
+  await expect
+    .poll(
+      async () =>
+        (await db.doc(`learningPrivacy/${learnerUid}`).get()).data()?.state,
+    )
+    .toBe("erased");
+  expect((await db.doc(`learningLearners/${learnerUid}`).get()).exists).toBe(
+    false,
+  );
+  expect(
+    (
+      await db
+        .collection("learningCertificates")
+        .where("uid", "==", learnerUid)
+        .get()
+    ).empty,
+  ).toBe(true);
+  expect(
+    (await db.doc(`sessions/RETAIN01/students/${learnerUid}`).get()).exists,
+  ).toBe(true);
+  await a.context.close();
+  const again = await actor(browser, "learner@example.invalid");
+  expect(again.uid).toBe(learnerUid);
+  await expect(
+    again.page.getByRole("heading", {
+      name: "Your learning records were removed.",
+    }),
+  ).toBeVisible();
+  await expect(
+    again.page.getByText("Learning-record removal · resolved"),
+  ).toBeVisible();
+  await again.page.screenshot({
+    path: "/tmp/inspiredlearning-removal-complete.png",
+    fullPage: true,
+  });
+  await again.context.close();
+});
+test("erased certificate is unavailable; explicit reactivation does not restore historical results", async ({
+  browser,
+}) => {
+  const s = await actor(browser, "learner@example.invalid");
+  await expect(
+    s.page.getByRole("heading", {
+      name: "Your learning records were removed.",
+    }),
+  ).toBeVisible();
+  const denied = await s.page.evaluate(
+    (id) =>
+      import("/src/firebase.ts").then(async (m) => {
+        const { httpsCallable } =
+          await import("/node_modules/.vite/deps/firebase_functions.js");
+        try {
+          await httpsCallable(m.functions, "learningCertificate")({ id });
+          return "allowed";
+        } catch (e) {
+          return e.code;
+        }
+      }),
+    cert,
+  );
+  expect(denied).toBe("functions/permission-denied");
+  await s.page
+    .getByRole("button", { name: "Start a new learning profile" })
+    .click();
+  await expect(
+    s.page.getByRole("heading", { name: "Your next chapter starts here" }),
+  ).toBeVisible();
+  expect(
+    (await db.collection(`learningLearners/${learnerUid}/workshops`).get())
+      .empty,
+  ).toBe(true);
+  const a = await actor(browser, fac, "/admin");
+  await a.page.getByLabel("Session code").fill("RETAIN01");
+  await a.page.getByRole("button", { name: "Load workshop" }).click();
+  await expect(
+    a.page.getByText("Records removed", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    a.page.getByRole("checkbox", { name: "Select Retained Learner" }),
+  ).toBeDisabled();
+  await a.context.close();
+  await db.doc("sessions/FUTURE02").set({ title: "Future workshop" });
+  await db
+    .doc(`sessions/FUTURE02/students/${learnerUid}`)
+    .set({ name: "Returning learner", teamId: "mumbai-1a", role: "COO" });
+  await expect
+    .poll(
+      async () =>
+        (
+          await db
+            .doc(`learningLearners/${learnerUid}/workshops/FUTURE02`)
+            .get()
+        ).exists,
+    )
+    .toBe(true);
+  expect(
+    (await db.doc(`learningLearners/${learnerUid}/workshops/RETAIN01`).get())
+      .exists,
+  ).toBe(false);
+  await s.context.close();
+});
+test("administrator receives new requests live without reloading the console", async ({
+  browser,
+}) => {
+  const a = await actor(browser, fac, "/admin");
+  await expect(
+    a.page.getByRole("heading", { name: "Admin control centre." }),
+  ).toBeVisible();
+  const s = await actor(browser, "other@example.invalid", "/profile");
+  await s.page
+    .getByLabel("Details", { exact: true })
+    .fill("New request while the administrator console stays open.");
+  await s.page.getByRole("button", { name: "Send request" }).click();
+  await expect(
+    a.page.getByText(
+      "New request while the administrator console stays open.",
+      { exact: true },
+    ),
+  ).toBeVisible();
+  await s.context.close();
+  await a.context.close();
+});
+test("final canonical-event drain preserves trace and transaction correlation for admin controls and erasure", async () => {
+  let stable = 0,
+    previous = -1;
+  await expect
+    .poll(
+      async () => {
+        const rows = (await db.collection("learningTelemetry").get()).docs.map(
+          (d) => d.data(),
+        );
+        stable =
+          rows.every((r) => r.status === "delivered") &&
+          rows.length === previous
+            ? stable + 1
+            : 0;
+        previous = rows.length;
+        return stable >= 3;
+      },
+      { timeout: 60000, intervals: [1000] },
+    )
+    .toBe(true);
+  for (const name of [
+    "workshop.completion.reinstated",
+    "learner.profile.corrected",
+    "account.removal.started",
+    "account.removal.completed",
+    "account.reactivated",
+    "certificate.admin-preview.prepared",
+  ])
+    expect(events.some((e) => e.data?.["event.name"] === name)).toBe(true);
+  for (const event of events) {
+    expect(event.data["transaction.id"]).toBeTruthy();
+    expect(event.data.trace_id).toMatch(/^[a-f0-9]{32}$/);
+    expect(event.data.span_id).toMatch(/^[a-f0-9]{16}$/);
+  }
 });

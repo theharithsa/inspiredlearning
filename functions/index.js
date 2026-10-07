@@ -73,6 +73,10 @@ export const learningAction = onCall(options, async (r) => {
       "reviewRequest",
       "lookup",
       "correctCertificate",
+      "eraseLearner",
+      "reactivate",
+      "updateLearner",
+      "restoreCompletion",
     ].includes(r.data.action)
   )
     throw new HttpsError("invalid-argument", "Unknown learning action.");
@@ -96,11 +100,32 @@ export const learningCertificate = onCall(options, async (r) => {
       const ref = db.doc(`learningCertificates/${r.data.id}`),
         snap = await ref.get(),
         cert = snap.data();
-      if (!cert || cert.uid !== actor.uid)
+      let administratorPreview = false;
+      if (!cert)
         throw new HttpsError(
           "permission-denied",
           "This certificate is not available to your account.",
         );
+      if (cert.uid !== actor.uid) {
+        const administrator = await db.doc(`admins/${actor.email}`).get();
+        administratorPreview =
+          administrator.exists &&
+          (administrator.data().role || "facilitator") === "facilitator";
+        if (!administratorPreview)
+          throw new HttpsError(
+            "permission-denied",
+            "This certificate is not available to your account.",
+          );
+        if (
+          typeof r.data.reason !== "string" ||
+          !r.data.reason.trim() ||
+          r.data.reason.length > 500
+        )
+          throw new HttpsError(
+            "invalid-argument",
+            "Add a reason for administrator certificate preview.",
+          );
+      }
       if (cert.status !== "issued")
         throw new HttpsError(
           "failed-precondition",
@@ -111,7 +136,9 @@ export const learningCertificate = onCall(options, async (r) => {
         .collection("learningTelemetry")
         .add(
           (await import("./events.js")).eventRecord(
-            "certificate.download.prepared",
+            administratorPreview
+              ? "certificate.admin-preview.prepared"
+              : "certificate.download.prepared",
             actor,
             c,
             { "certificate.id": cert.id, "workshop.session.id": cert.sid },
@@ -183,7 +210,7 @@ export const cancelLearningEnrollment = onDocumentDeleted(
   { ...options, document: "sessions/{sid}", retry: true },
   async (e) => {
     if (!validSid(e.params.sid)) return;
-    return measured("enrollment.cancel", {uid:"system"}, async (c) => {
+    return measured("enrollment.cancel", { uid: "system" }, async (c) => {
       const index = await db.doc(`learningEnrollments/${e.params.sid}`).get();
       for (const uid of index.data()?.uids || []) {
         await db.runTransaction(async (tx) => {
@@ -196,7 +223,7 @@ export const cancelLearningEnrollment = onDocumentDeleted(
               status: "cancelled",
               updatedAt: FieldValue.serverTimestamp(),
             });
-            queue(tx, db, "enrollment.cancelled", {uid:"system"}, c, {
+            queue(tx, db, "enrollment.cancelled", { uid: "system" }, c, {
               "learner.id": uid,
               "workshop.session.id": e.params.sid,
             });

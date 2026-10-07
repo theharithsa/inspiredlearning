@@ -53,7 +53,7 @@ export async function certificatePdf(c) {
   text(c.name, 347, 32);
   text("for verified participation in", 304, 14, muted);
   text(c.title, 271, 21);
-  text(c.date || "Workshop date recorded by facilitator", 235, 14, muted);
+  text(c.date || "Workshop date not available", 235, 14, muted);
   text(
     "Cloud fundamentals · Architecture · Observability · Teamwork",
     199,
@@ -72,7 +72,7 @@ export async function certificatePdf(c) {
   pdf.setTitle("InspiredLearning · Certificate of Participation");
   pdf.setAuthor("InspiredLearning");
   pdf.setSubject(
-    "Verify certificate status at inspi.in; public verification requires the learner’s permission.",
+    "Verify certificate status through the verification QR; public verification requires the learner’s permission.",
   );
   return Buffer.from(await pdf.save());
 }

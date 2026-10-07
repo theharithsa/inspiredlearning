@@ -18,17 +18,27 @@ DNS is managed in GoDaddy. Use Firebase Hosting's current **exact required DNS r
 
 ## Publish completion
 
-Use Workshop staff → Load workshop → Import existing registrations for older sessions. Verify attendees rather than inferring attendance from a name or a login. Mark absentees not-attended. Captains are region-scoped; only global facilitators can close and publish. Complete scoring before publishing. Publish again after score corrections to create a new result/certificate version. Identical publication is a no-op.
+Use Admin controls (global facilitators) or Workshop staff (captains) → Load workshop → Import existing registrations for older sessions. Verify attendees rather than inferring attendance from a name or a login. Mark absentees not-attended. Captains are region-scoped; only global facilitators can close and publish. Complete scoring before publishing. Publish again after score corrections to create a new result/certificate version. Identical publication is a no-op.
 
 A failed batch reports per-learner failures; correct those and repeat. The transaction and ledger prevent duplicate points. Deleting a reviewed live session retains all permanent learner records and certificates. Session codes with archived learner records cannot be reused.
 
-## Correct/revoke after archival
+## Administrator controls and archived records
 
-Workshop staff → Permanent records → Find by learner account reference (UID) or certificate ID. Add a review note. Correct certificate name creates a new private certificate revision and invalidates its predecessor, with no additional points. Revoke archived completion invalidates the certificate and subtracts the original 100 learning points once. Names on issued certificates do not follow student display-name edits.
+Open `/#/admin` after Google sign-in. Only global facilitators from `admins/{email}` can use this control centre; captains retain region-scoped attendance review through `/#/staff`. Navigation visibility is not authorization: backend transactions recheck the role for privileged changes.
 
-## Requests and removal
+Find permanent records by the learner's Google email, UID, or certificate ID. Add a review note before any correction or decision. Correct learner display name affects only the portal profile, not Google identity or issued certificates. Replace certificate details allows verified name, workshop title and date changes, creates a new private revision and invalidates its predecessor without more points. An administrator can preview an issued PDF with a recorded review reason; students can download only their own issued certificates.
 
-Learners submit correction or removal requests from Profile. Global facilitators see pending requests. **Mark reviewed records the review only; it does not delete anything.** For removal, verify the requester owns the Google UID and confirm the requested scope. Revoke issued completions first so public verification becomes invalid. Through an authorized Firebase administrator, remove that UID's `learningLearners/{uid}` document and subcollections and owned `learningCertificates` records; remove their UID from `learningEnrollments` arrays. Remove associated requests after retaining only the minimum non-identifying review evidence required by your retention policy. Existing live workshop membership and Firebase Auth account deletion are separate decisions: confirm whether the request covers them before deleting. Telemetry has separate Dynatrace retention and erasure controls and must be handled there if requested. Check that account sign-in no longer exposes the removed learning data, then record the request resolution. Do not tell a learner their data is erased merely because a request was marked reviewed.
+Revoke completion invalidates its certificate and reverses the original 100 learning points once. Reinstate only previously verified revoked completion: it restores 100 points once and issues a new private certificate. It cannot manufacture attendance or initial completion. These controls remain available after the Live session is archived. Never change aggregate points directly.
+
+## Student requests and removal
+
+Learners submit corrections or removal requests in Profile and can see status and the review response. Pending requests arrive live in Admin controls. The first page has 50 records; Load more retrieves subsequent pages. Apply a verified profile/certificate correction before choosing **Resolve correction**. Administrators may decline requests with a reason, or reopen reviewed requests. Completed removals cannot be reopened; a new request is needed for newly created data.
+
+For removal, open the learner's submitted removal request, add the review reason, choose **Approve removal**, and type the exact learner account reference. Scope is **InspiredLearning history and certificates only**: recursive learner history, versions, points, reviews and owned certificates are removed; enrollment arrays are cleared and other requests are reduced to minimal status. Shared Firebase Authentication, Google sign-in and ChaiCart Live workshop records remain intact.
+
+A minimal UID removal marker, blocked workshop codes and request resolution remain to prevent accidental re-import. Previously downloaded PDFs cannot be recalled; monitoring has separate Dynatrace retention controls. Do not promise those have been erased by this operation.
+
+The request stays processing until deletion completes. Failed work is resumable: use **Retry removal** with the same request and typed UID, or let the five-minute recovery job finish it after the lease expires. Inspect `learningPrivacy` for persistent erasing state. Do not manually mark processing work resolved. Removed learners see the removal status instead of stale results. They may explicitly start a new profile for future workshops; old workshop codes remain blocked and no old points or certificates return.
 
 ## Recovery
 

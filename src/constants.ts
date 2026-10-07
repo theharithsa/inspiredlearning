@@ -6,6 +6,7 @@ export const statusLabel = (status: string) =>
     completed: "Completed",
     "not-attended": "Attendance not confirmed",
     cancelled: "Session cancelled",
+    removed: "Records removed",
     revoked: "Completion revoked",
   })[status] || status;
 export const activityLabel = (id: string) =>

@@ -60,3 +60,9 @@ The **ChaiCart Live repository owns production Firestore rules and indexes**. Th
 Completed Live sessions cannot be deleted until every current participant has a permanent reviewed status. Reopening a session does not bypass this guard. Permanent history survives Live session deletion, and archived certificates can still be corrected or revoked.
 
 [Deployment and operations](docs/RUNBOOK.md) · [Observability](docs/OBSERVABILITY.md) · [Private handover](docs/PROJECT-HANDOVER.md).
+
+## Administrator support
+
+Google-authorized global facilitators use [Admin controls](https://inspiredlearning-vh.web.app/#/admin) to verify attendance, close and publish workshop completion, inspect permanent learner records by email/UID/certificate, preview issued certificates, correct profile or certificate details, revoke and reinstate verified completion, and resolve/decline/reopen student support requests. Captains review attendance only within their assigned region. Initial certificates require verified attendance and a closed workshop; quiz correctness is not a participation requirement.
+
+Approved removal erases InspiredLearning history and certificates only, retaining shared Google sign-in and Live data. It has typed account confirmation, resumable processing, and an anti-reimport marker. Students see their request history and can explicitly start a new profile for future workshops. See [operations](docs/RUNBOOK.md) and [use-case validation](docs/USE-CASE-VALIDATION.md).

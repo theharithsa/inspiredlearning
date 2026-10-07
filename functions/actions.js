@@ -1,3 +1,5 @@
+import { eraseLearner, privacyBlocked } from "./erasure.js";
+import { adminAction } from "./admin.js";
 import { recordsAction } from "./records.js";
 import { finalize } from "./finalize.js";
 import { FieldValue } from "firebase-admin/firestore";
@@ -43,11 +45,17 @@ const permitted = (role, team) =>
 export async function enroll(db, sid, uid, student, session, c, actor) {
   return db.runTransaction(async (tx) => {
     const ref = record(db, uid, sid);
-    const [existing, liveSession] = await Promise.all([
+    const [existing, liveSession, privacy] = await Promise.all([
       tx.get(ref),
       tx.get(db.doc(`sessions/${sid}`)),
+      tx.get(db.doc(`learningPrivacy/${uid}`)),
     ]);
-    if (existing.exists || !liveSession.exists || liveSession.data().deleting)
+    if (
+      existing.exists ||
+      !liveSession.exists ||
+      liveSession.data().deleting ||
+      privacyBlocked(privacy.data(), sid)
+    )
       return false;
     tx.set(
       db.doc(`learningEnrollments/${sid}`),
@@ -77,25 +85,95 @@ export async function enroll(db, sid, uid, student, session, c, actor) {
 export async function execute(db, actor, data, c) {
   const d = data || {},
     action = d.action;
+  if (action === "eraseLearner") return eraseLearner(db, actor, d, c);
+  if (action === "reactivate") {
+    await db.runTransaction(async (tx) => {
+      const ref = db.doc(`learningPrivacy/${actor.uid}`),
+        p = await tx.get(ref);
+      if (p.data()?.state !== "erased")
+        fail(
+          "failed-precondition",
+          "Removal must be complete before starting a new learning profile.",
+        );
+      tx.set(ref, { state: "active" }, { merge: true });
+      tx.set(
+        learner(db, actor.uid),
+        {
+          name: actor.name || actor.email.split("@")[0],
+          email: actor.email,
+          updatedAt: FieldValue.serverTimestamp(),
+        },
+        { merge: true },
+      );
+      queue(tx, db, "account.reactivated", actor, c, {
+        "learner.id": actor.uid,
+      });
+    });
+    const sessions = await db.collection("sessions").get();
+    for (const session of sessions.docs) {
+      const student = await session.ref
+        .collection("students")
+        .doc(actor.uid)
+        .get();
+      if (student.exists)
+        await enroll(
+          db,
+          session.id,
+          actor.uid,
+          student.data(),
+          session.data(),
+          c,
+          actor,
+        );
+    }
+    return { saved: true };
+  }
+  if (["updateLearner", "restoreCompletion"].includes(action))
+    return adminAction(db, actor, d, c);
   if (action === "profile") {
-    const existing = await learner(db, actor.uid).get();
-    const name =
-      typeof d.name === "string"
+    return db.runTransaction(async (tx) => {
+      const ref = learner(db, actor.uid),
+        [existing, privacy] = await Promise.all([
+          tx.get(ref),
+          tx.get(db.doc(`learningPrivacy/${actor.uid}`)),
+        ]);
+      if (privacyBlocked(privacy.data())) {
+        if (typeof d.name === "string")
+          fail(
+            "failed-precondition",
+            "Your records have been removed. Start a new learning profile before saving.",
+          );
+        return { removed: true };
+      }
+      const explicit = typeof d.name === "string";
+      const name = explicit
         ? d.name.trim()
         : existing.data()?.name || actor.name || actor.email.split("@")[0];
-    if (!name || name.length > 80)
-      fail("invalid-argument", "Use a display name up to 80 characters.");
-    await learner(db, actor.uid).set(
-      { name, email: actor.email, updatedAt: FieldValue.serverTimestamp() },
-      { merge: true },
-    );
-    return { saved: true };
+      if (!name || name.length > 80)
+        fail("invalid-argument", "Use a display name up to 80 characters.");
+      tx.set(
+        ref,
+        {
+          ...(!existing.data()?.name || explicit ? { name } : {}),
+          email: actor.email,
+          updatedAt: FieldValue.serverTimestamp(),
+        },
+        { merge: true },
+      );
+      return { saved: true };
+    });
   }
   if (action === "requestCorrection") {
     const reason = reasonOf(d);
     const ref = db.collection("learningRequests").doc();
     const kind = d.kind === "erasure" ? "erasure" : "correction";
     await db.runTransaction(async (tx) => {
+      const privacy = await tx.get(db.doc(`learningPrivacy/${actor.uid}`));
+      if (privacyBlocked(privacy.data()))
+        fail(
+          "failed-precondition",
+          "A removal is in progress or complete; your existing request shows its status.",
+        );
       tx.create(ref, {
         uid: actor.uid,
         email: actor.email,
@@ -147,7 +225,13 @@ export async function execute(db, actor, data, c) {
     return db.runTransaction(async (tx) => {
       const ref = record(db, d.uid, sid),
         p = learner(db, d.uid);
-      const [snap, profile] = await Promise.all([tx.get(ref), tx.get(p)]);
+      const [snap, profile, privacy] = await Promise.all([
+        tx.get(ref),
+        tx.get(p),
+        tx.get(db.doc(`learningPrivacy/${d.uid}`)),
+      ]);
+      if (privacyBlocked(privacy.data(), sid))
+        fail("failed-precondition", "This learner requested removal.");
       const old = snap.data();
       if (old?.status !== "completed")
         fail(
@@ -207,8 +291,17 @@ export async function execute(db, actor, data, c) {
   if (action === "access") {
     if (d.sid && !validSid(d.sid))
       fail("invalid-argument", "Use a valid session code.");
-    const role = await staffRole(db, actor, d.sid);
-    return role;
+    const [admin, staff] = await Promise.all([
+      db.doc(`admins/${actor.email}`).get(),
+      d.sid
+        ? db.doc(`sessions/${d.sid}/staff/${actor.email}`).get()
+        : Promise.resolve(null),
+    ]);
+    return {
+      facilitator:
+        admin.exists && (admin.data().role || "facilitator") === "facilitator",
+      region: staff?.data()?.role === "captain" ? staff.data().region : null,
+    };
   }
   if (!validSid(d.sid))
     fail("invalid-argument", "Use a valid workshop session code.");
@@ -229,13 +322,18 @@ export async function execute(db, actor, data, c) {
       students.docs
         .filter((s) => permitted(role, s.data().teamId))
         .map(async (s) => {
-          const r = await record(db, s.id, sid).get();
+          const [r, privacy] = await Promise.all([
+            record(db, s.id, sid).get(),
+            db.doc(`learningPrivacy/${s.id}`).get(),
+          ]);
           return {
-            uid: s.id,
             ...s.data(),
+            uid: s.id,
             joinedAt: undefined,
             attendance: statuses.get(s.id)?.status || "unreviewed",
-            resultStatus: r.data()?.status || "registered",
+            resultStatus: privacyBlocked(privacy.data(), sid)
+              ? "removed"
+              : r.data()?.status || "registered",
             revision: r.data()?.revision || 0,
           };
         }),
@@ -276,10 +374,16 @@ export async function execute(db, actor, data, c) {
       fail("invalid-argument", "Choose a participant and attendance status.");
     const reason = reasonOf(d);
     return db.runTransaction(async (tx) => {
-      const [st, currentSession] = await Promise.all([
+      const [st, currentSession, privacy] = await Promise.all([
         tx.get(root.collection("students").doc(d.uid)),
         tx.get(root),
+        tx.get(db.doc(`learningPrivacy/${d.uid}`)),
       ]);
+      if (privacyBlocked(privacy.data(), sid))
+        fail(
+          "failed-precondition",
+          "This learner requested removal; attendance cannot recreate deleted records.",
+        );
       if (!currentSession.exists || currentSession.data().deleting)
         fail("failed-precondition", "Session is unavailable or deleting.");
       const ref = record(db, d.uid, sid);

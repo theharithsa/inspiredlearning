@@ -1,28 +1,27 @@
-import { useEffect, useState } from "react";
-import { action, errorMessage } from "./observability";
+import CertificateCorrection from "./CertificateCorrection";
+import RequestsPanel from "./RequestsPanel";
+import { useState } from "react";
+import { auth } from "./firebase";
+import { action, call, errorMessage } from "./observability";
 import { Message } from "./components";
 import { statusLabel } from "./constants";
-interface Request {
-  id: string;
-  uid: string;
-  email: string;
-  reason: string;
-  kind: string;
-}
 interface Lookup {
   uid: string;
   name: string;
   email: string | null;
+  removed?: boolean;
   workshops: {
     sid: string;
     title: string;
+    date: string | null;
     name: string;
     status: string;
     revision: number;
+    certificateId: string | null;
   }[];
 }
 export default function StaffRecords() {
-  const [requests, setRequests] = useState<Request[]>([]),
+  const [requestVersion, setRequestVersion] = useState(0),
     [reference, setReference] = useState(""),
     [lookup, setLookup] = useState<Lookup | null>(null),
     [name, setName] = useState(""),
@@ -30,22 +29,14 @@ export default function StaffRecords() {
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [notice, setNotice] = useState("");
-  useEffect(() => {
-    let active = true;
-    void action<{ requests: Request[] }>("requests")
-      .then((r) => {
-        if (active) setRequests(r.requests);
-      })
-      .catch(() => {});
-    return () => {
-      active = false;
-    };
-  }, []);
   async function load(ref = reference) {
     setBusy(true);
     setError("");
+    setLookup(null);
     try {
-      setLookup(await action<Lookup>("lookup", { reference: ref.trim() }));
+      const result = await action<Lookup>("lookup", { reference: ref.trim() });
+      setLookup(result);
+      setName(result.name);
     } catch (e) {
       setError(errorMessage(e));
     } finally {
@@ -58,9 +49,36 @@ export default function StaffRecords() {
     try {
       const r = await work();
       setNotice(r.message || "Reviewed.");
-      setRequests((await action<{ requests: Request[] }>("requests")).requests);
+      setRequestVersion((v) => v + 1);
       if (lookup)
         setLookup(await action<Lookup>("lookup", { reference: lookup.uid }));
+    } catch (e) {
+      setError(errorMessage(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function preview(id: string) {
+    const actor = auth.currentUser?.uid;
+    setBusy(true);
+    setError("");
+    try {
+      const r = await call<{ base64: string; filename: string }>(
+        "learningCertificate",
+        { id, reason },
+      );
+      if (auth.currentUser?.uid !== actor) return;
+      const url = URL.createObjectURL(
+        new Blob([Uint8Array.from(atob(r.base64), (c) => c.charCodeAt(0))], {
+          type: "application/pdf",
+        }),
+      );
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = r.filename;
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 30000);
+      setNotice("Administrator certificate preview downloaded.");
     } catch (e) {
       setError(errorMessage(e));
     } finally {
@@ -81,7 +99,7 @@ export default function StaffRecords() {
         }}
       >
         <label>
-          Learner account reference or certificate ID
+          Learner email, account reference or certificate ID
           <input
             value={reference}
             required
@@ -106,37 +124,83 @@ export default function StaffRecords() {
             {lookup.name} · {lookup.email}
           </h3>
           <label>
-            Verified certificate name
+            Learner display name
             <input
               value={name}
               maxLength={80}
               onChange={(e) => setName(e.target.value)}
             />
           </label>
+          <button
+            className="button secondary"
+            disabled={busy || lookup.removed || !name.trim() || !reason.trim()}
+            onClick={() =>
+              run(() =>
+                action("updateLearner", { uid: lookup.uid, name, reason }),
+              )
+            }
+          >
+            Correct learner display name
+          </button>
+          <p className="small muted">
+            Google email and account identity cannot be changed here.
+            Certificate names use their separate versioned correction control.
+          </p>
           {lookup.workshops.map((w) => (
             <div className="panel" key={w.sid}>
               <h3>{w.title}</h3>
               <p>
                 {w.sid} · {w.name} · {statusLabel(w.status)} · v{w.revision}
               </p>
+              {w.status === "revoked" && (
+                <button
+                  className="button secondary"
+                  disabled={busy || !reason.trim()}
+                  onClick={() => {
+                    if (
+                      confirm(
+                        "Reinstate verified completion, issue a replacement private certificate and restore the original 100 learning points once?",
+                      )
+                    )
+                      void run(() =>
+                        action("restoreCompletion", {
+                          uid: lookup.uid,
+                          sid: w.sid,
+                          reason,
+                        }),
+                      );
+                  }}
+                >
+                  Reinstate completion and certificate
+                </button>
+              )}
               {w.status === "completed" && (
                 <div className="staff-actions">
-                  <button
-                    className="button secondary"
-                    disabled={busy || !name.trim() || !reason.trim()}
-                    onClick={() =>
+                  {w.certificateId && (
+                    <button
+                      className="button secondary"
+                      disabled={busy || !reason.trim()}
+                      onClick={() => void preview(w.certificateId!)}
+                    >
+                      Preview certificate PDF
+                    </button>
+                  )}
+                  <CertificateCorrection
+                    key={w.sid + ":" + w.revision}
+                    workshop={w}
+                    busy={busy}
+                    reason={reason}
+                    onSave={(data) =>
                       run(() =>
                         action("correctCertificate", {
                           uid: lookup.uid,
                           sid: w.sid,
-                          name,
                           reason,
+                          ...data,
                         }),
                       )
                     }
-                  >
-                    Correct certificate name
-                  </button>
+                  />
                   <button
                     className="text-button danger"
                     disabled={busy || !reason.trim()}
@@ -163,52 +227,23 @@ export default function StaffRecords() {
           ))}
         </div>
       )}
-      <h3>Pending account requests</h3>
-      {!requests.length ? (
-        <p className="muted">No pending requests.</p>
-      ) : (
-        requests.map((r) => (
-          <article className="panel" key={r.id}>
-            <strong>
-              {r.email} · {r.kind}
-            </strong>
-            <p>{r.reason}</p>
-            <small>Account reference: {r.uid}</small>
-            <div className="staff-actions">
-              <button
-                className="text-button"
-                disabled={busy}
-                onClick={() => {
-                  setReference(r.uid);
-                  void load(r.uid);
-                }}
-              >
-                Open learner records
-              </button>
-              <button
-                className="button secondary"
-                disabled={busy || !reason.trim()}
-                onClick={() => {
-                  if (
-                    confirm(
-                      "Have you completed the requested correction or removal? This button only records your review.",
-                    )
-                  )
-                    void run(() =>
-                      action("reviewRequest", { requestId: r.id, reason }),
-                    );
-                }}
-              >
-                Mark reviewed
-              </button>
-            </div>
-          </article>
-        ))
-      )}
+      <RequestsPanel
+        refresh={requestVersion}
+        reason={reason}
+        onDone={() => {
+          setRequestVersion((v) => v + 1);
+          if (lookup) void load(lookup.uid);
+        }}
+        onOpen={(uid) => {
+          setReference(uid);
+          void load(uid);
+        }}
+      />
       <p className="muted">
         Corrections and revocation work even after a live session is deleted.
-        Removal requests need the documented staff removal procedure; marking a
-        request reviewed does not erase records.
+        Approved removal deletes InspiredLearning records through a recoverable
+        server workflow. Shared authentication and Live workshop data are
+        outside its scope.
       </p>
     </section>
   );

@@ -1,3 +1,4 @@
+import { privacyBlocked } from "./erasure.js";
 import { FieldValue } from "firebase-admin/firestore";
 import { randomUUID } from "node:crypto";
 import { HttpsError } from "firebase-functions/v2/https";
@@ -14,19 +15,34 @@ export async function finalize(db, actor, c, sid, uid, reason) {
     const root = db.doc(`sessions/${sid}`),
       ref = record(db, uid, sid),
       profileRef = learner(db, uid);
-    const [session, student, attendance, current, profile, board, quiz, admin] =
-      await Promise.all([
-        tx.get(root),
-        tx.get(root.collection("students").doc(uid)),
-        tx.get(root.collection("learningAttendance").doc(uid)),
-        tx.get(ref),
-        tx.get(profileRef),
-        tx.get(root.collection("public").doc("leaderboard")),
-        tx.get(root.collection("quizResults").doc(uid)),
-        tx.get(db.doc(`admins/${actor.email}`)),
-      ]);
+    const [
+      session,
+      student,
+      attendance,
+      current,
+      profile,
+      board,
+      quiz,
+      admin,
+      privacy,
+    ] = await Promise.all([
+      tx.get(root),
+      tx.get(root.collection("students").doc(uid)),
+      tx.get(root.collection("learningAttendance").doc(uid)),
+      tx.get(ref),
+      tx.get(profileRef),
+      tx.get(root.collection("public").doc("leaderboard")),
+      tx.get(root.collection("quizResults").doc(uid)),
+      tx.get(db.doc(`admins/${actor.email}`)),
+      tx.get(db.doc(`learningPrivacy/${uid}`)),
+    ]);
     if (!admin.exists || (admin.data().role || "facilitator") !== "facilitator")
       fail("permission-denied", "Facilitator access changed.");
+    if (privacyBlocked(privacy.data(), sid))
+      fail(
+        "failed-precondition",
+        "This learner requested removal. Historical results cannot be republished.",
+      );
     // Read submissions by actual team after reading the student; never trust a supplied team.
     if (!session.exists || !student.exists)
       fail("not-found", "Workshop participant not found.");
@@ -61,6 +77,10 @@ export async function finalize(db, actor, c, sid, uid, reason) {
     );
     const old = current.data();
     if (old?.certificateNameOverride) result.name = old.certificateNameOverride;
+    if (old?.certificateTitleOverride)
+      result.title = old.certificateTitleOverride;
+    if (old && Object.hasOwn(old, "certificateDateOverride"))
+      result.date = old.certificateDateOverride;
     const hash = fingerprint(result);
     if (old?.status === "completed" && old.fingerprint === hash)
       return { uid, status: "unchanged" };
@@ -74,6 +94,12 @@ export async function finalize(db, actor, c, sid, uid, reason) {
       ...result,
       ...(old?.certificateNameOverride
         ? { certificateNameOverride: old.certificateNameOverride }
+        : {}),
+      ...(old?.certificateTitleOverride
+        ? { certificateTitleOverride: old.certificateTitleOverride }
+        : {}),
+      ...(old && Object.hasOwn(old, "certificateDateOverride")
+        ? { certificateDateOverride: old.certificateDateOverride }
         : {}),
       status: "completed",
       revision,

@@ -1,3 +1,4 @@
+import RequestHistory from "./RequestHistory";
 import { useState } from "react";
 import type { User } from "firebase/auth";
 import type { Profile as LearnerProfile } from "./types";
@@ -113,6 +114,7 @@ export default function Profile({
           </button>
         </form>
       </div>
+      <RequestHistory uid={user.uid} />
     </>
   );
 }

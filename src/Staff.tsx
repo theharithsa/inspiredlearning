@@ -5,7 +5,7 @@ import { useSearchParams } from "react-router-dom";
 import { action, errorMessage } from "./observability";
 import type { Roster } from "./types";
 import { Message } from "./components";
-export default function Staff() {
+export default function Staff({ admin = false }: { admin?: boolean }) {
   const [params] = useSearchParams();
   const [globalFacilitator, setGlobalFacilitator] = useState(false);
   useEffect(() => {
@@ -71,7 +71,7 @@ export default function Staff() {
     <>
       <header className="page-heading compact">
         <span className="eyebrow">WORKSHOP STAFF</span>
-        <h1>Verify the journey.</h1>
+        <h1>{admin ? "Admin control centre." : "Verify the journey."}</h1>
         <p>
           Confirm attendance, publish lasting results and correct issued
           records. Quiz performance does not determine eligibility for a
@@ -248,6 +248,7 @@ export default function Staff() {
                         type="checkbox"
                         aria-label={"Select " + s.name}
                         checked={selected.includes(s.uid)}
+                        disabled={s.resultStatus === "removed"}
                         onChange={(e) =>
                           setSelected(
                             e.target.checked

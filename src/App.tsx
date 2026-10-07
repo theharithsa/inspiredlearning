@@ -18,6 +18,7 @@ import Workshops from "./Workshops";
 import PointsHistory from "./PointsHistory";
 const WorkshopDetail = lazy(() => import("./WorkshopDetail"));
 const Certificates = lazy(() => import("./Certificates"));
+const RemovedAccount = lazy(() => import("./RemovedAccount"));
 const Profile = lazy(() => import("./Profile"));
 const Staff = lazy(() => import("./Staff"));
 const Verify = lazy(() => import("./Verify"));
@@ -217,6 +218,21 @@ function Privacy() {
   );
 }
 function LearnerLayout({ user }: { user: User }) {
+  const privacy = useRecord<{ state: string }>(`learningPrivacy/${user.uid}`);
+  const [administrator, setAdministrator] = useState<boolean | null>(null);
+  useEffect(() => {
+    let active = true;
+    void action<{ facilitator: boolean }>("access")
+      .then((r) => {
+        if (active) setAdministrator(r.facilitator);
+      })
+      .catch(() => {
+        if (active) setAdministrator(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [user.uid]);
   const profile = useRecord<LearnerProfile>(`learningLearners/${user.uid}`);
   const { rows, error } = useRows<Workshop>(
     `learningLearners/${user.uid}/workshops`,
@@ -227,6 +243,8 @@ function LearnerLayout({ user }: { user: User }) {
   useEffect(() => {
     void action("profile").catch(() => {});
   }, [user.uid]);
+  if (privacy?.state === "erasing" || privacy?.state === "erased")
+    return <RemovedAccount user={user} state={privacy.state} />;
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -242,6 +260,7 @@ function LearnerLayout({ user }: { user: User }) {
           <NavLink to="/certificates">Certificates</NavLink>
           <NavLink to="/community">Community ↗</NavLink>
           <NavLink to="/profile">Profile</NavLink>
+          {administrator && <NavLink to="/admin">Admin controls</NavLink>}
         </nav>
         <div className="sidebar-footer">
           <Link to="/staff">Workshop staff</Link>
@@ -285,9 +304,27 @@ function LearnerLayout({ user }: { user: User }) {
           <Route path="/community" element={<Community />} />
           <Route
             path="/profile"
-            element={<Profile user={user} profile={profile} />}
+            element={
+              profile === undefined ? (
+                <p role="status">Loading your profile…</p>
+              ) : (
+                <Profile key={user.uid} user={user} profile={profile} />
+              )
+            }
           />
           <Route path="/staff" element={<Staff />} />
+          <Route
+            path="/admin"
+            element={
+              administrator === null ? (
+                <p role="status">Checking administrator access…</p>
+              ) : administrator ? (
+                <Staff admin />
+              ) : (
+                <Message error>Administrator access required.</Message>
+              )
+            }
+          />
           <Route
             path="*"
             element={

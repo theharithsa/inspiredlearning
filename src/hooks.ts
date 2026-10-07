@@ -1,6 +1,13 @@
 import { useEffect, useState } from "react";
 import { onAuthStateChanged, type User } from "firebase/auth";
-import { collection, doc, onSnapshot } from "firebase/firestore";
+import {
+  collection,
+  doc,
+  onSnapshot,
+  query,
+  where,
+  type WhereFilterOp,
+} from "firebase/firestore";
 import { auth, db } from "./firebase";
 export const googleUser = (u: User | null | undefined) =>
   !!u &&
@@ -12,19 +19,29 @@ export function useUser() {
   useEffect(() => onAuthStateChanged(auth, set), []);
   return u;
 }
-export function useRows<T>(path: string | null) {
+export function useRows<T>(
+  path: string | null,
+  filters: [string, WhereFilterOp, unknown][] = [],
+) {
+  const encoded = JSON.stringify(filters),
+    key = path ? path + encoded : null;
   const [state, set] = useState<{
     path: string | null;
     rows: (T & { id: string })[] | undefined;
     error: string;
-  }>({ path, rows: undefined, error: "" });
+  }>({ path: key, rows: undefined, error: "" });
   useEffect(() => {
     if (!path) return;
     return onSnapshot(
-      collection(db, path),
+      query(
+        collection(db, path),
+        ...(JSON.parse(encoded) as [string, WhereFilterOp, unknown][]).map(
+          ([field, op, value]) => where(field, op, value),
+        ),
+      ),
       (s) =>
         set({
-          path,
+          path: key,
           rows: s.docs.map(
             (d) => ({ ...d.data(), id: d.id }) as T & { id: string },
           ),
@@ -32,14 +49,14 @@ export function useRows<T>(path: string | null) {
         }),
       () =>
         set({
-          path,
+          path: key,
           rows: [],
           error:
             "Could not load your records. Check your connection and sign in again.",
         }),
     );
-  }, [path]);
-  return state.path === path ? state : { path, rows: undefined, error: "" };
+  }, [path, encoded, key]);
+  return state.path === key ? state : { path: key, rows: undefined, error: "" };
 }
 export function useRecord<T>(path: string | null) {
   const [state, set] = useState<{
