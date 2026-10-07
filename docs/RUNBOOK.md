@@ -37,3 +37,9 @@ Outbox `learningTelemetry` stores canonical events pending/delivered. A schedule
 ## Authentication
 
 Google sign-in must be enabled and all Hosting/custom domains authorized in Firebase Authentication. Learners use the same Google account as Live. Anonymous users cannot obtain certificates. Staff authorization comes from `admins/{email}` (facilitator) or `sessions/{sid}/staff/{email}` (regional captain), not frontend route visibility.
+
+## Rollback
+
+For a frontend regression, use Firebase Hosting release history for **inspiredlearning-vh** to restore its previous version, leaving ChaiCart Live's Hosting site intact. For backend changes, check out the last verified source and redeploy only `functions:inspiredlearning`; retain the durable records and outbox. A frontend rollback does not roll back Functions, security rules or Firestore data. Coordinate any shared rules rollback through ChaiCart Live's reviewed rules source and run both apps' permission tests first. Never delete learner records or the points ledger as a rollback shortcut.
+
+Initial creation of retry-enabled functions requires Firebase's `--force` deployment option after reviewing their idempotency. If an initial build leaves new functions in FAILED state with missing trigger metadata, verify they are never-live functions in the dedicated codebase before removing/recreating those failed placeholders. Do not apply that cleanup procedure to active workshop functions.
