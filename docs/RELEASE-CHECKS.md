@@ -1,6 +1,14 @@
 # Release checks — 7 October 2026
 
-## Deployed
+## Administrator support release
+
+Source `b14a76b` adds role-gated administrator controls, private certificate preview, verified profile/certificate corrections, archived completion reinstatement, live paginated requests, request decisions, scoped resumable removal and future-only reactivation. Runtime deployed to the existing Firebase URL on 7 October; changed functions were confirmed ACTIVE, the RUM tag and new administrator controls are present in production assets, and the production Firebase configuration is correct. Shared privacy rule is released; pending/history production queries were accepted without additional indexes. No real learner records were changed by this release's simulation.
+
+119 automated cases passed: four portal model, 24 portal backend/rules, 17 portal browser, 39 Live rules/actions/audit, 17 Live browser and 18 Live backend unit cases. The Live browser suite passed again after patching dependencies. Build and lint succeeded (existing Fast Refresh warnings remain). Live frontend and backend clean installs report zero audit vulnerabilities after source-map-js/UUID patches. UI screenshots and private PDFs were checked in the rehearsal.
+
+GitHub CI passed for portal runtime `b14a76b` and shared archival source `7377ad4`. Live patch source `a0ce28d` is deployed, with all seven telemetry functions confirmed ACTIVE; its regression workflow is tracked in GitHub Actions. These checks do not replace real Google OAuth or custom-domain verification below.
+
+## Initial deployment
 
 - InspiredLearning: https://inspiredlearning-vh.web.app
 - Private repository: https://github.com/theharithsa/inspiredlearning (privacy verified)

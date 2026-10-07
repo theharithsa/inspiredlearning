@@ -12,3 +12,5 @@ PDF visual review checks one-page layout, QR, certificate identity and version. 
 
 
 The expanded matrix is in [USE-CASE-VALIDATION.md](USE-CASE-VALIDATION.md). Shared Live rules/action/audit regression: 39 cases passed, including completed erasure as an archival alternative and rejecting in-progress erasure. The browser suite includes live request arrival, mobile corrected PDFs, role-gated navigation, email lookup, admin preview, archived reinstatement, request decisions, account switching, typed removal and future-only reactivation.
+
+18 Live backend unit cases also passed. Total distinct automated cases across the two applications: 119. Live browser regression was repeated successfully after the dependency patches. Portal runtime and initial shared archival source passed GitHub CI.

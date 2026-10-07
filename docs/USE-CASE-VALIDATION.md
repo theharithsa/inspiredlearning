@@ -40,6 +40,7 @@ Real Google OAuth popup/consent, MFA and account availability must be checked wi
 - `npm run test:integration`: 24 backend/Firestore cases (requires Firebase CLI and Java 21).
 - `CI=true npm run test:rehearsal`: 17 serial browser journeys with real emulated Functions, Auth and Firestore.
 - Shared Live `npm run test:rules`: 39 rules/action/audit cases including erasure-aware archival.
-- Shared Live `CI=true npm run test:rehearsal`: baseline workshop journeys for regression.
+- Shared Live `CI=true npm run test:rehearsal`: 17 workshop journeys for regression.
+- Shared Live `npm test --prefix functions`: 18 business-audit, telemetry and validation unit cases.
 
 See [TESTING.md](TESTING.md) for release results, and [RUNBOOK.md](RUNBOOK.md) for operator instructions.
