@@ -1,0 +1,36 @@
+{
+  "name": "inspiredlearning-functions",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": "22"
+  },
+  "scripts": {
+    "test": "node --test ../test/model.test.mjs"
+  },
+  "dependencies": {
+    "@opentelemetry/api": "^1.9.1",
+    "@opentelemetry/api-logs": "^0.222.0",
+    "@opentelemetry/exporter-logs-otlp-proto": "^0.222.0",
+    "@opentelemetry/exporter-metrics-otlp-proto": "^0.222.0",
+    "@opentelemetry/exporter-trace-otlp-proto": "^0.222.0",
+    "@opentelemetry/resources": "^2.11.0",
+    "@opentelemetry/sdk-logs": "^0.222.0",
+    "@opentelemetry/sdk-metrics": "^2.11.0",
+    "@opentelemetry/sdk-node": "^0.222.0",
+    "@opentelemetry/sdk-trace": "^2.11.0",
+    "@pdf-lib/fontkit": "^1.1.1",
+    "firebase-admin": "^14.5.0",
+    "firebase-functions": "^7.0.0",
+    "pdf-lib": "^1.17.1",
+    "qrcode": "^1.5.4",
+    "regenerator-runtime": "^0.14.1"
+  },
+  "overrides": {
+    "gaxios@^6.4.0": {
+      "uuid": "^11.1.1"
+    }
+  },
+  "main": "index.js"
+}

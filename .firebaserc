@@ -1,0 +1,14 @@
+{
+  "projects": {
+    "prod": "chaicloud-workshop"
+  },
+  "targets": {
+    "chaicloud-workshop": {
+      "hosting": {
+        "inspiredlearning": [
+          "inspiredlearning-vh"
+        ]
+      }
+    }
+  }
+}

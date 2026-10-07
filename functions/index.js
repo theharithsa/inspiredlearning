@@ -1,0 +1,209 @@
+import { initializeApp } from "firebase-admin/app";
+import { getFirestore, FieldValue } from "firebase-admin/firestore";
+import { onCall, HttpsError } from "firebase-functions/v2/https";
+import {
+  onDocumentCreated,
+  onDocumentDeleted,
+} from "firebase-functions/v2/firestore";
+import { execute, enroll, verification } from "./actions.js";
+import { measured, token, log } from "./monitor.js";
+import { validCertificate, validSid, validUid } from "./model.js";
+import { certificatePdf } from "./pdf.js";
+import { queue } from "./events.js";
+initializeApp();
+const db = getFirestore(),
+  options = {
+    region: "asia-south1",
+    secrets: [token],
+    maxInstances: 2,
+    memory: "512MiB",
+    timeoutSeconds: 540,
+  };
+const actorOf = (r) => {
+  const t = r.auth?.token;
+  if (
+    !r.auth ||
+    !t?.email ||
+    !t.email_verified ||
+    t.firebase?.sign_in_provider !== "google.com"
+  )
+    throw new HttpsError("unauthenticated", "Sign in with Google to continue.");
+  return { uid: r.auth.uid, email: t.email, name: t.name };
+};
+const buckets = new Map();
+function rate(key, limit = 120) {
+  const now = Date.now();
+  let b = buckets.get(key);
+  if (!b || now - b.start > 60000) {
+    b = { start: now, n: 0 };
+    buckets.set(key, b);
+  }
+  if (++b.n > limit)
+    throw new HttpsError(
+      "resource-exhausted",
+      "Please wait a minute and try again.",
+    );
+  if (buckets.size > 10000)
+    for (const [k, v] of buckets) if (now - v.start > 60000) buckets.delete(k);
+}
+export const learningAction = onCall(options, async (r) => {
+  const actor = actorOf(r);
+  rate(actor.uid);
+  if (
+    !r.data ||
+    typeof r.data !== "object" ||
+    Array.isArray(r.data) ||
+    JSON.stringify(r.data).length > 32768
+  )
+    throw new HttpsError("invalid-argument", "Invalid learning request.");
+  if (
+    ![
+      "profile",
+      "requestCorrection",
+      "certificateVisibility",
+      "access",
+      "roster",
+      "sync",
+      "close",
+      "attendance",
+      "attendanceBatch",
+      "finalize",
+      "revoke",
+      "requests",
+      "reviewRequest",
+      "lookup",
+      "correctCertificate",
+    ].includes(r.data.action)
+  )
+    throw new HttpsError("invalid-argument", "Unknown learning action.");
+  return measured(
+    "learning." + r.data.action,
+    actor,
+    (c) => execute(db, actor, r.data, c),
+    r.data.traceparent,
+    r.data.transactionId,
+  );
+});
+export const learningCertificate = onCall(options, async (r) => {
+  const actor = actorOf(r);
+  rate(actor.uid, 30);
+  if (!validCertificate(r.data?.id))
+    throw new HttpsError("invalid-argument", "Choose a valid certificate.");
+  return measured(
+    "certificate.download",
+    actor,
+    async (c) => {
+      const ref = db.doc(`learningCertificates/${r.data.id}`),
+        snap = await ref.get(),
+        cert = snap.data();
+      if (!cert || cert.uid !== actor.uid)
+        throw new HttpsError(
+          "permission-denied",
+          "This certificate is not available to your account.",
+        );
+      if (cert.status !== "issued")
+        throw new HttpsError(
+          "failed-precondition",
+          "This certificate has been revoked or replaced.",
+        );
+      const bytes = await certificatePdf(cert);
+      await db
+        .collection("learningTelemetry")
+        .add(
+          (await import("./events.js")).eventRecord(
+            "certificate.download.prepared",
+            actor,
+            c,
+            { "certificate.id": cert.id, "workshop.session.id": cert.sid },
+          ),
+        );
+      return {
+        base64: bytes.toString("base64"),
+        filename: `InspiredLearning-${cert.sid}-${cert.id.slice(0, 8)}.pdf`,
+      };
+    },
+    r.data.traceparent,
+    r.data.transactionId,
+  );
+});
+export const learningVerify = onCall(options, async (r) => {
+  rate("verify:" + r.rawRequest.ip, 60);
+  return measured(
+    "certificate.verify",
+    null,
+    () => verification(db, r.data?.id),
+    r.data?.traceparent,
+    r.data?.transactionId,
+  );
+});
+export const learningTelemetry = onCall(options, async (r) => {
+  const actor = actorOf(r);
+  rate("telemetry:" + actor.uid, 100);
+  const allowed = new Set([
+    "ui.click",
+    "page.view",
+    "auth.signed-in",
+    "auth.signed-out",
+    "certificate.download",
+    "discord.opened",
+    "workshop.viewed",
+    "profile.saved",
+  ]);
+  if (!allowed.has(r.data?.name))
+    throw new HttpsError("invalid-argument", "Unknown telemetry event.");
+  return measured(
+    "browser." + r.data.name,
+    actor,
+    async () => {
+      log("INFO", "Learner interaction", {
+        "event.name": r.data.name,
+        "event.authority": "client-observed",
+        ...(validSid(r.data.sid) ? { "workshop.session.id": r.data.sid } : {}),
+      });
+      return { accepted: true };
+    },
+    r.data.traceparent,
+    r.data.transactionId,
+  );
+});
+export const recordLearningEnrollment = onDocumentCreated(
+  { ...options, document: "sessions/{sid}/students/{uid}", retry: true },
+  async (e) => {
+    if (!validSid(e.params.sid) || !validUid(e.params.uid)) return;
+    const session = await db.doc(`sessions/${e.params.sid}`).get();
+    if (!session.exists || session.data().deleting) return;
+    return measured("enrollment.record", { uid: e.params.uid }, (c) =>
+      enroll(db, e.params.sid, e.params.uid, e.data.data(), session.data(), c, {
+        uid: e.params.uid,
+      }),
+    );
+  },
+);
+export const cancelLearningEnrollment = onDocumentDeleted(
+  { ...options, document: "sessions/{sid}", retry: true },
+  async (e) => {
+    if (!validSid(e.params.sid)) return;
+    return measured("enrollment.cancel", {uid:"system"}, async (c) => {
+      const index = await db.doc(`learningEnrollments/${e.params.sid}`).get();
+      for (const uid of index.data()?.uids || []) {
+        await db.runTransaction(async (tx) => {
+          const ref = db.doc(
+              `learningLearners/${uid}/workshops/${e.params.sid}`,
+            ),
+            s = await tx.get(ref);
+          if (["registered", "completion-pending"].includes(s.data()?.status)) {
+            tx.update(ref, {
+              status: "cancelled",
+              updatedAt: FieldValue.serverTimestamp(),
+            });
+            queue(tx, db, "enrollment.cancelled", {uid:"system"}, c, {
+              "learner.id": uid,
+              "workshop.session.id": e.params.sid,
+            });
+          }
+        });
+      }
+    });
+  },
+);
+export { deliverLearningEvent, retryLearningEvents } from "./events.js";

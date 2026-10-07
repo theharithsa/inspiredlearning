@@ -1,0 +1,164 @@
+rules_version = '2';
+service cloud.firestore {
+ match /databases/{database}/documents {
+  function signedIn(){return request.auth != null;}
+  function google(){return signedIn() && request.auth.token.email_verified == true && request.auth.token.firebase.sign_in_provider == 'google.com';}
+  function facilitator(){return google() && exists(/databases/$(database)/documents/admins/$(request.auth.token.email)) && get(/databases/$(database)/documents/admins/$(request.auth.token.email)).data.get('role','facilitator') == 'facilitator';}
+  function validTeam(t){return t is string && t.matches('^(mumbai|chennai|pune|delhi)-1[a-f]$');}
+  function regionTeam(r,t){return (r=='west' && t.matches('^mumbai-1[a-f]$')) || (r=='south' && t.matches('^chennai-1[a-f]$')) || (r=='central' && t.matches('^pune-1[a-f]$')) || (r=='north' && t.matches('^delhi-1[a-f]$'));}
+  match /workshopTelemetry/{id}{allow read:if facilitator();allow write:if false;}
+  match /workshopContent/{id}{allow read:if facilitator();allow write:if false;}
+  match /admins/{email}{allow read:if signedIn() && request.auth.token.email==email;allow write:if false;}
+  // InspiredLearning shares Auth, but learner records are strictly owner-scoped.
+  match /learningLearners/{uid}{
+   allow read:if google() && request.auth.uid==uid;
+   allow write:if false;
+   match /{document=**}{allow read:if google() && request.auth.uid==uid;allow write:if false;}
+  }
+  match /learningCertificates/{id}{allow read:if google() && resource.data.uid==request.auth.uid;allow write:if false;}
+  match /learningRequests/{id}{allow read:if facilitator() || (google() && resource.data.uid==request.auth.uid);allow write:if false;}
+  match /learningTelemetry/{id}{allow read:if facilitator();allow write:if false;}
+  match /learningEnrollments/{sid}{allow read:if facilitator();allow write:if false;}
+  match /sessions/{sid}{
+   function session(){return get(/databases/$(database)/documents/sessions/$(sid)).data;}
+   function profile(){return get(/databases/$(database)/documents/sessions/$(sid)/students/$(request.auth.uid)).data;}
+   function captain(){return google() && exists(/databases/$(database)/documents/sessions/$(sid)/staff/$(request.auth.token.email));}
+   function captainTeam(t){return captain() && regionTeam(get(/databases/$(database)/documents/sessions/$(sid)/staff/$(request.auth.token.email)).data.region,t);}
+   function teamReader(t){return facilitator() || captainTeam(t) || (google() && profile().teamId==t);}
+   function writer(){return google() && profile().role=='COO';}
+   allow read:if google();allow write:if facilitator();
+   match /staff/{email}{allow read:if facilitator() || (google() && request.auth.token.email==email);allow write:if facilitator();}
+   match /public/{id}{allow read:if google();allow write:if facilitator();}
+   match /private/{id}{allow read:if facilitator() || (captain() && id in ['keys','activityKeys']);allow write:if facilitator();}
+   match /teams/{teamId}{
+    allow read:if google();allow create,delete:if facilitator();
+    allow update:if facilitator() || (google() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['slots'])
+      && request.resource.data.slots.diff(resource.data.slots).affectedKeys().size()==1
+      && getAfter(/databases/$(database)/documents/sessions/$(sid)/students/$(request.auth.uid)).data.teamId==teamId
+      && request.resource.data.slots[getAfter(/databases/$(database)/documents/sessions/$(sid)/students/$(request.auth.uid)).data.role]==request.auth.uid
+      && !(getAfter(/databases/$(database)/documents/sessions/$(sid)/students/$(request.auth.uid)).data.role in resource.data.slots));
+   }
+   match /students/{uid}{
+    allow read:if facilitator() || (signedIn() && uid==request.auth.uid) || teamReader(resource.data.teamId);
+    allow create:if google() && !session().get('deleting',false) && uid==request.auth.uid
+      && request.resource.data.keys().hasOnly(['name','semester','branch','teamId','role','joinedAt'])
+      && request.resource.data.name is string && request.resource.data.name.size()>1 && request.resource.data.name.size()<=60
+      && request.resource.data.branch is string && request.resource.data.branch.size()>0 && request.resource.data.branch.size()<=60
+      && request.resource.data.semester in ['5','7'] && request.resource.data.role in ['CEO','CTO','SRE','CFO','COO']
+      && validTeam(request.resource.data.teamId) && request.resource.data.joinedAt==request.time
+      && getAfter(/databases/$(database)/documents/sessions/$(sid)/teams/$(request.resource.data.teamId)).data.slots[request.resource.data.role]==uid;
+    allow update:if facilitator() || (google() && uid==request.auth.uid && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name','branch']) && request.resource.data.name is string && request.resource.data.name.size()<=60 && request.resource.data.branch is string && request.resource.data.branch.size()<=60);
+    allow delete:if facilitator();
+   }
+   match /learningAttendance/{uid}{allow read:if facilitator() || (google() && uid==request.auth.uid) || captainTeam(get(/databases/$(database)/documents/sessions/$(sid)/students/$(uid)).data.teamId);allow write:if false;}
+   match /quizResults/{uid}{allow read:if facilitator() || (google() && uid==request.auth.uid) || captainTeam(get(/databases/$(database)/documents/sessions/$(sid)/students/$(uid)).data.teamId);allow write:if false;}
+   match /awards/{id}{allow read:if (resource!=null && teamReader(resource.data.teamId)) || (resource==null && teamReader(id.split('__')[1]));allow delete:if facilitator();}
+   match /ledger/{id}{allow read:if teamReader(resource.data.teamId);allow create:if facilitator();allow update,delete:if false;}
+   match /designs/{teamId}{allow read:if teamReader(teamId);allow create:if facilitator();allow update,delete:if false;}
+   match /rolls/{id}{allow read:if teamReader(resource.data.teamId) || (google() && id.matches('^'+profile().teamId+'__.*'));allow create:if facilitator();allow update,delete:if false;}
+   match /networking/{uid}{
+    allow read:if (google() && request.auth.uid==uid) || teamReader(resource.data.teamId);
+    allow create,update:if google() && uid==request.auth.uid && session().get('networkingOpen',false)
+      && request.resource.data.keys().hasOnly(['teamId','region','completed','updatedAt']) && request.resource.data.teamId==profile().teamId
+      && regionTeam(request.resource.data.region,request.resource.data.teamId) && request.resource.data.completed is list
+      && request.resource.data.completed.size()<=3 && request.resource.data.completed.hasOnly(['linkedin','github','x']) && request.resource.data.updatedAt==request.time;
+   }
+   match /xEntries/{uid}{
+    allow update:if (facilitator() || captainTeam(resource.data.teamId)) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['shortlisted']) && request.resource.data.shortlisted is bool;
+    allow read:if (google() && uid==request.auth.uid) || facilitator() || captainTeam(resource.data.teamId);
+    allow create,update:if google() && uid==request.auth.uid && session().get('networkingOpen',false)
+      && request.resource.data.keys().hasOnly(['url','name','teamId','region','updatedAt'])
+      && request.resource.data.teamId==profile().teamId && request.resource.data.name==profile().name
+      && regionTeam(request.resource.data.region,request.resource.data.teamId) && request.resource.data.url is string && request.resource.data.url.size()<400
+      && request.resource.data.url.matches('^https://(www\\.)?(x\\.com|twitter\\.com)/[^/]+/status/[0-9]+/?(\\?.*)?$') && request.resource.data.updatedAt==request.time;
+   }
+   match /reviews/{id}{
+    // A new activity has no review yet. Authorize that lookup from the team in its ID.
+    allow read:if (resource!=null && teamReader(resource.data.teamId)) || (resource==null && teamReader(id.split('__')[1]));
+    allow create,update:if (facilitator() || captainTeam(request.resource.data.teamId))
+      && request.resource.data.keys().hasOnly(['activity','teamId','region','points','comment','status','actor','updatedAt'])
+      && validTeam(request.resource.data.teamId) && regionTeam(request.resource.data.region,request.resource.data.teamId)
+      && id==request.resource.data.activity+'__'+request.resource.data.teamId && request.resource.data.status=='approved'
+      && request.resource.data.points is number && request.resource.data.points>=0 && request.resource.data.points<=150
+      && request.resource.data.comment is string && request.resource.data.comment.size()<=1000 && request.resource.data.actor==request.auth.uid && request.resource.data.updatedAt==request.time;
+   }
+   match /submissions/{id}{
+    function individual(a){return a in ['survey-pre','survey-post','plan','cloud-or-not'];}
+    function existingSafe(){return resource==null || !resource.data.get('locked',false);}
+    function indexed(field,idx){return resource==null?request.resource.data[field].keys().hasOnly([idx]):request.resource.data[field].diff(resource.data.get(field,{})).affectedKeys().hasOnly([idx]) && !(idx in resource.data.get(field,{}));}
+    function payload(d,s){
+     let a=d.activity;
+     let idx=string(s.state.index);
+     return (a in ['quiz-day1','quiz-day2','cloud-or-not'] && d.keys().hasOnly(['activity','scope','teamId','uid','byName','updatedAt','answers']) && d.answers is map && indexed('answers',idx) && d.answers[idx] is int && d.answers[idx]>=0 && d.answers[idx]<(a=='cloud-or-not'?3:4))
+       || (a=='budget' && d.keys().hasOnly(['activity','scope','teamId','uid','byName','updatedAt','choices']) && indexed('choices',idx) && d.choices[idx].keys().hasOnly(['c','roll']) && d.choices[idx].c in ['A','B'] && (!('roll' in d.choices[idx]) || d.choices[idx].roll==get(/databases/$(database)/documents/sessions/$(sid)/rolls/$(d.teamId+'__'+idx)).data.roll))
+       || (a=='billshock' && d.keys().hasOnly(['activity','scope','teamId','uid','byName','updatedAt','controls']) && d.controls is map && d.controls.size()<=3)
+       || (a in ['shark-vote','demo-vote'] && d.keys().hasOnly(['activity','scope','teamId','uid','byName','updatedAt','choice']) && validTeam(d.choice) && d.choice!=d.teamId && d.choice.split('-')[0]==d.teamId.split('-')[0])
+       || (a=='mystery' && resource==null && d.keys().hasOnly(['activity','scope','teamId','uid','byName','updatedAt','accusation','locked']) && d.locked==true && d.accusation is map && d.accusation.keys().hasOnly(['killer','weapon','accomplice','bonus','metric','log','trace','fix']))
+       || (a in ['survey-pre','survey-post','plan','deploy-debate','shark-pitch','postmortem','treasure-hunt','downtime','architecture','timeline','service-sort','bingo','gallery'] && d.keys().hasOnly(['activity','scope','teamId','uid','byName','updatedAt','values','locked']) && d.values is map && d.values.size()<=40 && formValid(a,d.values) && (!('locked' in d) || a=='timeline') && (a!='timeline' || d.get('locked',false)==(d.values.order==get(/databases/$(database)/documents/sessions/$(sid)/private/activityKeys).data.timeline)));
+    }
+    // Per-activity form schemas are generated from the content manifest below.
+    function formValid(a,v){return "survey-pre" == a ? (v.keys().hasOnly(["c0","c1","c2","c3","c4","c5","c6","c7","c8","c9","hope","word"]) && (v.get("c0",0) is number && v.get("c0",0)>=0 && v.get("c0",0)<=5) && (v.get("c1",0) is number && v.get("c1",0)>=0 && v.get("c1",0)<=5) && (v.get("c2",0) is number && v.get("c2",0)>=0 && v.get("c2",0)<=5) && (v.get("c3",0) is number && v.get("c3",0)>=0 && v.get("c3",0)<=5) && (v.get("c4",0) is number && v.get("c4",0)>=0 && v.get("c4",0)<=5) && (v.get("c5",0) is number && v.get("c5",0)>=0 && v.get("c5",0)<=5) && (v.get("c6",0) is number && v.get("c6",0)>=0 && v.get("c6",0)<=5) && (v.get("c7",0) is number && v.get("c7",0)>=0 && v.get("c7",0)<=5) && (v.get("c8",0) is number && v.get("c8",0)>=0 && v.get("c8",0)<=5) && (v.get("c9",0) is number && v.get("c9",0)>=0 && v.get("c9",0)<=5) && (v.get("hope","") is string && v.get("hope","").size()<=4000) && (v.get("word","") is string && v.get("word","").size()<=4000)) :
+       "deploy-debate" == a ? (v.keys().hasOnly(["model","reason"]) && (v.get("model","") is string && v.get("model","").size()<=4000) && (v.get("reason","") is string && v.get("reason","").size()<=4000)) :
+       "shark-pitch" == a ? (v.keys().hasOnly(["pitch"]) && (v.get("pitch","") is string && v.get("pitch","").size()<=4000)) :
+       "downtime" == a ? (v.keys().hasOnly(["guess0","guess1","guess2","guess3"]) && (v.get("guess0",0) is number && v.get("guess0",0)>=0 && v.get("guess0",0)<=525600) && (v.get("guess1",0) is number && v.get("guess1",0)>=0 && v.get("guess1",0)<=525600) && (v.get("guess2",0) is number && v.get("guess2",0)>=0 && v.get("guess2",0)<=525600) && (v.get("guess3",0) is number && v.get("guess3",0)>=0 && v.get("guess3",0)<=525600)) :
+       "treasure-hunt" == a ? (v.keys().hasOnly(["q1","q1proof","q2","q2proof","q3","q3proof","q4","q4proof","q5","q5proof","q6","q6proof","q7","q7proof","q8","q8proof","q9","q9proof","q10","q10proof","q11","q11proof","q12","q12proof","q13","q13proof","q14","q14proof","q15","q15proof","reflection"]) && (v.get("q1","") is string && v.get("q1","").size()<=4000) && (v.get("q1proof","") is string && v.get("q1proof","").size()<=4000) && (v.get("q2","") is string && v.get("q2","").size()<=4000) && (v.get("q2proof","") is string && v.get("q2proof","").size()<=4000) && (v.get("q3","") is string && v.get("q3","").size()<=4000) && (v.get("q3proof","") is string && v.get("q3proof","").size()<=4000) && (v.get("q4","") is string && v.get("q4","").size()<=4000) && (v.get("q4proof","") is string && v.get("q4proof","").size()<=4000) && (v.get("q5","") is string && v.get("q5","").size()<=4000) && (v.get("q5proof","") is string && v.get("q5proof","").size()<=4000) && (v.get("q6","") is string && v.get("q6","").size()<=4000) && (v.get("q6proof","") is string && v.get("q6proof","").size()<=4000) && (v.get("q7","") is string && v.get("q7","").size()<=4000) && (v.get("q7proof","") is string && v.get("q7proof","").size()<=4000) && (v.get("q8","") is string && v.get("q8","").size()<=4000) && (v.get("q8proof","") is string && v.get("q8proof","").size()<=4000) && (v.get("q9","") is string && v.get("q9","").size()<=4000) && (v.get("q9proof","") is string && v.get("q9proof","").size()<=4000) && (v.get("q10","") is string && v.get("q10","").size()<=4000) && (v.get("q10proof","") is string && v.get("q10proof","").size()<=4000) && (v.get("q11","") is string && v.get("q11","").size()<=4000) && (v.get("q11proof","") is string && v.get("q11proof","").size()<=4000) && (v.get("q12","") is string && v.get("q12","").size()<=4000) && (v.get("q12proof","") is string && v.get("q12proof","").size()<=4000) && (v.get("q13","") is string && v.get("q13","").size()<=4000) && (v.get("q13proof","") is string && v.get("q13proof","").size()<=4000) && (v.get("q14","") is string && v.get("q14","").size()<=4000) && (v.get("q14proof","") is string && v.get("q14proof","").size()<=4000) && (v.get("q15","") is string && v.get("q15","").size()<=4000) && (v.get("q15proof","") is string && v.get("q15proof","").size()<=4000) && (v.get("reflection","") is string && v.get("reflection","").size()<=4000)) :
+       "postmortem" == a ? (v.keys().hasOnly(["summary","impact","timeline","rootCause","wentWell","actions"]) && (v.get("summary","") is string && v.get("summary","").size()<=4000) && (v.get("impact","") is string && v.get("impact","").size()<=4000) && (v.get("timeline","") is string && v.get("timeline","").size()<=4000) && (v.get("rootCause","") is string && v.get("rootCause","").size()<=4000) && (v.get("wentWell","") is string && v.get("wentWell","").size()<=4000) && (v.get("actions","") is string && v.get("actions","").size()<=4000)) :
+       "plan" == a ? (v.keys().hasOnly(["role","d30","d60","d90"]) && (v.get("role","") is string && v.get("role","").size()<=4000) && (v.get("d30","") is string && v.get("d30","").size()<=4000) && (v.get("d60","") is string && v.get("d60","").size()<=4000) && (v.get("d90","") is string && v.get("d90","").size()<=4000)) :
+       "survey-post" == a ? (v.keys().hasOnly(["c0","c1","c2","c3","c4","c5","c6","c7","c8","c9","nps","learned","improve"]) && (v.get("c0",0) is number && v.get("c0",0)>=0 && v.get("c0",0)<=5) && (v.get("c1",0) is number && v.get("c1",0)>=0 && v.get("c1",0)<=5) && (v.get("c2",0) is number && v.get("c2",0)>=0 && v.get("c2",0)<=5) && (v.get("c3",0) is number && v.get("c3",0)>=0 && v.get("c3",0)<=5) && (v.get("c4",0) is number && v.get("c4",0)>=0 && v.get("c4",0)<=5) && (v.get("c5",0) is number && v.get("c5",0)>=0 && v.get("c5",0)<=5) && (v.get("c6",0) is number && v.get("c6",0)>=0 && v.get("c6",0)<=5) && (v.get("c7",0) is number && v.get("c7",0)>=0 && v.get("c7",0)<=5) && (v.get("c8",0) is number && v.get("c8",0)>=0 && v.get("c8",0)<=5) && (v.get("c9",0) is number && v.get("c9",0)>=0 && v.get("c9",0)<=5) && (v.get("nps",0) is number && v.get("nps",0)>=0 && v.get("nps",0)<=10) && (v.get("learned","") is string && v.get("learned","").size()<=4000) && (v.get("improve","") is string && v.get("improve","").size()<=4000)) :
+       'timeline' == a ? (v.keys().hasOnly(['order']) && v.order is list && v.order.size()==12 && v.order.toSet().size()==12 && v.order.hasOnly(["event-3dff45d6e1","event-d2124d9099","event-e3dbb551dc","event-92c227cd34","event-03de7764a9","event-6fc718f566","event-da49dce6b9","event-7b2dd0834c","event-6e78508bef","event-567d7a1343","event-e2fef49a7d","event-358156296f"])) :
+       'service-sort' == a ? (v.keys().hasOnly(["service-0","service-1","service-2","service-3","service-4","service-5","service-6","service-7","service-8","service-9","service-10","service-11","service-12","service-13","service-14","service-15","service-16","service-17","service-18","service-19"]) && v.get('service-0','') in ['','IaaS','PaaS','SaaS'] && v.get('service-1','') in ['','IaaS','PaaS','SaaS'] && v.get('service-2','') in ['','IaaS','PaaS','SaaS'] && v.get('service-3','') in ['','IaaS','PaaS','SaaS'] && v.get('service-4','') in ['','IaaS','PaaS','SaaS'] && v.get('service-5','') in ['','IaaS','PaaS','SaaS'] && v.get('service-6','') in ['','IaaS','PaaS','SaaS'] && v.get('service-7','') in ['','IaaS','PaaS','SaaS'] && v.get('service-8','') in ['','IaaS','PaaS','SaaS'] && v.get('service-9','') in ['','IaaS','PaaS','SaaS'] && v.get('service-10','') in ['','IaaS','PaaS','SaaS'] && v.get('service-11','') in ['','IaaS','PaaS','SaaS'] && v.get('service-12','') in ['','IaaS','PaaS','SaaS'] && v.get('service-13','') in ['','IaaS','PaaS','SaaS'] && v.get('service-14','') in ['','IaaS','PaaS','SaaS'] && v.get('service-15','') in ['','IaaS','PaaS','SaaS'] && v.get('service-16','') in ['','IaaS','PaaS','SaaS'] && v.get('service-17','') in ['','IaaS','PaaS','SaaS'] && v.get('service-18','') in ['','IaaS','PaaS','SaaS'] && v.get('service-19','') in ['','IaaS','PaaS','SaaS']) :
+       'architecture' == a ? (v.keys().hasOnly(['provider','region','components','flow','reason']) && v.provider in ['AWS','Microsoft Azure','Google Cloud','Oracle Cloud'] && v.region is string && v.region.size()<=200 && v.flow is string && v.flow.size()<=4000 && v.reason is string && v.reason.size()<=4000 && v.components is list && v.components.size()<=13 && v.components.hasOnly(['loadbalancer','web','payment','database','multiAZ','autoscaling','cdn','waf','queue','cache','fallback','monitoring','vault'])) :
+       'bingo' == a ? (v.keys().hasOnly(['marks']) && v.marks is list && v.marks.size()<=24 && v.marks.hasOnly(get(/databases/$(database)/documents/sessions/$(sid)/public/workshop).data.bingoCalled)) :
+       'gallery' == a ? (v.keys().hasOnly(["Netflix","Disney+ Hotstar","UPI / NPCI","IRCTC Tatkal","Capital One","Spotify"]) && v.get("Netflix",'') is string && v.get("Netflix",'').size()<=4000 && v.get("Disney+ Hotstar",'') is string && v.get("Disney+ Hotstar",'').size()<=4000 && v.get("UPI / NPCI",'') is string && v.get("UPI / NPCI",'').size()<=4000 && v.get("IRCTC Tatkal",'') is string && v.get("IRCTC Tatkal",'').size()<=4000 && v.get("Capital One",'') is string && v.get("Capital One",'').size()<=4000 && v.get("Spotify",'') is string && v.get("Spotify",'').size()<=4000) : false;}
+    allow read:if facilitator() || (signedIn() && id.matches('.*__'+request.auth.uid+'$'))
+      || (google() && resource!=null && ((resource.data.activity=='cloud-or-not' && captainTeam(resource.data.teamId)) || (resource.data.get('scope','')=='team' && teamReader(resource.data.teamId))))
+      || (resource==null && id.matches('^cloud-or-not__.*') && captainTeam(get(/databases/$(database)/documents/sessions/$(sid)/students/$(id.split('__')[1])).data.teamId))
+      || (google() && resource==null && (captainTeam(id.split('__')[1]) || id.matches('.*__'+profile().teamId+'$')));
+    allow create,update:if google() && request.resource.data.uid==request.auth.uid && request.resource.data.teamId==profile().teamId
+      && request.resource.data.scope==(individual(request.resource.data.activity)?'individual':'team') && request.resource.data.byName==profile().name && request.resource.data.updatedAt==request.time
+      && id==request.resource.data.activity+'__'+(individual(request.resource.data.activity)?request.auth.uid:profile().teamId)
+      && (individual(request.resource.data.activity) || writer()) && session().currentActivity==request.resource.data.activity && session().state.phase=='open'
+      && existingSafe() && payload(request.resource.data,session()) && (request.resource.data.activity!='architecture' || !exists(/databases/$(database)/documents/sessions/$(sid)/designs/$(profile().teamId)));
+    allow delete:if facilitator();
+   }
+   match /stationTokens/{id}{
+    allow read:if google();allow create,delete:if facilitator();
+    allow update:if facilitator() || (google() && session().currentActivity==resource.data.activity && session().state.phase=='open' && !resource.data.blocked
+      && resource.data.assignees[resource.data.station]==request.auth.uid && request.resource.data.station==resource.data.station+1
+      && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['station','lastBy','lastName','updatedAt']) && request.resource.data.lastBy==request.auth.uid && request.resource.data.lastName==profile().name && request.resource.data.updatedAt==request.time
+      && getAfter(/databases/$(database)/documents/sessions/$(sid)/stationTokens/$(id)/events/$(string(resource.data.station))).data.at==request.time);
+    match /events/{event}{
+     allow read:if google();allow create:if google() && request.resource.data.keys().hasOnly(['uid','name','station','at']) && request.resource.data.uid==request.auth.uid && request.resource.data.at==request.time
+      && event==string(request.resource.data.station) && request.resource.data.name==profile().name
+      && getAfter(/databases/$(database)/documents/sessions/$(sid)/stationTokens/$(id)).data.updatedAt==request.time
+      && getAfter(/databases/$(database)/documents/sessions/$(sid)/stationTokens/$(id)).data.lastBy==request.auth.uid
+      && getAfter(/databases/$(database)/documents/sessions/$(sid)/stationTokens/$(id)).data.station==request.resource.data.station+1;
+    }
+   }
+   match /factoryLocks/{id}{
+    allow read:if google() && (facilitator() || id==profile().teamId+'__1');
+    allow create,update:if writer() && request.resource.data.keys().hasOnly(['teamId','round','ticket']) && request.resource.data.teamId==profile().teamId && request.resource.data.round==1 && id==profile().teamId+'__1'
+      && (resource==null?request.resource.data.ticket==0:(request.resource.data.ticket==resource.data.ticket+1 && get(/databases/$(database)/documents/sessions/$(sid)/factoryTickets/$(profile().teamId+'__1__'+string(resource.data.ticket))).data.stage==4))
+      && getAfter(/databases/$(database)/documents/sessions/$(sid)/factoryTickets/$(profile().teamId+'__1__'+string(request.resource.data.ticket))).data.startedAt==request.time;
+   }
+   match /factoryTickets/{id}{
+    function config(){return get(/databases/$(database)/documents/sessions/$(sid)/public/factory).data;}
+    function operator(stage){return config().round==1?writer():profile().role==(stage==0?'CEO':stage==1?'CTO':stage==2?'SRE':'COO');}
+    function active(d){return google() && d.teamId==profile().teamId && d.round==config().round && config().open && request.time.toMillis()<config().endsAt && session().currentActivity=='factory' && session().state.phase=='open';}
+    allow read:if teamReader(resource.data.teamId) || (google() && resource==null && id.matches('^'+profile().teamId+'__.*'));
+    allow create:if active(request.resource.data) && operator(0) && request.resource.data.ticket is int && request.resource.data.ticket>=0 && request.resource.data.ticket<6
+      && id==request.resource.data.teamId+'__'+string(request.resource.data.round)+'__'+string(request.resource.data.ticket)
+      && request.resource.data.keys().hasOnly(['teamId','round','ticket','stage','failures','startedAt','updatedAt','lastBy'])
+      && (request.resource.data.round!=1 || getAfter(/databases/$(database)/documents/sessions/$(sid)/factoryLocks/$(profile().teamId+'__1')).data.ticket==request.resource.data.ticket)
+      && request.resource.data.stage==1 && request.resource.data.failures==0 && request.resource.data.startedAt==request.time && request.resource.data.updatedAt==request.time && request.resource.data.lastBy==request.auth.uid;
+    allow update:if active(request.resource.data) && operator(resource.data.stage) && request.resource.data.startedAt==resource.data.startedAt
+      && request.resource.data.lastBy==request.auth.uid && request.resource.data.updatedAt==request.time
+      && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stage','checksum','failures','updatedAt','lastBy','failedAt','recoveredAt','deployedAt'])
+      && ((resource.data.stage==1 && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stage','checksum','updatedAt','lastBy']) && request.resource.data.stage==2 && request.resource.data.failures==resource.data.failures && request.resource.data.checksum is int && request.resource.data.checksum>=0 && request.resource.data.checksum<=100)
+       || (resource.data.stage==2 && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stage','updatedAt','lastBy','recoveredAt']) && resource.data.checksum==resource.data.ticket+resource.data.round+8 && request.resource.data.stage==3 && request.resource.data.failures==resource.data.failures && (resource.data.failures==0 || request.resource.data.recoveredAt==request.time))
+       || (resource.data.stage==2 && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stage','failures','updatedAt','lastBy','failedAt']) && resource.data.checksum!=resource.data.ticket+resource.data.round+8 && request.resource.data.stage==1 && request.resource.data.failures==resource.data.failures+1 && request.resource.data.failedAt==request.time)
+       || (resource.data.stage==3 && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stage','updatedAt','lastBy','deployedAt']) && request.resource.data.stage==4 && request.resource.data.failures==resource.data.failures && request.resource.data.deployedAt==request.time));
+   }
+  }
+ }
+}

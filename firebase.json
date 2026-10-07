@@ -1,0 +1,55 @@
+{
+  "hosting": {
+    "target": "inspiredlearning",
+    "public": "dist",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ],
+    "headers": [
+      {
+        "source": "index.html",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache"
+          }
+        ]
+      }
+    ]
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "inspiredlearning",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "test",
+        "*.log",
+        ".secret.local"
+      ]
+    }
+  ],
+  "emulators": {
+    "firestore": {
+      "port": 8185
+    },
+    "auth": {
+      "port": 9195
+    },
+    "functions": {
+      "port": 5001
+    },
+    "ui": {
+      "enabled": false
+    }
+  }
+}

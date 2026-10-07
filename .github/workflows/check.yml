@@ -1,0 +1,35 @@
+name: Checks
+on: [push, pull_request]
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - run: npm ci
+      - run: npx --yes npm@10 ci --prefix functions
+      - run: npm install --global firebase-tools
+      - run: npm run lint && npm test && npm run build
+        env:
+          VITE_FIREBASE_API_KEY: demo-key
+          VITE_FIREBASE_PROJECT_ID: demo-chaicart
+          VITE_FIREBASE_APP_ID: demo-app
+          VITE_FIREBASE_AUTH_DOMAIN: localhost
+      - run: npm run test:integration
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:rehearsal
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: browser-diagnostics
+          path: |
+            playwright-report
+            test-results
