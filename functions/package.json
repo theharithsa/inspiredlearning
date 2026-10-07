@@ -28,9 +28,7 @@
     "regenerator-runtime": "^0.14.1"
   },
   "overrides": {
-    "gaxios@^6.4.0": {
-      "uuid": "^11.1.1"
-    }
+    "uuid": "^11.1.1"
   },
   "main": "index.js"
 }
