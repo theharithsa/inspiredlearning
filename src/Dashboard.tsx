@@ -1,3 +1,6 @@
+import { useEffect, useState } from "react";
+import { auth } from "./firebase";
+import { useRows } from "./hooks";
 import type { Profile, Workshop } from "./types";
 import { CommunityCard, Empty, WorkshopCard } from "./components";
 export default function Dashboard({
@@ -7,6 +10,52 @@ export default function Dashboard({
   profile: Profile | null | undefined;
   workshops: Workshop[] | undefined;
 }) {
+  const { rows: entries } = useRows<{ delta: number }>(
+    auth.currentUser
+      ? `learningLearners/${auth.currentUser.uid}/creditEntries`
+      : null,
+  );
+  const uid = auth.currentUser?.uid;
+  const [state, setState] = useState<{
+    uid: string | undefined;
+    workshops: typeof workshops;
+    entries: typeof entries;
+    account: { totalCredits: number | null; unknownAwards: number } | null;
+    error: boolean;
+  } | null>(null);
+  const current =
+    state?.uid === uid &&
+    state?.workshops === workshops &&
+    state?.entries === entries;
+  const account = current ? state?.account : null,
+    creditError = current && state?.error;
+  useEffect(() => {
+    let active = true;
+    const user = auth.currentUser;
+    if (!user) return;
+    void user
+      .getIdToken()
+      .then((token) =>
+        fetch("/api/v1/me/scores", {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+      )
+      .then(async (res) => {
+        if (!res.ok) throw Error();
+        return res.json();
+      })
+      .then((data) => {
+        if (active)
+          setState({ uid, workshops, entries, account: data, error: false });
+      })
+      .catch(() => {
+        if (active)
+          setState({ uid, workshops, entries, account: null, error: true });
+      });
+    return () => {
+      active = false;
+    };
+  }, [uid, workshops, entries]);
   const complete = workshops?.filter((w) => w.status === "completed") || [];
   return (
     <>
@@ -28,9 +77,17 @@ export default function Dashboard({
           <strong>{complete.length}</strong>
         </div>
         <div>
-          <span>Learning points</span>
-          <strong>{profile?.learningPoints || 0}</strong>
-          <small>100 per verified completion</small>
+          <span>Total Inspi credits</span>
+          <strong>{account?.totalCredits ?? "—"}</strong>
+          <small>
+            {creditError
+              ? "Could not load credits"
+              : account?.unknownAwards
+                ? "Some published credits are unknown"
+                : account
+                  ? "Across your Inspi activities"
+                  : "Loading credits…"}
+          </small>
         </div>
         <div>
           <span>Available certificates</span>

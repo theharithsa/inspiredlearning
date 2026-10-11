@@ -20,7 +20,7 @@ DNS is managed in GoDaddy. Use Firebase Hosting's current **exact required DNS r
 
 Use Admin controls (global facilitators) or Workshop staff (captains) → Load workshop → Import existing registrations for older sessions. Verify attendees rather than inferring attendance from a name or a login. Mark absentees not-attended. Captains are region-scoped; only global facilitators can close and publish. Complete scoring before publishing. Publish again after score corrections to create a new result/certificate version. Identical publication is a no-op.
 
-A failed batch reports per-learner failures; correct those and repeat. The transaction and ledger prevent duplicate points. Deleting a reviewed live session retains all permanent learner records and certificates. Session codes with archived learner records cannot be reused.
+A failed batch reports per-learner failures; correct those and repeat. The transaction and latest result revision prevent duplicate credit awards. Deleting a reviewed live session retains all permanent learner records and certificates. Session codes with archived learner records cannot be reused.
 
 ## Administrator controls and archived records
 
@@ -28,7 +28,7 @@ Open `/#/admin` after Google sign-in. Only global facilitators from `admins/{ema
 
 Find permanent records by the learner's Google email, UID, or certificate ID. Add a review note before any correction or decision. Correct learner display name affects only the portal profile, not Google identity or issued certificates. Replace certificate details allows verified name, workshop title and date changes, creates a new private revision and invalidates its predecessor without more points. An administrator can preview an issued PDF with a recorded review reason; students can download only their own issued certificates.
 
-Revoke completion invalidates its certificate and reverses the original 100 learning points once. Reinstate only previously verified revoked completion: it restores 100 points once and issues a new private certificate. It cannot manufacture attendance or initial completion. These controls remain available after the Live session is archived. Never change aggregate points directly.
+Revoke completion invalidates its certificate and removes its unified credit contribution. Reinstate only previously verified revoked completion: it restores that contribution once and issues a new private certificate. Legacy 100-point fields continue to transition for compatibility but never enter the unified total. It cannot manufacture attendance or initial completion. These controls remain available after the Live session is archived. Never change aggregate credits or source contributions directly.
 
 ## Student requests and removal
 
@@ -42,7 +42,7 @@ The request stays processing until deletion completes. Failed work is resumable:
 
 ## Recovery
 
-Outbox `learningTelemetry` stores canonical events pending/delivered. A scheduled retry runs every five minutes with leases and exponential delay. Inspect pending retries and export errors; fix secret scopes/endpoint before replaying. Do not regenerate event IDs for retries. Completion can be republished safely; revocation must remain an explicit staff decision. Do not restore points by editing aggregate totals manually.
+Outbox `learningTelemetry` stores canonical events pending/delivered. A scheduled retry runs every five minutes with leases and exponential delay. Inspect pending retries and export errors; fix secret scopes/endpoint before replaying. Do not regenerate event IDs for retries. Completion can be republished safely; revocation must remain an explicit staff decision. Do not restore credits by editing aggregate totals manually.
 
 ## Authentication
 
@@ -53,3 +53,19 @@ Google sign-in must be enabled and all Hosting/custom domains authorized in Fire
 For a frontend regression, use Firebase Hosting release history for **inspiredlearning-vh** to restore its previous version, leaving ChaiCart Live's Hosting site intact. For backend changes, check out the last verified source and redeploy only `functions:inspiredlearning`; retain the durable records and outbox. A frontend rollback does not roll back Functions, security rules or Firestore data. Coordinate any shared rules rollback through ChaiCart Live's reviewed rules source and run both apps' permission tests first. Never delete learner records or the points ledger as a rollback shortcut.
 
 Initial creation of retry-enabled functions requires Firebase's `--force` deployment option after reviewing their idempotency. If an initial build leaves new functions in FAILED state with missing trigger metadata, verify they are never-live functions in the dedicated codebase before removing/recreating those failed placeholders. Do not apply that cleanup procedure to active workshop functions.
+
+## Scoped API credentials
+
+Global facilitators open `/#/admin` → **API tokens** to create scoped credentials, select permissions, limit learner/workshop IDs, choose a short expiry and revoke their tokens. Google reauthentication is required for creation. Copy the credential once; it cannot be retrieved from stored metadata. Use the raw credential in Swagger Authorize or the local MCP adapter’s `INSPIREDLEARNING_API_TOKEN`. Token-mediated requests cannot create or revoke credentials. If a credential is exposed, revoke it and create a replacement; expiry, account disablement and role removal also block future requests. See [API policy and contract](API.md).
+
+Deploy this portal panel together with `learningApi` and the Hosting `/api/**` rewrite. Production deployment was explicitly authorized by the user on 11 October 2026. Do not deploy shared rules/indexes or other Functions codebases.
+
+Resource API corrections require explicit write permissions, review reason, expectedVersion and UUID Idempotency-Key. Review [resource contract](API-RESOURCE-CONTRACT.md) before wiring webhook clients. No incoming webhook receiver is included.
+
+## Unified scoring operations
+
+Use `GET /api/v1/students/scores?limit=100` for bulk totals; follow nextCursor until null. Workshop filtering is optional. Each published completed workshop contributes team score plus individual score, with the approved repeat-individual attendance benefit. Non-workshop entries add signed amounts to the same account. A null total means source awards are unknown; knownCredits is a subtotal, not the full total. CreditAccount reads use a consistent transaction snapshot and fail above 500 records per source rather than truncate. Inspect latest permanent source records when reconciling; no Live backfill or automatic legacy points conversion occurs.
+
+After a reviewed score correction, republish through the existing attendance/completion workflow. Identical publication does not append a second adjustment or award. Credit transaction logs are prospective and omit private reasons; original historical awards still count even when they predate that log. Removal recursively deletes contributions/adjustments. Community producer write APIs are not part of this release.
+
+The production web build needs the existing project's public Firebase web configuration. Keep `.env.production.local` ignored; never commit environment/secret files. Functions target Node 22; local emulator verification used host Node 24. Shared rules/indexes remain owned by ChaiCart Live. The docs-only local preview on port 8787 is not an authenticated API server.

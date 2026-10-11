@@ -1,3 +1,4 @@
+import ApiTokens from "./ApiTokens";
 import StaffRecords from "./StaffRecords";
 import { statusLabel } from "./constants";
 import { useEffect, useState } from "react";
@@ -78,6 +79,7 @@ export default function Staff({ admin = false }: { admin?: boolean }) {
           participation certificate.
         </p>
       </header>
+      {admin && globalFacilitator && <ApiTokens />}
       <form
         className="panel inline-form"
         onSubmit={(e) => {

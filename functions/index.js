@@ -1,6 +1,10 @@
+import { getAuth } from "firebase-admin/auth";
+import { apiHandler } from "./api-http.js";
+import { googleActor } from "./api.js";
+import { eventRecord } from "./events.js";
 import { initializeApp } from "firebase-admin/app";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
-import { onCall, HttpsError } from "firebase-functions/v2/https";
+import { onCall, onRequest, HttpsError } from "firebase-functions/v2/https";
 import {
   onDocumentCreated,
   onDocumentDeleted,
@@ -20,15 +24,7 @@ const db = getFirestore(),
     timeoutSeconds: 540,
   };
 const actorOf = (r) => {
-  const t = r.auth?.token;
-  if (
-    !r.auth ||
-    !t?.email ||
-    !t.email_verified ||
-    t.firebase?.sign_in_provider !== "google.com"
-  )
-    throw new HttpsError("unauthenticated", "Sign in with Google to continue.");
-  return { uid: r.auth.uid, email: t.email, name: t.name };
+  return googleActor(r.auth?.uid, r.auth?.token);
 };
 const buckets = new Map();
 function rate(key, limit = 120) {
@@ -234,3 +230,20 @@ export const cancelLearningEnrollment = onDocumentDeleted(
   },
 );
 export { deliverLearningEvent, retryLearningEvents } from "./events.js";
+
+export const learningApi = onRequest(
+  options,
+  apiHandler({
+    db,
+    auth: getAuth(),
+    rate,
+    measured,
+    audit: (actor, c, operation, fields) =>
+      db.collection("learningTelemetry").add(
+        eventRecord("api." + operation, actor, c, {
+          "learner.id": fields.studentId || null,
+          ...(actor.apiTokenId ? { "api.token.id": actor.apiTokenId } : {}),
+        }),
+      ),
+  }),
+);

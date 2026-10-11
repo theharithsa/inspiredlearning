@@ -10,3 +10,6 @@ test-results/
 .DS_Store
 
 .firebase/
+
+# Local dependency symlinks are also ignored.
+node_modules

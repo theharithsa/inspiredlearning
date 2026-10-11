@@ -27,6 +27,7 @@ export function eventRecord(name, actor, c, fields = {}) {
         trace_id: c.traceId,
         span_id: c.spanId,
         "actor.id": actor.uid,
+        ...(actor.apiTokenId ? { "api.token.id": actor.apiTokenId } : {}),
         ...(actor.email ? { "actor.email": actor.email } : {}),
         ...fields,
       },

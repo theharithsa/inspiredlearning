@@ -162,3 +162,6 @@ td small {
 button:hover:not(:disabled) {
   filter: brightness(0.96);
 }
+
+.token-permissions { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.token-permission { flex-direction: row; align-items: center; }

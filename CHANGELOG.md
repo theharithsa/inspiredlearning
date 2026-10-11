@@ -1,5 +1,13 @@
 # Changelog
 
+## [Unreleased]
+
+- **Admin API tokens** — select read scopes, learner/workshop restrictions and expiry in the admin portal; credentials are copied once, hashed server-side, audited, and revocable, with current issuer authority checked on every request.
+
+- **Read API and Swagger** — shared-identity learner, history, published scores, participation, published quiz submissions and certificate reads with privacy filtering, bounded pagination and audited facilitator access.
+- **Local read-only MCP** — eight typed tools over the authenticated API with structured results and no database access.
+
+
 ## Administrator controls and validation — 7 October 2026
 
 - Role-gated admin control centre, email lookup and reasoned private certificate previews.
@@ -18,3 +26,6 @@
 - Regional attendance review, facilitator publication, account-support requests and Discord onboarding.
 - Correlated RUM, OTel logs/metrics/traces and durable canonical BizEvents.
 - Isolated emulator and browser regression suites.
+
+- Grouped resource APIs and Swagger categories; explicit colleges and memberships, filtered student/workshop rosters and latest published credits. Added scoped, version-checked, idempotent POST/PUT college, assignment, membership and name corrections with atomic audits and erasure cleanup. MCP remains read-only.
+- Unified student credit totals across Inspi: completed workshop team score plus individual score, intentionally counting individual awards again as the attendance benefit. Added global bulk/owner score reads, prospective adjustment logs, correction/revocation/reinstatement safety and unified portal displays; preserved legacy completion data and certificates.

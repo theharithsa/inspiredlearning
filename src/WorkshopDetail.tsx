@@ -1,3 +1,4 @@
+import { workshopCredits } from "./credits";
 import { activityLabel, statusLabel } from "./constants";
 import { Link, useParams } from "react-router-dom";
 import { useEffect } from "react";
@@ -48,6 +49,13 @@ export default function WorkshopDetail({
         </div>
       ) : (
         <>
+          <section className="panel">
+            <h2>{workshopCredits(w) ?? "Unknown"} credits awarded to you</h2>
+            <p>
+              Your final team score plus your individual credits. Individual
+              credits count again as an attendance benefit.
+            </p>
+          </section>
           <div className="stats">
             <div>
               <span>Personally earned quiz credits</span>
@@ -89,8 +97,8 @@ export default function WorkshopDetail({
                 <p>No team activity summary was available.</p>
               )}
               <p className="muted">
-                Team submissions are shared work. Their credits are not reported
-                as personally earned points.
+                Team activity credits contribute to the final team score
+                included in your workshop award.
               </p>
             </section>
             <section className="panel">
@@ -145,7 +153,7 @@ export default function WorkshopDetail({
               <span className="eyebrow">VERIFIED PARTICIPATION</span>
               <h2>Your work, recognised.</h2>
               <p>
-                {w.learningPoints} learning points · Result revision{" "}
+                {workshopCredits(w) ?? "Unknown"} credits · Result revision{" "}
                 {w.revision}
               </p>
               {w.awards?.map((a) => (

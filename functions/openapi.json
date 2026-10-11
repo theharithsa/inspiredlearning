@@ -1,0 +1,5737 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "InspiredLearning API",
+    "version": "1.2.0",
+    "description": "Shared verified Google identity and existing owner/facilitator permissions. Resource catalogs and all writes require a current global facilitator. Explicit token permissions apply on every request. Credits use latest published workshop results, preserve three separate measures and unknown null values. College affiliations are explicit, never inferred. Writes require a UUID Idempotency-Key and review reason; updates also require current expectedVersion. MCP remains read-only. Unified student credits award final team score plus individual score per completed workshop, intentionally counting individual credits twice. Legacy learning points remain compatibility data and are excluded from the unified total."
+  },
+  "servers": [
+    {
+      "url": "/api/v1"
+    }
+  ],
+  "security": [
+    {
+      "firebaseIdToken": []
+    }
+  ],
+  "paths": {
+    "/me": {
+      "get": {
+        "operationId": "me",
+        "summary": "Read authorized student",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Authorized allowlisted data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Student"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter or cursor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Verified Google Firebase ID token required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unavailable or privacy blocked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicting or ambiguous source data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Students"
+        ],
+        "description": "Reads the profile of the identity behind your credential. For an API token, this is the issuing administrator\u2019s learner ID. Returns the learner\u2019s ID, display name, email, explicit institutional college, profile revision and current learning-points balance. Unknown values are null. Workshop history and workshop credits are retrieved through their separate endpoints."
+      }
+    },
+    "/students/{studentId}": {
+      "get": {
+        "operationId": "students_studentId",
+        "summary": "Read authorized student",
+        "parameters": [
+          {
+            "name": "studentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized allowlisted data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Student"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter or cursor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Verified Google Firebase ID token required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unavailable or privacy blocked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicting or ambiguous source data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Students"
+        ],
+        "description": "Returns the learner\u2019s ID, display name, email, explicit institutional college, profile revision and current learning-points balance. Unknown values are null. Workshop history and workshop credits are retrieved through their separate endpoints. Available to the learner who owns the record or a current global facilitator. API tokens also require the matching read permission and must satisfy their learner/workshop restrictions. Removed records are unavailable; this endpoint does not reconstruct history from Live data."
+      }
+    },
+    "/students": {
+      "get": {
+        "operationId": "get_students",
+        "summary": "List students by exact email, college and workshop (AND filters)",
+        "tags": [
+          "Students"
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 25
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "email",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "collegeId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "workshopId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "include",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "credits"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "items",
+                    "nextCursor",
+                    "asOf"
+                  ],
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Student"
+                      }
+                    },
+                    "nextCursor": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "asOf": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter or cursor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Verified Google Firebase ID token required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unavailable or privacy blocked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Stale revision, ambiguous email or conflicting retry",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "firebaseIdToken": []
+          },
+          {
+            "apiToken": []
+          }
+        ],
+        "description": "Lists learners for a global facilitator. Optional email, collegeId and workshopId filters combine with AND. Email matching is exact and normalized; ambiguous email returns 409. College affiliations must be explicitly assigned. Add include=credits with workshopId to include latest published workshop results; token callers need scores:read as well as the student catalog/lookup permission. Lists use limit (default 25, maximum 100) and nextCursor. Continue until nextCursor is null, including after an empty page caused by privacy filtering."
+      }
+    },
+    "/me/workshops": {
+      "get": {
+        "operationId": "me_workshops",
+        "summary": "Read authorized workshop",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 25
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized allowlisted data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "items",
+                    "nextCursor",
+                    "asOf"
+                  ],
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Workshop"
+                      }
+                    },
+                    "nextCursor": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "asOf": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter or cursor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Verified Google Firebase ID token required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unavailable or privacy blocked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicting or ambiguous source data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Students"
+        ],
+        "description": "Lists your permanent learning workshop history, including published and revoked records. Lists use limit (default 25, maximum 100) and nextCursor. Continue until nextCursor is null, including after an empty page caused by privacy filtering. Available to the learner who owns the record or a current global facilitator. API tokens also require the matching read permission and must satisfy their learner/workshop restrictions. Removed records are unavailable; this endpoint does not reconstruct history from Live data."
+      }
+    },
+    "/students/{studentId}/workshops": {
+      "get": {
+        "operationId": "students_studentId_workshops",
+        "summary": "Read authorized workshop",
+        "parameters": [
+          {
+            "name": "studentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 25
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized allowlisted data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "items",
+                    "nextCursor",
+                    "asOf"
+                  ],
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Workshop"
+                      }
+                    },
+                    "nextCursor": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "asOf": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter or cursor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Verified Google Firebase ID token required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unavailable or privacy blocked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicting or ambiguous source data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Students"
+        ],
+        "description": "Lists a learner\u2019s permanent workshop history, including published and revoked records. Historical results remain available after the source session is deleted. Lists use limit (default 25, maximum 100) and nextCursor. Continue until nextCursor is null, including after an empty page caused by privacy filtering. Available to the learner who owns the record or a current global facilitator. API tokens also require the matching read permission and must satisfy their learner/workshop restrictions. Removed records are unavailable; this endpoint does not reconstruct history from Live data."
+      }
+    },
+    "/me/certificates": {
+      "get": {
+        "operationId": "me_certificates",
+        "summary": "Read authorized certificate",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 25
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized allowlisted data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "items",
+                    "nextCursor",
+                    "asOf"
+                  ],
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Certificate"
+                      }
+                    },
+                    "nextCursor": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "asOf": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter or cursor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Verified Google Firebase ID token required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unavailable or privacy blocked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicting or ambiguous source data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Students"
+        ],
+        "description": "Lists your private issued and revoked certificate metadata. This endpoint does not download PDFs or make certificates public. Lists use limit (default 25, maximum 100) and nextCursor. Continue until nextCursor is null, including after an empty page caused by privacy filtering. Available to the learner who owns the record or a current global facilitator. API tokens also require the matching read permission and must satisfy their learner/workshop restrictions. Removed records are unavailable; this endpoint does not reconstruct history from Live data."
+      }
+    },
+    "/students/{studentId}/certificates": {
+      "get": {
+        "operationId": "students_studentId_certificates",
+        "summary": "Read authorized certificate",
+        "parameters": [
+          {
+            "name": "studentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 25
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized allowlisted data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "items",
+                    "nextCursor",
+                    "asOf"
+                  ],
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Certificate"
+                      }
+                    },
+                    "nextCursor": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "asOf": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter or cursor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Verified Google Firebase ID token required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unavailable or privacy blocked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicting or ambiguous source data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Students"
+        ],
+        "description": "Lists a learner\u2019s private issued and revoked certificate metadata. This endpoint does not download PDFs or make certificates public. Lists use limit (default 25, maximum 100) and nextCursor. Continue until nextCursor is null, including after an empty page caused by privacy filtering. Available to the learner who owns the record or a current global facilitator. API tokens also require the matching read permission and must satisfy their learner/workshop restrictions. Removed records are unavailable; this endpoint does not reconstruct history from Live data."
+      }
+    },
+    "/students/{studentId}/scores": {
+      "get": {
+        "operationId": "students_studentId_scores",
+        "summary": "Read authorized score",
+        "parameters": [
+          {
+            "name": "studentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "workshopId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized allowlisted data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/CreditAccount"
+                    },
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "items",
+                        "nextCursor",
+                        "asOf"
+                      ],
+                      "properties": {
+                        "items": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/Score"
+                          }
+                        },
+                        "nextCursor": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "asOf": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter or cursor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Verified Google Firebase ID token required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unavailable or privacy blocked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicting or ambiguous source data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Students"
+        ],
+        "description": "Without workshopId, returns this student\u2019s unified CreditAccount across Inspi: each completed workshop awards team score plus individual score, intentionally counting individual credit again. Legacy learning points are excluded. Unknown awards make the total null. Owner or global facilitator access required; API tokens need scores:read. Workshop-restricted tokens must specify a permitted workshopId. With workshopId, preserves the existing three-measure published score response for compatibility."
+      }
+    },
+    "/students/{studentId}/participation": {
+      "get": {
+        "operationId": "students_studentId_participation",
+        "summary": "Read authorized participation",
+        "parameters": [
+          {
+            "name": "studentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "workshopId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized allowlisted data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "items",
+                    "nextCursor",
+                    "asOf"
+                  ],
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Participation"
+                      }
+                    },
+                    "nextCursor": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "asOf": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter or cursor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Verified Google Firebase ID token required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unavailable or privacy blocked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicting or ambiguous source data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Students"
+        ],
+        "description": "Returns the selected workshop\u2019s published individual and team activity summary, bounded to 100 entries. Supply workshopId. Raw answers, private notes, feedback and telemetry are excluded; unknown historical values stay null. Available to the learner who owns the record or a current global facilitator. API tokens also require the matching read permission and must satisfy their learner/workshop restrictions. Removed records are unavailable; this endpoint does not reconstruct history from Live data."
+      }
+    },
+    "/workshops/{workshopId}": {
+      "get": {
+        "operationId": "workshops_workshopId",
+        "summary": "Read authorized workshopdetail",
+        "parameters": [
+          {
+            "name": "workshopId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized allowlisted data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkshopDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter or cursor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Verified Google Firebase ID token required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unavailable or privacy blocked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicting or ambiguous source data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Workshops"
+        ],
+        "description": "Returns active session metadata and its explicitly assigned hosting college. Available to enrolled learners, current global facilitators and captains assigned to that session. A deleted session returns 404; permanent learner history is available through student endpoints. Unknown end dates, timezone and college remain null. collegeRevision is the version used for college-assignment updates."
+      }
+    },
+    "/certificates/{certificateId}": {
+      "get": {
+        "operationId": "certificates_certificateId",
+        "summary": "Read authorized certificate",
+        "parameters": [
+          {
+            "name": "certificateId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized allowlisted data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Certificate"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter or cursor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Verified Google Firebase ID token required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unavailable or privacy blocked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicting or ambiguous source data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Certificates"
+        ],
+        "description": "Returns private metadata for one issued or revoked certificate. Available to its owner or a current global facilitator; unknown or unauthorized certificate IDs return 404. This endpoint does not download a PDF or bypass certificate visibility settings. Available to the learner who owns the record or a current global facilitator. API tokens also require the matching read permission and must satisfy their learner/workshop restrictions. Removed records are unavailable; this endpoint does not reconstruct history from Live data."
+      }
+    },
+    "/students/{studentId}/submissions": {
+      "get": {
+        "operationId": "students_studentId_submissions",
+        "summary": "Read authorized published quiz submission",
+        "parameters": [
+          {
+            "name": "studentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "workshopId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized allowlisted data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "items",
+                    "nextCursor",
+                    "asOf"
+                  ],
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Submission"
+                      }
+                    },
+                    "nextCursor": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "asOf": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter or cursor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Verified Google Firebase ID token required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unavailable or privacy blocked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicting or ambiguous source data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Students"
+        ],
+        "description": "Returns immutable published personal quiz answers, correctness and awarded credits for workshopId, bounded to 100 entries. Unpublished records return an empty list. Live submissions, private comments and feedback are excluded. Available to the learner who owns the record or a current global facilitator. API tokens also require the matching read permission and must satisfy their learner/workshop restrictions. Removed records are unavailable; this endpoint does not reconstruct history from Live data."
+      }
+    },
+    "/admin/api-tokens": {
+      "get": {
+        "operationId": "list_api_tokens",
+        "summary": "List your API token metadata (Google admin sign-in only)",
+        "tags": [
+          "Admin tokens"
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "items",
+                    "nextCursor",
+                    "asOf",
+                    "permissions"
+                  ],
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ApiToken"
+                      }
+                    },
+                    "nextCursor": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "asOf": {
+                      "type": "string"
+                    },
+                    "permissions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "scope",
+                          "label"
+                        ],
+                        "properties": {
+                          "scope": {
+                            "enum": [
+                              "students:read",
+                              "students:lookup",
+                              "history:read",
+                              "scores:read",
+                              "participation:read",
+                              "submissions:read",
+                              "certificates:read",
+                              "workshops:read",
+                              "colleges:read",
+                              "memberships:read",
+                              "colleges:write",
+                              "workshops:college:write",
+                              "memberships:write",
+                              "students:profile:write"
+                            ]
+                          },
+                          "label": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Google sign-in required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Facilitator or required token permission missing",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Recent sign-in or new idempotency key required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate/quota limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 25
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "description": "Lists the signed-in global facilitator\u2019s own API-token metadata and available permissions. Secrets and stored hashes are never returned. Requires verified Google sign-in; API tokens cannot manage tokens. Lists use limit (default 25, maximum 100) and nextCursor. Continue until nextCursor is null, including after an empty page caused by privacy filtering."
+      },
+      "post": {
+        "operationId": "create_api_token",
+        "summary": "Create a scoped read token (Google admin sign-in within 5 minutes)",
+        "tags": [
+          "Admin tokens"
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "token",
+                    "secret",
+                    "alreadyCreated"
+                  ],
+                  "properties": {
+                    "token": {
+                      "$ref": "#/components/schemas/ApiToken"
+                    },
+                    "secret": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "alreadyCreated": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Google sign-in required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Facilitator or required token permission missing",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Recent sign-in or new idempotency key required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate/quota limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApiTokenInput"
+              }
+            }
+          }
+        },
+        "description": "Creates a token with selected permissions, optional learner/workshop restrictions and a 1, 7 or 30-day expiry. Requires global facilitator Google sign-in confirmed within the last five minutes and a UUID Idempotency-Key. The secret is returned once; identical retries return metadata with secret=null. Save it immediately, or revoke and replace it if lost. Maximum 25 active unexpired tokens per administrator. API tokens cannot create tokens."
+      }
+    },
+    "/admin/api-tokens/{tokenId}": {
+      "delete": {
+        "operationId": "revoke_api_token",
+        "summary": "Revoke your API token (Google admin sign-in only)",
+        "tags": [
+          "Admin tokens"
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "revoked",
+                    "id"
+                  ],
+                  "properties": {
+                    "revoked": {
+                      "const": true
+                    },
+                    "id": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Google sign-in required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Facilitator or required token permission missing",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Recent sign-in or new idempotency key required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate/quota limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "tokenId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "description": "Revokes a token owned by the signed-in global facilitator. Verified Google sign-in is required; API tokens cannot revoke tokens. Repeating revocation is safe. Future requests using the revoked credential are rejected."
+      }
+    },
+    "/workshops": {
+      "get": {
+        "operationId": "get_workshops",
+        "summary": "List active session metadata",
+        "tags": [
+          "Workshops"
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 25
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "collegeId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "open",
+                "closed"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "items",
+                    "nextCursor",
+                    "asOf"
+                  ],
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/WorkshopDetail"
+                      }
+                    },
+                    "nextCursor": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "asOf": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter or cursor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Verified Google Firebase ID token required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unavailable or privacy blocked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Stale revision, ambiguous email or conflicting retry",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "firebaseIdToken": []
+          },
+          {
+            "apiToken": []
+          }
+        ],
+        "description": "Lists current Live session metadata for a global facilitator. Filter by explicitly assigned hosting collegeId or open/closed status. Deleting sessions are excluded; this catalog does not enumerate archived sessions whose Live documents were deleted. Lists use limit (default 25, maximum 100) and nextCursor. Continue until nextCursor is null, including after an empty page caused by privacy filtering."
+      }
+    },
+    "/colleges": {
+      "get": {
+        "operationId": "get_colleges",
+        "summary": "List explicit college records",
+        "tags": [
+          "Colleges"
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 25
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "active",
+                "inactive"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "items",
+                    "nextCursor",
+                    "asOf"
+                  ],
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/College"
+                      }
+                    },
+                    "nextCursor": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "asOf": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter or cursor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Verified Google Firebase ID token required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unavailable or privacy blocked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Stale revision, ambiguous email or conflicting retry",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "firebaseIdToken": []
+          },
+          {
+            "apiToken": []
+          }
+        ],
+        "description": "Lists explicit college records for a global facilitator. Filter by active or inactive status. Existing learner or workshop college affiliations are never inferred from names or email addresses. Token callers require colleges:read. Lists use limit (default 25, maximum 100) and nextCursor. Continue until nextCursor is null, including after an empty page caused by privacy filtering."
+      },
+      "post": {
+        "operationId": "post_colleges",
+        "summary": "Create a college",
+        "tags": [
+          "Colleges"
+        ],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WriteResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter or cursor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Verified Google Firebase ID token required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unavailable or privacy blocked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Stale revision, ambiguous email or conflicting retry",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "firebaseIdToken": []
+          },
+          {
+            "apiToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "collegeId",
+                  "name",
+                  "status",
+                  "reason"
+                ],
+                "properties": {
+                  "collegeId": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 140
+                  },
+                  "status": {
+                    "enum": [
+                      "active",
+                      "inactive"
+                    ]
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  }
+                }
+              }
+            }
+          }
+        },
+        "description": "Creates a college using a stable lowercase collegeId (2\u201364 characters), display name and active/inactive status. An existing ID returns 409. Token callers require colleges:write. No learner membership or workshop assignment is created automatically. Requires a current global facilitator or an admin-issued token with the explicit write permission. Send a JSON body with a review reason and a UUID Idempotency-Key header. Identical retries return the original result; reusing the key for different settings returns 409. Resource restrictions and removal rules are enforced on every request."
+      }
+    },
+    "/colleges/{collegeId}": {
+      "get": {
+        "operationId": "get_colleges__collegeId_",
+        "summary": "Read a college",
+        "tags": [
+          "Colleges"
+        ],
+        "parameters": [
+          {
+            "name": "collegeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/College"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter or cursor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Verified Google Firebase ID token required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unavailable or privacy blocked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Stale revision, ambiguous email or conflicting retry",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "firebaseIdToken": []
+          },
+          {
+            "apiToken": []
+          }
+        ],
+        "description": "Returns one explicit college record with name, status, revision and update time. Global facilitator access and colleges:read for token callers are required. Use revision as expectedVersion when updating the college."
+      },
+      "put": {
+        "operationId": "put_colleges__collegeId_",
+        "summary": "Update a college",
+        "tags": [
+          "Colleges"
+        ],
+        "parameters": [
+          {
+            "name": "collegeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WriteResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter or cursor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Verified Google Firebase ID token required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unavailable or privacy blocked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Stale revision, ambiguous email or conflicting retry",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "firebaseIdToken": []
+          },
+          {
+            "apiToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "name",
+                  "status",
+                  "expectedVersion",
+                  "reason"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 140
+                  },
+                  "status": {
+                    "enum": [
+                      "active",
+                      "inactive"
+                    ]
+                  },
+                  "expectedVersion": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  }
+                }
+              }
+            }
+          }
+        },
+        "description": "Updates a college\u2019s display name and active/inactive status. Set expectedVersion to its current revision; a stale version returns 409. Inactive colleges cannot receive new assignments. Existing historical affiliations are preserved. Token callers require colleges:write. Requires a current global facilitator or an admin-issued token with the explicit write permission. Send a JSON body with a review reason and a UUID Idempotency-Key header. Identical retries return the original result; reusing the key for different settings returns 409. Resource restrictions and removal rules are enforced on every request."
+      }
+    },
+    "/students/{studentId}/college-memberships": {
+      "get": {
+        "operationId": "get_students__studentId__college_memberships",
+        "summary": "Read authorized explicit memberships",
+        "tags": [
+          "Students"
+        ],
+        "parameters": [
+          {
+            "name": "studentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 25
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "collegeId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "workshopId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "items",
+                    "nextCursor",
+                    "asOf"
+                  ],
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Membership"
+                      }
+                    },
+                    "nextCursor": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "asOf": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter or cursor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Verified Google Firebase ID token required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unavailable or privacy blocked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Stale revision, ambiguous email or conflicting retry",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "firebaseIdToken": []
+          },
+          {
+            "apiToken": []
+          }
+        ],
+        "description": "Lists explicit institutional and workshop college affiliations with status, revision and update time. Optional collegeId and workshopId filters select matching memberships. Unknown affiliations are not inferred. Use membership revision as expectedVersion for a correction. Token callers require memberships:read. Lists use limit (default 25, maximum 100) and nextCursor. Continue until nextCursor is null, including after an empty page caused by privacy filtering. Available to the learner who owns the record or a current global facilitator. API tokens also require the matching read permission and must satisfy their learner/workshop restrictions. Removed records are unavailable; this endpoint does not reconstruct history from Live data."
+      }
+    },
+    "/workshops/{workshopId}/participants": {
+      "get": {
+        "operationId": "get_workshops__workshopId__participants",
+        "summary": "List permanent workshop participants",
+        "tags": [
+          "Workshops"
+        ],
+        "parameters": [
+          {
+            "name": "workshopId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 25
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "collegeId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "include",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "credits"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "items",
+                    "nextCursor",
+                    "asOf"
+                  ],
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Student"
+                      }
+                    },
+                    "nextCursor": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "asOf": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter or cursor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Verified Google Firebase ID token required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unavailable or privacy blocked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Stale revision, ambiguous email or conflicting retry",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "firebaseIdToken": []
+          },
+          {
+            "apiToken": []
+          }
+        ],
+        "description": "Lists permanent learner participants for a global facilitator. Optional collegeId selects explicit membership for this workshop. Add include=credits to include the three latest published measures; token callers need students:read and scores:read for this expansion. No Live roster backfill occurs. Lists use limit (default 25, maximum 100) and nextCursor. Continue until nextCursor is null, including after an empty page caused by privacy filtering."
+      }
+    },
+    "/workshops/{workshopId}/scores": {
+      "get": {
+        "operationId": "get_workshops__workshopId__scores",
+        "summary": "List latest published results",
+        "tags": [
+          "Workshops"
+        ],
+        "parameters": [
+          {
+            "name": "workshopId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 25
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "collegeId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "items",
+                    "nextCursor",
+                    "asOf"
+                  ],
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ScoreRow"
+                      }
+                    },
+                    "nextCursor": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "asOf": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter or cursor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Verified Google Firebase ID token required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unavailable or privacy blocked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Stale revision, ambiguous email or conflicting retry",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "firebaseIdToken": []
+          },
+          {
+            "apiToken": []
+          }
+        ],
+        "description": "Returns the latest published individual credits, team credits and learning points as three separate measures, with units, publication status and source. Missing or unpublished values are null; zero remains zero. Revoked results are marked revoked. Credits are not recalculated from the Live leaderboard. Lists permanent participant results for a global facilitator, optionally filtered by explicit collegeId membership for this workshop. Token callers require scores:read. Lists use limit (default 25, maximum 100) and nextCursor. Continue until nextCursor is null, including after an empty page caused by privacy filtering."
+      }
+    },
+    "/workshops/{workshopId}/participants/{studentId}/scores": {
+      "get": {
+        "operationId": "workshopParticipantscores",
+        "summary": "Read authorized score",
+        "parameters": [
+          {
+            "name": "workshopId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized allowlisted data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "items",
+                    "nextCursor",
+                    "asOf"
+                  ],
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Score"
+                      }
+                    },
+                    "nextCursor": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "asOf": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter or cursor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Verified Google Firebase ID token required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unavailable or privacy blocked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicting or ambiguous source data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Workshops"
+        ],
+        "description": "Returns the latest published individual credits, team credits and learning points as three separate measures, with units, publication status and source. Missing or unpublished values are null; zero remains zero. Revoked results are marked revoked. Credits are not recalculated from the Live leaderboard. Workshop-oriented alias of the student score endpoint; both IDs are supplied in the path. Available to the learner who owns the record or a current global facilitator. API tokens also require the matching read permission and must satisfy their learner/workshop restrictions. Removed records are unavailable; this endpoint does not reconstruct history from Live data."
+      }
+    },
+    "/workshops/{workshopId}/participants/{studentId}/submissions": {
+      "get": {
+        "operationId": "workshopParticipantsubmissions",
+        "summary": "Read authorized published quiz submission",
+        "parameters": [
+          {
+            "name": "workshopId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized allowlisted data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "items",
+                    "nextCursor",
+                    "asOf"
+                  ],
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Submission"
+                      }
+                    },
+                    "nextCursor": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "asOf": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter or cursor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Verified Google Firebase ID token required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unavailable or privacy blocked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicting or ambiguous source data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Workshops"
+        ],
+        "description": "Returns the selected participant\u2019s immutable published personal quiz answers, correctness and awarded credits, bounded to 100 entries. Workshop-oriented alias of the student submissions endpoint; both IDs are supplied in the path. Excludes Live submissions and private feedback. Available to the learner who owns the record or a current global facilitator. API tokens also require the matching read permission and must satisfy their learner/workshop restrictions. Removed records are unavailable; this endpoint does not reconstruct history from Live data."
+      }
+    },
+    "/workshops/{workshopId}/college": {
+      "put": {
+        "operationId": "put_workshops__workshopId__college",
+        "summary": "Assign a workshop college",
+        "tags": [
+          "Workshops"
+        ],
+        "parameters": [
+          {
+            "name": "workshopId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WriteResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter or cursor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Verified Google Firebase ID token required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unavailable or privacy blocked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Stale revision, ambiguous email or conflicting retry",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "firebaseIdToken": []
+          },
+          {
+            "apiToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "collegeId",
+                  "expectedVersion",
+                  "reason"
+                ],
+                "properties": {
+                  "collegeId": {
+                    "type": "string"
+                  },
+                  "expectedVersion": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  }
+                }
+              }
+            }
+          }
+        },
+        "description": "Assigns an active college to an existing Live workshop using InspiredLearning metadata. Set expectedVersion to the workshop\u2019s collegeRevision, or 0 for an unassigned workshop. A stale version returns 409. This assignment does not change the shared Live session or enroll learners. Token callers require workshops:college:write. Requires a current global facilitator or an admin-issued token with the explicit write permission. Send a JSON body with a review reason and a UUID Idempotency-Key header. Identical retries return the original result; reusing the key for different settings returns 409. Resource restrictions and removal rules are enforced on every request."
+      }
+    },
+    "/students/{studentId}/profile": {
+      "put": {
+        "operationId": "put_students__studentId__profile",
+        "summary": "Correct a learner name",
+        "tags": [
+          "Students"
+        ],
+        "parameters": [
+          {
+            "name": "studentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WriteResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter or cursor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Verified Google Firebase ID token required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unavailable or privacy blocked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Stale revision, ambiguous email or conflicting retry",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "firebaseIdToken": []
+          },
+          {
+            "apiToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "name",
+                  "expectedVersion",
+                  "reason"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  },
+                  "expectedVersion": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  }
+                }
+              }
+            }
+          }
+        },
+        "description": "Corrects the learner\u2019s display name using the existing reviewed profile workflow. Set expectedVersion to profileRevision from student details. Shared Google UID/email, published scores and issued certificates are preserved. Token callers require students:profile:write; workshop-restricted tokens cannot change global profile fields. Requires a current global facilitator or an admin-issued token with the explicit write permission. Send a JSON body with a review reason and a UUID Idempotency-Key header. Identical retries return the original result; reusing the key for different settings returns 409. Resource restrictions and removal rules are enforced on every request."
+      }
+    },
+    "/students/{studentId}/college-membership": {
+      "put": {
+        "operationId": "put_students__studentId__college_membership",
+        "summary": "Correct institutional membership",
+        "tags": [
+          "Students"
+        ],
+        "parameters": [
+          {
+            "name": "studentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WriteResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter or cursor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Verified Google Firebase ID token required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unavailable or privacy blocked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Stale revision, ambiguous email or conflicting retry",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "firebaseIdToken": []
+          },
+          {
+            "apiToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "collegeId",
+                  "status",
+                  "expectedVersion",
+                  "reason"
+                ],
+                "properties": {
+                  "collegeId": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "enum": [
+                      "active",
+                      "inactive"
+                    ]
+                  },
+                  "expectedVersion": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  }
+                }
+              }
+            }
+          }
+        },
+        "description": "Sets the learner\u2019s institutional college affiliation and active/inactive status. Use the current membership revision as expectedVersion, or 0 if absent. The college must be active for a new active assignment. Membership and roster pointers update atomically. Token callers require memberships:write; workshop-restricted tokens cannot change institutional membership. Requires a current global facilitator or an admin-issued token with the explicit write permission. Send a JSON body with a review reason and a UUID Idempotency-Key header. Identical retries return the original result; reusing the key for different settings returns 409. Resource restrictions and removal rules are enforced on every request."
+      }
+    },
+    "/workshops/{workshopId}/participants/{studentId}/college-membership": {
+      "put": {
+        "operationId": "put_workshops__workshopId__participants__studentId__college_membership",
+        "summary": "Correct workshop membership",
+        "tags": [
+          "Workshops"
+        ],
+        "parameters": [
+          {
+            "name": "workshopId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WriteResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter or cursor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Verified Google Firebase ID token required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unavailable or privacy blocked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Stale revision, ambiguous email or conflicting retry",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "firebaseIdToken": []
+          },
+          {
+            "apiToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "collegeId",
+                  "status",
+                  "expectedVersion",
+                  "reason"
+                ],
+                "properties": {
+                  "collegeId": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "enum": [
+                      "active",
+                      "inactive"
+                    ]
+                  },
+                  "expectedVersion": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  }
+                }
+              }
+            }
+          }
+        },
+        "description": "Corrects college affiliation and active/inactive status for a permanent workshop participant. Use the current membership revision as expectedVersion, or 0 if absent. Requires an existing permanent learner/workshop record; no Live backfill occurs. Membership and roster pointers update atomically. Token callers require memberships:write. Published results are preserved. Requires a current global facilitator or an admin-issued token with the explicit write permission. Send a JSON body with a review reason and a UUID Idempotency-Key header. Identical retries return the original result; reusing the key for different settings returns 409. Resource restrictions and removal rules are enforced on every request."
+      }
+    },
+    "/students/scores": {
+      "get": {
+        "operationId": "listStudentScores",
+        "summary": "List unified student credit totals across Inspi",
+        "tags": [
+          "Students"
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 25
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "collegeId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "workshopId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Optional contribution filter. Omit for the total across Inspi."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "items",
+                    "nextCursor",
+                    "asOf"
+                  ],
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/CreditAccount"
+                      }
+                    },
+                    "nextCursor": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "asOf": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter or cursor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Verified Google Firebase ID token required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unavailable or privacy blocked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Stale revision, ambiguous email or conflicting retry",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "firebaseIdToken": []
+          },
+          {
+            "apiToken": []
+          }
+        ],
+        "description": "Returns one credit total per authorized student across all completed published workshops and non-workshop credit entries. Each workshop contributes final team score PLUS individual score; counting individual credits again is an intentional attendance benefit. The legacy fixed 100 learning points are excluded. Latest records count once; corrections replace their contribution and revocations remove it. No workshopId is required. Optional collegeId and workshopId filters select affiliations and contributions. Use limit (25 default, 100 maximum) and nextCursor to retrieve all pages, even after an empty page. Global facilitator access and scores:read for API tokens are required. Workshop-restricted tokens must provide a permitted workshopId. Unknown awarded components produce totalCredits=null with knownCredits and unknownAwards; no partial value is labeled as the total. Accounts exceeding 500 records per source fail rather than truncate. New adjustments are recorded prospectively; existing published snapshots are included without republishing."
+      }
+    },
+    "/scores": {
+      "get": {
+        "operationId": "listScores",
+        "summary": "List unified student totals (alias)",
+        "tags": [
+          "Students"
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 25
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "collegeId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "workshopId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Optional contribution filter. Omit for the total across Inspi."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "items",
+                    "nextCursor",
+                    "asOf"
+                  ],
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/CreditAccount"
+                      }
+                    },
+                    "nextCursor": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "asOf": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter or cursor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Verified Google Firebase ID token required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unavailable or privacy blocked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Stale revision, ambiguous email or conflicting retry",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "firebaseIdToken": []
+          },
+          {
+            "apiToken": []
+          }
+        ],
+        "description": "Returns one credit total per authorized student across all completed published workshops and non-workshop credit entries. Each workshop contributes final team score PLUS individual score; counting individual credits again is an intentional attendance benefit. The legacy fixed 100 learning points are excluded. Latest records count once; corrections replace their contribution and revocations remove it. No workshopId is required. Optional collegeId and workshopId filters select affiliations and contributions. Use limit (25 default, 100 maximum) and nextCursor to retrieve all pages, even after an empty page. Global facilitator access and scores:read for API tokens are required. Workshop-restricted tokens must provide a permitted workshopId. Unknown awarded components produce totalCredits=null with knownCredits and unknownAwards; no partial value is labeled as the total. Accounts exceeding 500 records per source fail rather than truncate. New adjustments are recorded prospectively; existing published snapshots are included without republishing."
+      }
+    },
+    "/me/scores": {
+      "get": {
+        "operationId": "myUnifiedScores",
+        "summary": "Read your total credits across Inspi",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Authorized allowlisted data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreditAccount"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter or cursor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Verified Google Firebase ID token required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unavailable or privacy blocked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicting or ambiguous source data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Students"
+        ],
+        "description": "Returns one credit total per authorized student across all completed published workshops and non-workshop credit entries. Each workshop contributes final team score PLUS individual score; counting individual credits again is an intentional attendance benefit. The legacy fixed 100 learning points are excluded. Latest records count once; corrections replace their contribution and revocations remove it. No workshopId is required. Optional collegeId and workshopId filters select affiliations and contributions. Use limit (25 default, 100 maximum) and nextCursor to retrieve all pages, even after an empty page. Owner access and scores:read for API tokens are required. Workshop-restricted tokens must provide a permitted workshopId. Unknown awarded components produce totalCredits=null with knownCredits and unknownAwards; no partial value is labeled as the total. Accounts exceeding 500 records per source fail rather than truncate. New adjustments are recorded prospectively; existing published snapshots are included without republishing."
+      }
+    },
+    "/students/{studentId}/credit-transactions": {
+      "get": {
+        "operationId": "studentCreditTransactions",
+        "summary": "Read credit award adjustments",
+        "parameters": [
+          {
+            "name": "studentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 25
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "workshopId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized allowlisted data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "items",
+                    "nextCursor",
+                    "asOf"
+                  ],
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/CreditTransaction"
+                      }
+                    },
+                    "nextCursor": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "asOf": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter or cursor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Verified Google Firebase ID token required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unavailable or privacy blocked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicting or ambiguous source data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Students"
+        ],
+        "description": "Lists prospective immutable workshop award adjustments, with before/after amounts and delta. Publication, correction, revocation and reinstatement each record one change per result revision. Private review reasons are excluded. Existing historical awards count in the total even if they predate this log; this log is not a complete historical balance ledger. Owner or global facilitator access and scores:read for tokens are required. Optional workshopId filters entries. Workshop-restricted tokens must supply a permitted workshopId. Pagination uses limit and nextCursor; continue even after an empty filtered page. Removed or blocked workshop records remain unavailable."
+      }
+    },
+    "/me/credit-transactions": {
+      "get": {
+        "operationId": "myCreditTransactions",
+        "summary": "Read credit award adjustments",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 25
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "workshopId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized allowlisted data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "items",
+                    "nextCursor",
+                    "asOf"
+                  ],
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/CreditTransaction"
+                      }
+                    },
+                    "nextCursor": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "asOf": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter or cursor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Verified Google Firebase ID token required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unavailable or privacy blocked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicting or ambiguous source data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Students"
+        ],
+        "description": "Lists prospective immutable workshop award adjustments, with before/after amounts and delta. Publication, correction, revocation and reinstatement each record one change per result revision. Private review reasons are excluded. Existing historical awards count in the total even if they predate this log; this log is not a complete historical balance ledger. Owner or global facilitator access and scores:read for tokens are required. Optional workshopId filters entries. Workshop-restricted tokens must supply a permitted workshopId. Pagination uses limit and nextCursor; continue even after an empty filtered page. Removed or blocked workshop records remain unavailable."
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "firebaseIdToken": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "Firebase ID token or InspiredLearning API token",
+        "description": "Verified Google Firebase identity or an admin-created scoped API token. Token management requires Google sign-in."
+      },
+      "apiToken": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "InspiredLearning API token",
+        "description": "Explicit permissions and current issuer admin role are checked on every request."
+      }
+    },
+    "schemas": {
+      "Student": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "studentId",
+          "name",
+          "email",
+          "collegeId"
+        ],
+        "properties": {
+          "studentId": {
+            "type": "string"
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "email": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "collegeId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "profileRevision": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "learningPoints": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "deprecated": true,
+            "description": "Legacy completion points; excluded from the unified Inspi credit total. Use /students/scores for the canonical total."
+          },
+          "workshopId": {
+            "type": "string"
+          },
+          "completionStatus": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "credits": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Score"
+            }
+          }
+        }
+      },
+      "Workshop": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "workshopName",
+          "workshopStartDate",
+          "workshopEndDate",
+          "workshopTimezone",
+          "studentId",
+          "workshopId",
+          "status",
+          "teamId",
+          "role",
+          "revision",
+          "certificateId"
+        ],
+        "properties": {
+          "workshopName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "workshopStartDate": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "workshopEndDate": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "workshopTimezone": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "studentId": {
+            "type": "string"
+          },
+          "workshopId": {
+            "type": "string"
+          },
+          "status": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "teamId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "role": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "revision": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "certificateId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "Score": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "workshopName",
+          "workshopStartDate",
+          "workshopEndDate",
+          "workshopTimezone",
+          "studentId",
+          "workshopId",
+          "metric",
+          "value",
+          "unit",
+          "scoringVersion",
+          "source",
+          "publicationStatus",
+          "revision",
+          "asOf"
+        ],
+        "properties": {
+          "workshopName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "workshopStartDate": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "workshopEndDate": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "workshopTimezone": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "studentId": {
+            "type": "string"
+          },
+          "workshopId": {
+            "type": "string"
+          },
+          "metric": {
+            "enum": [
+              "individualCredits",
+              "teamCredits",
+              "learningPoints"
+            ]
+          },
+          "value": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "unit": {
+            "enum": [
+              "credits",
+              "points"
+            ]
+          },
+          "scoringVersion": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "source": {
+            "type": "string"
+          },
+          "publicationStatus": {
+            "enum": [
+              "published",
+              "revoked",
+              "unpublished"
+            ]
+          },
+          "revision": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "asOf": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "Certificate": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "certificateId",
+          "studentId",
+          "workshopId",
+          "name",
+          "title",
+          "date",
+          "status",
+          "revision",
+          "issuedAt"
+        ],
+        "properties": {
+          "certificateId": {
+            "type": "string"
+          },
+          "studentId": {
+            "type": "string"
+          },
+          "workshopId": {
+            "type": "string"
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "date": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "enum": [
+              "issued",
+              "revoked"
+            ]
+          },
+          "revision": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "issuedAt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "Participation": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "workshopName",
+          "workshopStartDate",
+          "workshopEndDate",
+          "workshopTimezone",
+          "studentId",
+          "workshopId",
+          "activityId",
+          "scope",
+          "status",
+          "reviewStatus",
+          "submittedAt",
+          "awardedCredits",
+          "source"
+        ],
+        "properties": {
+          "workshopName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "workshopStartDate": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "workshopEndDate": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "workshopTimezone": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "studentId": {
+            "type": "string"
+          },
+          "workshopId": {
+            "type": "string"
+          },
+          "activityId": {
+            "type": "string"
+          },
+          "scope": {
+            "enum": [
+              "individual",
+              "team"
+            ]
+          },
+          "status": {
+            "const": "recorded-in-result"
+          },
+          "reviewStatus": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "submittedAt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "awardedCredits": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "source": {
+            "type": "string"
+          }
+        }
+      },
+      "WorkshopDetail": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "workshopId",
+          "workshopName",
+          "workshopStartDate",
+          "workshopEndDate",
+          "workshopTimezone",
+          "status"
+        ],
+        "properties": {
+          "workshopId": {
+            "type": "string"
+          },
+          "workshopName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "workshopStartDate": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "workshopEndDate": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "workshopTimezone": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "enum": [
+              "open",
+              "closed"
+            ]
+          },
+          "collegeId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "collegeRevision": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "Submission": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "studentId",
+          "workshopId",
+          "workshopName",
+          "workshopStartDate",
+          "workshopEndDate",
+          "workshopTimezone",
+          "source",
+          "publicationStatus",
+          "activityId",
+          "questionId",
+          "answer",
+          "correct",
+          "awardedCredits",
+          "submittedAt"
+        ],
+        "properties": {
+          "studentId": {
+            "type": "string"
+          },
+          "workshopId": {
+            "type": "string"
+          },
+          "workshopName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "workshopStartDate": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "workshopEndDate": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "workshopTimezone": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "source": {
+            "type": "string"
+          },
+          "publicationStatus": {
+            "enum": [
+              "published",
+              "revoked",
+              "unpublished"
+            ]
+          },
+          "activityId": {
+            "type": "string"
+          },
+          "questionId": {
+            "type": "string"
+          },
+          "answer": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "correct": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "awardedCredits": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "submittedAt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": [
+              "code"
+            ],
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "ApiTokenInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "scopes"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "scopes": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 14,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "enum": [
+                "students:read",
+                "students:lookup",
+                "history:read",
+                "scores:read",
+                "participation:read",
+                "submissions:read",
+                "certificates:read",
+                "workshops:read",
+                "colleges:read",
+                "memberships:read",
+                "colleges:write",
+                "workshops:college:write",
+                "memberships:write",
+                "students:profile:write"
+              ]
+            }
+          },
+          "expiresInDays": {
+            "type": "integer",
+            "enum": [
+              1,
+              7,
+              30
+            ],
+            "default": 7
+          },
+          "studentIds": {
+            "type": "array",
+            "maxItems": 50,
+            "items": {
+              "type": "string"
+            }
+          },
+          "workshopIds": {
+            "type": "array",
+            "maxItems": 50,
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "ApiToken": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
+          "scopes",
+          "studentIds",
+          "workshopIds",
+          "createdAt",
+          "expiresAt",
+          "revokedAt",
+          "status"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "students:read",
+                "students:lookup",
+                "history:read",
+                "scores:read",
+                "participation:read",
+                "submissions:read",
+                "certificates:read",
+                "workshops:read",
+                "colleges:read",
+                "memberships:read",
+                "colleges:write",
+                "workshops:college:write",
+                "memberships:write",
+                "students:profile:write"
+              ]
+            }
+          },
+          "studentIds": {
+            "type": "array",
+            "maxItems": 50,
+            "items": {
+              "type": "string"
+            }
+          },
+          "workshopIds": {
+            "type": "array",
+            "maxItems": 50,
+            "items": {
+              "type": "string"
+            }
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "type": "string"
+          },
+          "revokedAt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "enum": [
+              "active",
+              "expired",
+              "revoked"
+            ]
+          }
+        }
+      },
+      "College": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "collegeId",
+          "name",
+          "status",
+          "revision",
+          "updatedAt"
+        ],
+        "properties": {
+          "collegeId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "active",
+              "inactive"
+            ]
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "updatedAt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "Membership": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "studentId",
+          "collegeId",
+          "workshopId",
+          "status",
+          "revision",
+          "updatedAt"
+        ],
+        "properties": {
+          "studentId": {
+            "type": "string"
+          },
+          "collegeId": {
+            "type": "string"
+          },
+          "workshopId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "enum": [
+              "active",
+              "inactive"
+            ]
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "updatedAt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "ScoreRow": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "studentId",
+          "workshopId",
+          "collegeId",
+          "scores"
+        ],
+        "properties": {
+          "studentId": {
+            "type": "string"
+          },
+          "workshopId": {
+            "type": "string"
+          },
+          "collegeId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "scores": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Score"
+            }
+          }
+        }
+      },
+      "WriteResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "revision"
+        ],
+        "properties": {
+          "studentId": {
+            "type": "string"
+          },
+          "workshopId": {
+            "type": "string"
+          },
+          "collegeId": {
+            "type": "string"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "CreditAccount": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "studentId",
+          "totalCredits",
+          "knownCredits",
+          "unknownAwards",
+          "contributionCount",
+          "unit",
+          "policy",
+          "asOf"
+        ],
+        "properties": {
+          "studentId": {
+            "type": "string"
+          },
+          "totalCredits": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "knownCredits": {
+            "type": "number"
+          },
+          "unknownAwards": {
+            "type": "integer"
+          },
+          "contributionCount": {
+            "type": "integer"
+          },
+          "unit": {
+            "const": "credits"
+          },
+          "policy": {
+            "const": "team-plus-individual-attendance-bonus-v1"
+          },
+          "collegeId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "workshopId": {
+            "type": "string"
+          },
+          "asOf": {
+            "type": "string"
+          }
+        }
+      },
+      "CreditTransaction": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "transactionId",
+          "studentId",
+          "workshopId",
+          "sourceType",
+          "revision",
+          "policy",
+          "before",
+          "after",
+          "delta",
+          "at"
+        ],
+        "properties": {
+          "transactionId": {
+            "type": "string"
+          },
+          "studentId": {
+            "type": "string"
+          },
+          "workshopId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sourceType": {
+            "type": "string"
+          },
+          "revision": {
+            "type": "integer"
+          },
+          "policy": {
+            "type": "string"
+          },
+          "before": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "after": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "delta": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Students"
+    },
+    {
+      "name": "Workshops"
+    },
+    {
+      "name": "Colleges"
+    },
+    {
+      "name": "Certificates"
+    },
+    {
+      "name": "Admin tokens"
+    }
+  ]
+}

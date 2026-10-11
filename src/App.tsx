@@ -188,7 +188,7 @@ function Privacy() {
         <p>
           Google sign-in links your account to verified workshop participation.
           We store your display name, email, attendance, results, learning
-          points and certificates. Team scores are shown separately from
+          credits and certificates. Your workshop award combines team and
           individual results.
         </p>
         <p>

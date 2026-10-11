@@ -1,3 +1,4 @@
+import { recordCreditTransition } from "./credits.js";
 import { eraseLearner, privacyBlocked } from "./erasure.js";
 import { adminAction } from "./admin.js";
 import { recordsAction } from "./records.js";
@@ -156,6 +157,9 @@ export async function execute(db, actor, data, c) {
         {
           ...(!existing.data()?.name || explicit ? { name } : {}),
           email: actor.email,
+          ...(explicit
+            ? { profileRevision: (existing.data()?.profileRevision || 0) + 1 }
+            : {}),
           updatedAt: FieldValue.serverTimestamp(),
         },
         { merge: true },
@@ -251,6 +255,17 @@ export async function execute(db, actor, data, c) {
         revokedBy: actor.uid,
         reason,
       };
+      recordCreditTransition(
+        tx,
+        db,
+        actor,
+        c,
+        d.uid,
+        sid,
+        old,
+        updated,
+        reason,
+      );
       tx.set(ref, updated);
       tx.create(ref.collection("versions").doc(String(revision)), updated);
       tx.set(

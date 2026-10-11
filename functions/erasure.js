@@ -1,4 +1,4 @@
-import { FieldValue } from "firebase-admin/firestore";
+import { FieldValue, FieldPath } from "firebase-admin/firestore";
 import { randomUUID } from "node:crypto";
 import { HttpsError } from "firebase-functions/v2/https";
 import { requireAdmin, reviewReason } from "./admin.js";
@@ -107,6 +107,33 @@ export async function completeErasure(db, uid, actor, c) {
       .get();
     for (const doc of certificates.docs) await doc.ref.delete();
     await db.recursiveDelete(db.doc(`learningLearners/${uid}`));
+    const rosters = await db
+      .collection("learningCollegeRoster")
+      .where("uid", "==", uid)
+      .get();
+    for (const doc of rosters.docs) await doc.ref.delete();
+    // Keep minimal replay tombstones so a delayed webhook cannot recreate erased data after reactivation.
+    let cursor, operations;
+    do {
+      let query = db
+        .collection("learningApiOperations")
+        .where("uid", "==", uid)
+        .orderBy(FieldPath.documentId());
+      if (cursor) query = query.startAfter(cursor);
+      operations = await query.limit(100).get();
+      if (!operations.empty) {
+        const batch = db.batch();
+        for (const doc of operations.docs)
+          batch.set(doc.ref, {
+            uid,
+            requestHash: doc.data().requestHash,
+            erased: true,
+            result: null,
+          });
+        await batch.commit();
+        cursor = operations.docs.at(-1).id;
+      }
+    } while (operations.size === 100);
     const indexes = await db
       .collection("learningEnrollments")
       .where("uids", "array-contains", uid)

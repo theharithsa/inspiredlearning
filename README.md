@@ -9,9 +9,9 @@ A permanent learner account for the ChaiCart workshop, hosted separately in the 
 
 ## What learners get
 
-Registered, pending verification, completed, not-attended, cancelled and revoked participation states; personal quiz results alongside separate team scores; activity summaries and confidence surveys; a permanent points ledger; authenticated certificate PDF downloads; optional public certificate verification; correction/removal requests and community access.
+Registered, pending verification, completed, not-attended, cancelled and revoked participation states; personal quiz results alongside separate team scores; activity summaries and confidence surveys; a credit adjustment log; authenticated certificate PDF downloads; optional public certificate verification; correction/removal requests and community access.
 
-**100 learning points are awarded once for each verified completed workshop.** These are separate from the workshop's team credits and individual quiz credits. Repeat publication and corrected certificates do not award another 100 points. Revocation reverses the award once. Registration and the old session-wide certificate announcement do not establish completion.
+**Students have one Inspi credit total.** Each completed, attendance-verified workshop contributes its final team score plus the student's individual score. Individual credits intentionally count again as an attendance benefit. Latest corrections replace contributions; revoked results are excluded. Existing published records are included without republishing. Signed non-workshop entries can add or consume credits in the same account. Legacy 100-point completion fields are retained for compatibility and excluded from the unified total. Registration alone does not award credits.
 
 ## Run locally
 
@@ -55,7 +55,7 @@ The **ChaiCart Live repository owns production Firestore rules and indexes**. Th
 4. Close the workshop after scoring is finished.
 5. Facilitator publishes verified results. Attendance must be confirmed; missing personal results are shown as unavailable, not invented.
 6. Learners open Certificates and download their PDF. Public verification is private until they opt in.
-7. Review corrections and requests. Result revisions replace earlier certificates and preserve the points ledger.
+7. Review corrections and requests. Result revisions replace earlier certificates and record credit adjustments.
 
 Completed Live sessions cannot be deleted until every current participant has a permanent reviewed status. Reopening a session does not bypass this guard. Permanent history survives Live session deletion, and archived certificates can still be corrected or revoked.
 
@@ -66,3 +66,20 @@ Completed Live sessions cannot be deleted until every current participant has a 
 Google-authorized global facilitators use [Admin controls](https://inspiredlearning-vh.web.app/#/admin) to verify attendance, close and publish workshop completion, inspect permanent learner records by email/UID/certificate, preview issued certificates, correct profile or certificate details, revoke and reinstate verified completion, and resolve/decline/reopen student support requests. Captains review attendance only within their assigned region. Initial certificates require verified attendance and a closed workshop; quiz correctness is not a participation requirement.
 
 Approved removal erases InspiredLearning history and certificates only, retaining shared Google sign-in and Live data. It has typed account confirmation, resumable processing, and an anti-reimport marker. Students see their request history and can explicitly start a new profile for future workshops. See [operations](docs/RUNBOOK.md) and [use-case validation](docs/USE-CASE-VALIDATION.md).
+
+## Read API
+
+The first API slice and Swagger documentation are prepared for the existing Functions/Hosting codebase. See [API contract and limits](docs/API.md) and `functions/openapi.json`. Production deployment requires separate authorization.
+
+Global facilitators can create scoped, expiring read credentials from Admin controls → API tokens. Copy each credential once and use it in Swagger Authorize or the local MCP adapter; revocation and current issuer permissions are enforced by the API.
+
+## APIs and integrations
+
+- Production portal: [inspi.in](https://inspi.in/); stable Hosting URL: [inspiredlearning-vh.web.app](https://inspiredlearning-vh.web.app/).
+- [Swagger API documentation](https://inspi.in/api/docs) and [OpenAPI contract](https://inspi.in/api/openapi.json).
+- Bulk unified student totals: `GET /api/v1/students/scores?limit=100`; workshop/college filters are optional. Follow nextCursor to fetch all authorized students.
+- Global facilitators manage scoped API tokens at `/#/admin`. Select read/write permissions, optional learner/workshop allowlists and expiry. Google reauthentication is required to create a token; copy the credential once and revoke it if exposed.
+- Scoped POST/PUT corrections require a UUID Idempotency-Key, review reason and current expectedVersion. Domain writes are limited to colleges, assignments, memberships and profile name corrections.
+- The [MCP adapter](mcp/README.md) exposes eleven local GET-only tools using the same REST permissions.
+
+See [API contracts and privacy](docs/API.md), [release validation](docs/API-VALIDATION.md), [operations](docs/RUNBOOK.md) and [handover](docs/PROJECT-HANDOVER.md). Existing historical awards are included from their latest published snapshots without republishing. Community contributions share the same total, but public provider award/consumption write endpoints remain future work.

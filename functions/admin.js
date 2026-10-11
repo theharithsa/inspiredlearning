@@ -1,3 +1,4 @@
+import { recordCreditTransition } from "./credits.js";
 import { FieldValue } from "firebase-admin/firestore";
 import { randomUUID } from "node:crypto";
 import { HttpsError } from "firebase-functions/v2/https";
@@ -20,43 +21,11 @@ export async function adminAction(db, actor, d, c) {
   const reason = reviewReason(d);
   if (!validUid(d.uid)) fail("invalid-argument", "Select a valid learner.");
   if (d.action === "updateLearner") {
-    if (typeof d.name !== "string" || !d.name.trim() || d.name.length > 80)
-      fail(
-        "invalid-argument",
-        "Provide a verified display name up to 80 characters.",
-      );
-    return db.runTransaction(async (tx) => {
-      await requireAdmin(tx, db, actor);
-      const privacy = await tx.get(db.doc(`learningPrivacy/${d.uid}`));
-      if (
-        ["erasing", "erased"].includes(privacy.data()?.state) ||
-        privacy.data()?.blockedSessions?.includes(d.sid)
-      )
-        fail("failed-precondition", "This learner requested removal.");
-      const ref = db.doc(`learningLearners/${d.uid}`),
-        p = await tx.get(ref),
-        history = await tx.get(ref.collection("workshops").limit(1));
-      if (!p.exists && history.empty) fail("not-found", "Learner not found.");
-      tx.set(
-        ref,
-        { name: d.name.trim(), updatedAt: FieldValue.serverTimestamp() },
-        { merge: true },
-      );
-      tx.create(ref.collection("reviews").doc(), {
-        kind: "profile-correction",
-        reason,
-        by: actor.uid,
-        at: FieldValue.serverTimestamp(),
-      });
-      queue(tx, db, "learner.profile.corrected", actor, c, {
-        "learner.id": d.uid,
-      });
-      return {
-        message:
-          "Display name corrected. Google identity and issued certificates are unchanged.",
-      };
-    });
+    return db.runTransaction((tx) =>
+      correctProfile(tx, db, actor, { ...d, reason }, c),
+    );
   }
+
   if (d.action === "restoreCompletion") {
     if (!validSid(d.sid)) fail("invalid-argument", "Select a valid workshop.");
     return db.runTransaction(async (tx) => {
@@ -104,6 +73,17 @@ export async function adminAction(db, actor, d, c) {
           reinstatedAt: FieldValue.serverTimestamp(),
           reinstatedBy: actor.uid,
         };
+      recordCreditTransition(
+        tx,
+        db,
+        actor,
+        c,
+        d.uid,
+        d.sid,
+        old,
+        updated,
+        reason,
+      );
       tx.set(ref, updated);
       tx.create(ref.collection("versions").doc(String(revision)), {
         ...updated,
@@ -159,4 +139,59 @@ export async function adminAction(db, actor, d, c) {
     });
   }
   fail("invalid-argument", "Unknown administrator action.");
+}
+
+export async function correctProfile(tx, db, actor, d, c) {
+  const reason = reviewReason(d);
+  if (
+    !validUid(d.uid) ||
+    typeof d.name !== "string" ||
+    !d.name.trim() ||
+    d.name.length > 80
+  )
+    fail(
+      "invalid-argument",
+      "Provide a verified learner and display name up to 80 characters.",
+    );
+  await requireAdmin(tx, db, actor);
+  const privacy = await tx.get(db.doc(`learningPrivacy/${d.uid}`));
+  if (
+    ["erasing", "erased"].includes(privacy.data()?.state) ||
+    privacy.data()?.blockedSessions?.includes(d.sid)
+  )
+    fail("failed-precondition", "This learner requested removal.");
+  const ref = db.doc(`learningLearners/${d.uid}`),
+    p = await tx.get(ref),
+    history = await tx.get(ref.collection("workshops").limit(1));
+  if (!p.exists && history.empty) fail("not-found", "Learner not found.");
+  const version = p.data()?.profileRevision ?? 0;
+  if (d.expectedVersion !== undefined && d.expectedVersion !== version)
+    fail(
+      "failed-precondition",
+      "Profile changed; reload the current revision.",
+    );
+  tx.set(
+    ref,
+    {
+      name: d.name.trim(),
+      profileRevision: version + 1,
+      updatedAt: FieldValue.serverTimestamp(),
+    },
+    { merge: true },
+  );
+  tx.create(ref.collection("reviews").doc(), {
+    kind: "profile-correction",
+    reason,
+    by: actor.uid,
+    at: FieldValue.serverTimestamp(),
+  });
+  queue(tx, db, "learner.profile.corrected", actor, c, {
+    "learner.id": d.uid,
+    "profile.revision": version + 1,
+  });
+  return {
+    message:
+      "Display name corrected. Google identity and issued certificates are unchanged.",
+    profileRevision: version + 1,
+  };
 }

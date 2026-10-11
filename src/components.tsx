@@ -1,3 +1,4 @@
+import { workshopCredits } from "./credits";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import type { Workshop } from "./types";
@@ -77,7 +78,7 @@ export function WorkshopCard({ workshop: w }: { workshop: Workshop }) {
       <div className="card-bottom">
         <span>
           {w.status === "completed"
-            ? `${w.learningPoints || 0} learning points`
+            ? `${workshopCredits(w) ?? "Unknown"} credits awarded`
             : "Your participation record"}
         </span>
         <span aria-hidden="true">↗</span>

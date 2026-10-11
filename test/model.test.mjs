@@ -88,3 +88,40 @@ test("session and region identifiers are bounded", () => {
   assert.equal(validSid("WORKSHOP01"), true);
   assert.equal(regionFor("mumbai-1a"), "west");
 });
+
+test("unified workshop credits deliberately repeat the individual award and never use legacy points", async () => {
+  const { workshopCredits } = await import("../functions/credits.js");
+  assert.equal(
+    workshopCredits({
+      status: "completed",
+      teamCredits: 1000,
+      personalCredits: 100,
+      learningPoints: 100,
+    }),
+    1100,
+  );
+  assert.equal(
+    workshopCredits({
+      status: "completed",
+      teamCredits: 0,
+      personalCredits: 0,
+    }),
+    0,
+  );
+  assert.equal(
+    workshopCredits({
+      status: "completed",
+      teamCredits: 1000,
+      personalCredits: null,
+    }),
+    null,
+  );
+  assert.equal(
+    workshopCredits({
+      status: "revoked",
+      teamCredits: 1000,
+      personalCredits: 100,
+    }),
+    0,
+  );
+});

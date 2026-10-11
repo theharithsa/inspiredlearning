@@ -516,6 +516,14 @@ test("approved erasure removes certificates and all learner descendants, retains
   const req = (await run(fac, "requests")).requests.find(
     (r) => r.uid === "one" && r.kind === "erasure",
   );
+  await db
+    .doc("learningCollegeRoster/erasure-pointer")
+    .set({ uid: "one", collegeId: "erase-college" });
+  await db.doc("learningApiOperations/erasure-operation").set({
+    uid: "one",
+    requestHash: "retained-replay-digest",
+    result: { name: "Remove me" },
+  });
   await run(fac, "eraseLearner", {
     requestId: req.id,
     uid: "one",
@@ -523,6 +531,16 @@ test("approved erasure removes certificates and all learner descendants, retains
     scope: "learning-records",
     reason: "Owner confirmed scope",
   });
+  assert.equal(
+    (await db.doc("learningCollegeRoster/erasure-pointer").get()).exists,
+    false,
+  );
+  const tombstone = (
+    await db.doc("learningApiOperations/erasure-operation").get()
+  ).data();
+  assert.equal(tombstone.erased, true);
+  assert.equal(tombstone.result, null);
+  assert.equal(JSON.stringify(tombstone).includes("Remove me"), false);
   assert.equal((await db.doc("learningLearners/one").get()).exists, false);
   assert.equal(
     (await db.collection("learningLearners/one/workshops").get()).size,
@@ -823,5 +841,863 @@ test("reactivation imports a workshop joined during opt-out without restoring er
   assert.equal(
     (await db.doc(`learningLearners/${uid}/workshops/${sid}`).get()).exists,
     false,
+  );
+});
+
+test("read API enforces owner/admin privacy and validates OpenAPI responses", async () => {
+  const { readApi } = await import("../functions/api.js");
+  const { default: Ajv } = await import("ajv/dist/2020.js");
+  const spec = JSON.parse(fs.readFileSync("functions/openapi.json", "utf8"));
+  const ajv = new Ajv({ strict: false });
+  const validate = (name, result) => {
+    const schema = {
+      ...spec.components.schemas[name],
+      $defs: spec.components.schemas,
+    };
+    const remap = (v) =>
+      JSON.parse(
+        JSON.stringify(v).replaceAll("#/components/schemas/", "#/$defs/"),
+      );
+    assert.equal(
+      ajv.validate(remap(schema), result),
+      true,
+      JSON.stringify(ajv.errors),
+    );
+  };
+  const uid = "api-one",
+    owner = { uid, email: "api-one@example.invalid" };
+  await db.doc(`learningLearners/${uid}`).set({
+    name: "API learner",
+    email: owner.email,
+    privateNote: "never return",
+  });
+  await db.doc(`learningLearners/${uid}/workshops/API001`).set({
+    sid: "API001",
+    title: "API workshop",
+    status: "completed",
+    teamId: "mumbai-1a",
+    role: "COO",
+    learningPoints: 100,
+    personalCredits: 0,
+    teamCredits: 250,
+    personalQuiz: {
+      secret: true,
+      0: { answer: 1, correct: false, credits: 0, privateNote: "excluded" },
+    },
+    personalActivities: ["quiz"],
+    revision: 1,
+  });
+  await db
+    .doc(`learningLearners/${uid}/workshops/API002`)
+    .set({ sid: "API002", status: "registered" });
+  const profile = await readApi(db, owner, "/me");
+  validate("Student", profile);
+  assert.equal(profile.privateNote, undefined);
+  await assert.rejects(
+    readApi(
+      db,
+      { uid: "other", email: "other@example.invalid" },
+      `/students/${uid}`,
+    ),
+    { code: "permission-denied" },
+  );
+  await assert.rejects(
+    readApi(db, captain, `/students/${uid}/scores`, { workshopId: "API001" }),
+    { code: "permission-denied" },
+  );
+  let audited = 0;
+  await readApi(db, fac, `/students/${uid}`, {}, async () => audited++);
+  assert.equal(audited, 1);
+  const first = await readApi(db, owner, "/me/workshops", { limit: "1" });
+  validate("Workshop", first.items[0]);
+  assert.ok(first.nextCursor);
+  const second = await readApi(db, owner, "/me/workshops", {
+    limit: "1",
+    cursor: first.nextCursor,
+  });
+  assert.equal(second.items[0].workshopId, "API002");
+  assert.equal(second.nextCursor, null);
+  const scoreRows = await readApi(db, owner, `/students/${uid}/scores`, {
+    workshopId: "API001",
+  });
+  scoreRows.items.forEach((r) => validate("Score", r));
+  assert.equal(scoreRows.items[0].value, 0);
+  const submissions = await readApi(db, owner, `/students/${uid}/submissions`, {
+    workshopId: "API001",
+  });
+  validate("Submission", submissions.items[0]);
+  assert.equal(submissions.items[0].awardedCredits, 0);
+  assert.equal(submissions.items[0].privateNote, undefined);
+  const participation = await readApi(
+    db,
+    owner,
+    `/students/${uid}/participation`,
+    { workshopId: "API001" },
+  );
+  validate("Participation", participation.items[0]);
+  await db
+    .doc(`learningPrivacy/${uid}`)
+    .set({ state: "active", blockedSessions: ["API001"] });
+  assert.equal((await readApi(db, owner, "/me/workshops")).items.length, 1);
+  await assert.rejects(
+    readApi(db, owner, `/students/${uid}/scores`, { workshopId: "API001" }),
+    { code: "not-found" },
+  );
+  await db.doc(`learningPrivacy/${uid}`).set({ state: "erasing" });
+  await assert.rejects(readApi(db, fac, `/students/${uid}`), {
+    code: "not-found",
+  });
+  await assert.rejects(
+    readApi(db, fac, "/students", { email: owner.email }, async () => {
+      throw Error("audit unavailable");
+    }),
+    /audit unavailable/,
+  );
+});
+
+test("HTTP API and Swagger serve authenticated reads without disclosing private fields", async () => {
+  const { apiHandler } = await import("../functions/api-http.js");
+  const express = require("express");
+  const app = express(),
+    uid = "api-http",
+    email = "api-http@example.invalid";
+  await db
+    .doc(`learningLearners/${uid}`)
+    .set({ name: "HTTP learner", email, staffNotes: "private" });
+  await db
+    .doc(`learningLearners/${uid}/workshops/HTTP01`)
+    .set({ sid: "HTTP01", status: "completed" });
+  await db.doc("sessions/HTTP01").set({
+    title: "HTTP workshop",
+    workshopDate: "2026-10-08",
+    privateKeys: "never return",
+  });
+  const certId = "11111111-1111-4111-8111-111111111111";
+  await db.doc(`learningCertificates/${certId}`).set({
+    uid,
+    sid: "HTTP01",
+    name: "HTTP learner",
+    status: "revoked",
+    reason: "private review",
+    revision: 1,
+  });
+  const { readApi } = await import("../functions/api.js");
+  await assert.rejects(
+    readApi(
+      db,
+      { uid: "stranger", email: "stranger@example.invalid" },
+      `/certificates/${certId}`,
+    ),
+    { code: "not-found" },
+  );
+  await assert.rejects(
+    readApi(
+      db,
+      { uid: "stranger", email: "stranger@example.invalid" },
+      "/certificates/22222222-2222-4222-8222-222222222222",
+    ),
+    { code: "not-found" },
+  );
+  app.use(
+    apiHandler({
+      db,
+      auth: {
+        verifyIdToken: async (token, revoked) => {
+          assert.equal(revoked, true);
+          if (token !== "test-id-token") throw Error();
+          return {
+            uid,
+            email,
+            email_verified: true,
+            firebase: { sign_in_provider: "google.com" },
+          };
+        },
+      },
+      rate() {},
+      measured: async (_name, _actor, work) => work(c),
+      audit: async () => {},
+    }),
+  );
+  const server = app.listen(0, "127.0.0.1");
+  await new Promise((r) => server.once("listening", r));
+  const base = `http://127.0.0.1:${server.address().port}`;
+  const get = (path) =>
+    fetch(base + path, { headers: { Authorization: "Bearer test-id-token" } });
+  try {
+    assert.equal((await fetch(base + "/api/v1/me")).status, 401);
+    const me = await get("/api/v1/me");
+    assert.equal(me.headers.get("cache-control"), "no-store");
+    assert.ok(me.headers.get("x-request-id"));
+    assert.equal((await me.json()).staffNotes, undefined);
+    const metadata = await (await get("/api/v1/workshops/HTTP01")).json();
+    assert.equal(metadata.workshopId, "HTTP01");
+    assert.equal(metadata.privateKeys, undefined);
+    const cert = await (await get(`/api/v1/certificates/${certId}`)).json();
+    assert.equal(cert.status, "revoked");
+    assert.equal(cert.reason, undefined);
+    assert.equal((await get("/api/v1/me?include=private")).status, 400);
+    assert.equal(
+      (await fetch(base + "/api/v1/me", { method: "POST" })).status,
+      405,
+    );
+    const docs = await fetch(base + "/api/docs");
+    assert.match(await docs.text(), /persistAuthorization:false/);
+    const css = await fetch(base + "/api/docs/swagger-ui.css");
+    assert.equal(css.status, 200);
+    assert.match(css.headers.get("content-type"), /css/);
+    const bundle = await fetch(base + "/api/docs/swagger-ui-bundle.js");
+    assert.equal(bundle.status, 200);
+    await bundle.arrayBuffer();
+    const spec = await (await fetch(base + "/api/openapi.json")).json();
+    assert.equal(spec.openapi, "3.1.0");
+    await db.doc(`learningPrivacy/${uid}`).set({ state: "erased" });
+    assert.equal((await get(`/api/v1/certificates/${certId}`)).status, 404);
+  } finally {
+    server.closeAllConnections();
+    await new Promise((r) => server.close(r));
+  }
+});
+
+test("admin token lifecycle preserves scopes, resource restrictions, privacy and current authority", async () => {
+  const { manageTokens, authenticateApiToken } =
+    await import("../functions/api-tokens.js");
+  const { readApi } = await import("../functions/api.js");
+  const { Timestamp } = require("firebase-admin/firestore");
+  const opts = {
+    authTime: Date.now() / 1000,
+    idempotencyKey: "33333333-3333-4333-8333-333333333333",
+  };
+  const input = {
+    name: "Scoped score reader",
+    scopes: ["scores:read", "history:read"],
+    studentIds: ["token-one"],
+    workshopIds: ["TOKEN01"],
+    expiresInDays: 7,
+  };
+  const manage = (actor, method, id, body, options = opts) =>
+    manageTokens(db, actor, method, id, body, {}, c, options);
+  await assert.rejects(manage(captain, "POST", null, input), {
+    code: "permission-denied",
+  });
+  await assert.rejects(
+    manage({ uid: "student", email: "student@example.invalid" }, "GET", null),
+    { code: "permission-denied" },
+  );
+  await assert.rejects(
+    manage(fac, "POST", null, input, {
+      ...opts,
+      authTime: Date.now() / 1000 - 301,
+    }),
+    { code: "failed-precondition" },
+  );
+  await assert.rejects(
+    manage(fac, "POST", null, { ...input, scopes: ["admin:write"] }),
+    { code: "invalid-argument" },
+  );
+  const [first, retry] = await Promise.all([
+    manage(fac, "POST", null, input),
+    manage(fac, "POST", null, input),
+  ]);
+  const created = first.secret ? first : retry,
+    duplicate = first.secret ? retry : first;
+  assert.match(created.secret, /^ilapi_/);
+  assert.equal(duplicate.secret, null);
+  assert.equal(duplicate.alreadyCreated, true);
+  const { default: Ajv } = await import("ajv/dist/2020.js");
+  const spec = JSON.parse(fs.readFileSync("functions/openapi.json", "utf8"));
+  const validateTokenResponse = (method, response) => {
+    const schema = {
+      ...spec.paths["/admin/api-tokens"][method].responses["200"].content[
+        "application/json"
+      ].schema,
+      $defs: spec.components.schemas,
+    };
+    const ajv = new Ajv({ strict: false });
+    assert.equal(
+      ajv.validate(
+        JSON.parse(
+          JSON.stringify(schema).replaceAll(
+            "#/components/schemas/",
+            "#/$defs/",
+          ),
+        ),
+        response,
+      ),
+      true,
+      JSON.stringify(ajv.errors),
+    );
+  };
+  validateTokenResponse("post", created);
+  validateTokenResponse("post", duplicate);
+  const id = created.token.id,
+    stored = (await db.doc(`learningApiTokens/${id}`).get()).data();
+  assert.equal(stored.secret, undefined);
+  assert.notEqual(stored.secretHash, created.secret);
+  await assert.rejects(
+    manage(fac, "POST", null, { ...input, name: "Changed settings" }),
+    { code: "already-exists" },
+  );
+  const listed = await manage(fac, "GET", null);
+  validateTokenResponse("get", listed);
+  assert.equal(listed.items.find((t) => t.id === id).secretHash, undefined);
+  assert.equal(listed.items.find((t) => t.id === id).requestHash, undefined);
+  const auth = {
+    getUser: async (uid) => ({
+      uid,
+      email: fac.email,
+      emailVerified: true,
+      disabled: false,
+      providerData: [{ providerId: "google.com" }],
+    }),
+  };
+  const actor = await authenticateApiToken(db, auth, created.secret);
+  await db
+    .doc("learningLearners/token-one")
+    .set({ name: "Token learner", email: "token-one@example.invalid" });
+  for (const sid of ["TOKEN01", "TOKEN02"])
+    await db.doc(`learningLearners/token-one/workshops/${sid}`).set({
+      sid,
+      title: "Token workshop",
+      status: "completed",
+      personalCredits: 0,
+      teamCredits: 250,
+      learningPoints: 100,
+    });
+  assert.equal(
+    (await readApi(db, actor, "/students/token-one/workshops")).items.length,
+    1,
+  );
+  const scores = await readApi(db, actor, "/students/token-one/scores", {
+    workshopId: "TOKEN01",
+  });
+  assert.equal(scores.items[0].value, 0);
+  await assert.rejects(readApi(db, actor, "/students/token-one"), {
+    code: "permission-denied",
+  });
+  await assert.rejects(
+    readApi(db, actor, "/students/other/scores", { workshopId: "TOKEN01" }),
+    { code: "not-found" },
+  );
+  await assert.rejects(
+    readApi(db, actor, "/students/token-one/scores", { workshopId: "TOKEN02" }),
+    { code: "not-found" },
+  );
+  await assert.rejects(manage(actor, "POST", null, input), {
+    code: "permission-denied",
+  });
+  await db
+    .doc("learningPrivacy/token-one")
+    .set({ state: "active", blockedSessions: ["TOKEN01"] });
+  assert.equal(
+    (await readApi(db, actor, "/students/token-one/workshops")).items.length,
+    0,
+  );
+  await assert.rejects(
+    readApi(db, actor, "/students/token-one/scores", { workshopId: "TOKEN01" }),
+    { code: "not-found" },
+  );
+  await assert.rejects(
+    authenticateApiToken(db, auth, created.secret.slice(0, -1) + "!"),
+    { code: "unauthenticated" },
+  );
+  await assert.rejects(
+    authenticateApiToken(
+      db,
+      {
+        getUser: async () => ({
+          ...(await auth.getUser(fac.uid)),
+          disabled: true,
+        }),
+      },
+      created.secret,
+    ),
+    { code: "unauthenticated" },
+  );
+  await db.doc(`admins/${fac.email}`).delete();
+  await assert.rejects(authenticateApiToken(db, auth, created.secret), {
+    code: "unauthenticated",
+  });
+  await db.doc(`admins/${fac.email}`).set({ role: "facilitator" });
+  await db
+    .doc(`learningApiTokens/${id}`)
+    .update({ expiresAt: Timestamp.fromMillis(Date.now() - 1) });
+  await assert.rejects(authenticateApiToken(db, auth, created.secret), {
+    code: "unauthenticated",
+  });
+  await db
+    .doc(`learningApiTokens/${id}`)
+    .update({ expiresAt: Timestamp.fromMillis(Date.now() + 60000) });
+  await db
+    .doc("admins/second-admin@example.invalid")
+    .set({ role: "facilitator" });
+  await assert.rejects(
+    manage(
+      { uid: "second-admin", email: "second-admin@example.invalid" },
+      "DELETE",
+      id,
+    ),
+    { code: "not-found" },
+  );
+  await manage(fac, "DELETE", id);
+  await manage(fac, "DELETE", id);
+  await assert.rejects(authenticateApiToken(db, auth, created.secret), {
+    code: "unauthenticated",
+  });
+  assert.equal(
+    (await manage(fac, "GET", null)).items.find((t) => t.id === id).status,
+    "revoked",
+  );
+  const browserAdmin = env
+    .authenticatedContext(fac.uid, {
+      email: fac.email,
+      email_verified: true,
+      firebase: { sign_in_provider: "google.com" },
+    })
+    .firestore();
+  await assertFails(getDoc(doc(browserAdmin, `learningApiTokens/${id}`)));
+  await assertFails(
+    setDoc(doc(browserAdmin, "learningApiTokens/forged"), {
+      scopes: ["admin:write"],
+    }),
+  );
+  await db.doc(`learningApiTokenOwners/${fac.uid}`).set({
+    slots: Array.from({ length: 25 }, (_, i) => ({
+      id: `quota-${i}`,
+      expiresAtMs: Date.now() + 60000,
+    })),
+  });
+  await assert.rejects(
+    manage(fac, "POST", null, input, {
+      ...opts,
+      idempotencyKey: "55555555-5555-4555-8555-555555555555",
+    }),
+    { code: "resource-exhausted" },
+  );
+  await db.doc(`learningApiTokenOwners/${fac.uid}`).set({ slots: [] });
+  await db
+    .doc("learningApiTokens/66666666-6666-4666-8666-666666666666")
+    .set({ ...stored, revokedAt: Timestamp.now() });
+  const firstPage = await manageTokens(
+    db,
+    fac,
+    "GET",
+    null,
+    undefined,
+    { limit: "1" },
+    c,
+  );
+  assert.ok(firstPage.nextCursor);
+  const nextPage = await manageTokens(
+    db,
+    fac,
+    "GET",
+    null,
+    undefined,
+    { limit: "1", cursor: firstPage.nextCursor },
+    c,
+  );
+  assert.notEqual(nextPage.items[0].id, firstPage.items[0].id);
+  assert.equal(nextPage.nextCursor, null);
+  const events = await db
+    .collection("learningTelemetry")
+    .where(
+      new (require("firebase-admin/firestore").FieldPath)(
+        "payload",
+        "data",
+        "api.token.id",
+      ),
+      "==",
+      id,
+    )
+    .get();
+  assert.equal(
+    events.docs.filter(
+      (d) => d.data().payload.data["event.name"] === "api-token.created",
+    ).length,
+    1,
+  );
+  assert.equal(
+    events.docs.filter(
+      (d) => d.data().payload.data["event.name"] === "api-token.revoked",
+    ).length,
+    1,
+  );
+  assert.ok(
+    events.docs.every(
+      (d) => !JSON.stringify(d.data()).includes(created.secret),
+    ),
+  );
+});
+
+test("resource catalogs and explicit writes preserve revisions, scopes, retries and privacy", async () => {
+  const { writeDomain } = await import("../functions/api-domain-writes.js");
+  const { readApi } = await import("../functions/api.js");
+  const { randomUUID } = await import("node:crypto");
+  const write = (path, body, key = randomUUID(), actor = fac, method = "PUT") =>
+    writeDomain(db, actor, method, "/api/v1" + path, body, {}, c, key);
+  const read = (path, q = {}, actor = fac) =>
+    readApi(db, actor, "/api/v1" + path, q, async () => {});
+  await db.doc("learningLearners/catalog-user").set({
+    name: "Original",
+    email: "catalog@example.invalid",
+    learningPoints: 0,
+  });
+  await db.doc("learningLearners/catalog-user/workshops/CATALOG1").set({
+    status: "completed",
+    personalCredits: 0,
+    teamCredits: 7,
+    learningPoints: 3,
+  });
+  await db.doc("learningEnrollments/CATALOG1").set({ uids: ["catalog-user"] });
+  await db.doc("sessions/CATALOG1").set({ title: "Catalog workshop" });
+  const key = randomUUID(),
+    body = {
+      collegeId: "catalog-college",
+      name: "College",
+      status: "active",
+      reason: "Integration setup",
+    };
+  const first = await write("/colleges", body, key, fac, "POST");
+  assert.deepEqual(await write("/colleges", body, key, fac, "POST"), first);
+  await assert.rejects(
+    write("/colleges", { ...body, name: "Different" }, key, fac, "POST"),
+    { code: "already-exists" },
+  );
+  await assert.rejects(
+    write("/colleges/catalog-college", {
+      name: "College",
+      status: "active",
+      expectedVersion: 0,
+      reason: "Correction",
+    }),
+    { code: "failed-precondition" },
+  );
+  await write("/workshops/CATALOG1/college", {
+    collegeId: "catalog-college",
+    expectedVersion: 0,
+    reason: "Assignment",
+  });
+  await write(
+    "/workshops/CATALOG1/participants/catalog-user/college-membership",
+    {
+      collegeId: "catalog-college",
+      status: "active",
+      expectedVersion: 0,
+      reason: "Membership correction",
+    },
+  );
+  const roster = await read("/students", {
+    collegeId: "catalog-college",
+    workshopId: "CATALOG1",
+    include: "credits",
+  });
+  assert.equal(roster.items.length, 1);
+  assert.equal(roster.items[0].studentId, "catalog-user");
+  assert.equal(roster.items[0].credits[0].value, 0);
+  assert.equal(roster.items[0].credits[1].value, 7);
+  assert.equal(
+    roster.items[0].credits[0].source,
+    "InspiredLearning.published-result",
+  );
+  const firstCollegePage = await read("/colleges", { limit: "1" });
+  assert.equal(firstCollegePage.items.length, 1);
+  const deniedClient = env
+    .authenticatedContext("catalog-user", {
+      email: "catalog@example.invalid",
+      email_verified: true,
+      firebase: { sign_in_provider: "google.com" },
+    })
+    .firestore();
+  await assertFails(
+    setDoc(doc(deniedClient, "learningColleges/forged"), { name: "Forged" }),
+  );
+  const scopedWriter = {
+    ...fac,
+    apiTokenId: "writer",
+    apiScopes: ["memberships:write"],
+    apiStudentIds: ["catalog-user"],
+    apiWorkshopIds: ["OTHER001"],
+  };
+  await assert.rejects(
+    write(
+      "/students/catalog-user/college-membership",
+      {
+        collegeId: "catalog-college",
+        status: "active",
+        expectedVersion: 0,
+        reason: "Correction",
+      },
+      randomUUID(),
+      scopedWriter,
+    ),
+    { code: "permission-denied" },
+  );
+  await assert.rejects(
+    write(
+      "/workshops/CATALOG1/participants/catalog-user/college-membership",
+      {
+        collegeId: "catalog-college",
+        status: "inactive",
+        expectedVersion: 1,
+        reason: "Correction",
+      },
+      randomUUID(),
+      scopedWriter,
+    ),
+    { code: "not-found" },
+  );
+  const spec = JSON.parse(fs.readFileSync("functions/openapi.json", "utf8"));
+  const Ajv = (await import("ajv/dist/2020.js")).default,
+    ajv = new Ajv({ strict: false });
+  for (const [schemaName, value] of [
+    ["Student", roster.items[0]],
+    ["ScoreRow", (await read("/workshops/CATALOG1/scores")).items[0]],
+    ["College", await read("/colleges/catalog-college")],
+    [
+      "Membership",
+      (await read("/students/catalog-user/college-memberships")).items[0],
+    ],
+  ]) {
+    const schema = {
+      ...spec.components.schemas[schemaName],
+      $defs: spec.components.schemas,
+    };
+    assert.equal(
+      ajv.validate(
+        JSON.parse(
+          JSON.stringify(schema).replaceAll(
+            "#/components/schemas/",
+            "#/$defs/",
+          ),
+        ),
+        value,
+      ),
+      true,
+      JSON.stringify(ajv.errors),
+    );
+  }
+
+  assert.equal(
+    (await read("/students", { email: "catalog@example.invalid" })).items
+      .length,
+    1,
+  );
+  assert.equal(
+    (await read("/workshops/CATALOG1/participants")).items.length,
+    1,
+  );
+  assert.equal((await read("/workshops/CATALOG1/scores")).items.length, 1);
+  assert.deepEqual(
+    (await read("/workshops/CATALOG1/participants/catalog-user/scores")).items,
+    (await read("/students/catalog-user/scores", { workshopId: "CATALOG1" }))
+      .items,
+  );
+  const token = {
+    ...fac,
+    apiTokenId: "catalog-token",
+    apiScopes: ["students:read"],
+    apiStudentIds: [],
+    apiWorkshopIds: [],
+  };
+  await assert.rejects(
+    read("/students", { workshopId: "CATALOG1", include: "credits" }, token),
+    { code: "permission-denied" },
+  );
+  await assert.rejects(
+    write(
+      "/students/catalog-user/profile",
+      { name: "Corrected", expectedVersion: 0, reason: "Correction" },
+      randomUUID(),
+      token,
+    ),
+    { code: "permission-denied" },
+  );
+  const profileKey = randomUUID(),
+    profileBody = {
+      name: "Corrected",
+      expectedVersion: 0,
+      reason: "Correction",
+    };
+  await write("/students/catalog-user/profile", profileBody, profileKey);
+  assert.deepEqual(
+    await write("/students/catalog-user/profile", profileBody, profileKey),
+    { studentId: "catalog-user", revision: 1 },
+  );
+  await assert.rejects(write("/students/catalog-user/profile", profileBody), {
+    code: "failed-precondition",
+  });
+  assert.equal((await read("/students/catalog-user")).profileRevision, 1);
+  await db.doc("learningPrivacy/catalog-user").set({ state: "erased" });
+  await assert.rejects(
+    write("/students/catalog-user/profile", profileBody, profileKey),
+    { code: "failed-precondition" },
+  );
+  assert.equal(
+    (
+      await read("/students", {
+        collegeId: "catalog-college",
+        workshopId: "CATALOG1",
+      })
+    ).items.length,
+    0,
+  );
+  await assert.rejects(
+    write(
+      "/colleges",
+      { ...body, collegeId: "captain-college" },
+      randomUUID(),
+      captain,
+      "POST",
+    ),
+    { code: "permission-denied" },
+  );
+});
+
+test("unified credit account spans workshops and activities; publication corrections and reversal apply once", async () => {
+  const { finalize } = await import("../functions/finalize.js");
+  const { readApi } = await import("../functions/api.js");
+  const uid = "credit-student",
+    wid = "CREDIT01",
+    owner = { uid, email: "credit-owner@example.invalid" };
+  await db
+    .doc(`learningLearners/${uid}`)
+    .set({ name: "Credit learner", email: owner.email, learningPoints: 900 });
+  await db
+    .doc(`sessions/${wid}`)
+    .set({ title: "Credit workshop", completedAt: new Date() });
+  await db.doc(`sessions/${wid}/students/${uid}`).set(st);
+  await db
+    .doc(`sessions/${wid}/learningAttendance/${uid}`)
+    .set({ status: "attended" });
+  await db
+    .doc(`sessions/${wid}/public/leaderboard`)
+    .set({ scores: { "mumbai-1a": 1000 } });
+  await db.doc(`sessions/${wid}/quizResults/${uid}`).set({ credits: 100 });
+  await Promise.all([
+    finalize(db, fac, c, wid, uid, "Publish"),
+    finalize(db, fac, c, wid, uid, "Publish"),
+  ]);
+  const own = () => readApi(db, owner, "/me/scores");
+  assert.equal((await own()).totalCredits, 1100);
+  assert.equal(
+    (await db.collection(`learningLearners/${uid}/creditTransactions`).get())
+      .size,
+    1,
+  );
+  await db
+    .doc(`learningLearners/${uid}/workshops/CREDIT02`)
+    .set({
+      status: "completed",
+      teamCredits: 200,
+      personalCredits: 50,
+      learningPoints: 100,
+    });
+  await db
+    .doc(`learningLearners/${uid}/creditEntries/community-earn`)
+    .set({ sourceType: "community", delta: 30 });
+  await db
+    .doc(`learningLearners/${uid}/creditEntries/community-consume`)
+    .set({ sourceType: "community", delta: -10 });
+  assert.equal((await own()).totalCredits, 1370);
+  await db
+    .doc(`sessions/${wid}/public/leaderboard`)
+    .set({ scores: { "mumbai-1a": 1200 } });
+  await Promise.all([
+    finalize(db, fac, c, wid, uid, "Score correction"),
+    finalize(db, fac, c, wid, uid, "Score correction"),
+  ]);
+  assert.equal((await own()).totalCredits, 1570);
+  assert.equal(
+    (
+      await db.doc(`learningLearners/${uid}/creditTransactions/${wid}__2`).get()
+    ).data().delta,
+    200,
+  );
+  await execute(
+    db,
+    fac,
+    { action: "revoke", sid: wid, uid, reason: "Attendance correction" },
+    c,
+  );
+  assert.equal((await own()).totalCredits, 270);
+  await Promise.all([
+    execute(
+      db,
+      fac,
+      {
+        action: "restoreCompletion",
+        sid: wid,
+        uid,
+        reason: "Verified attendance",
+      },
+      c,
+    ),
+    execute(
+      db,
+      fac,
+      {
+        action: "restoreCompletion",
+        sid: wid,
+        uid,
+        reason: "Verified attendance",
+      },
+      c,
+    ),
+  ]);
+  assert.equal((await own()).totalCredits, 1570);
+  assert.equal(
+    (await db.collection(`learningLearners/${uid}/creditTransactions`).get())
+      .size,
+    4,
+  );
+  const actor = {
+    ...fac,
+    apiTokenId: "credits-reader",
+    apiScopes: ["scores:read"],
+    apiStudentIds: [uid],
+    apiWorkshopIds: [],
+  };
+  const bulk = await readApi(db, actor, "/students/scores", { limit: "100" });
+  assert.equal(bulk.items.length, 1);
+  assert.equal(bulk.items[0].totalCredits, 1570);
+  await assert.rejects(readApi(db, owner, "/students/scores"), {
+    code: "permission-denied",
+  });
+  await assert.rejects(
+    readApi(db, { ...actor, apiWorkshopIds: [wid] }, "/students/scores"),
+    { code: "permission-denied" },
+  );
+  assert.equal(
+    (
+      await readApi(
+        db,
+        { ...actor, apiWorkshopIds: [wid] },
+        "/students/scores",
+        { workshopId: wid },
+      )
+    ).items[0].totalCredits,
+    1300,
+  );
+  const log = await readApi(db, owner, "/me/credit-transactions", {
+    limit: "2",
+  });
+  assert.equal(log.items.length, 2);
+  assert.ok(log.nextCursor);
+  assert.equal(log.items[0].reason, undefined);
+  await db
+    .doc(`learningLearners/${uid}/workshops/CREDIT03`)
+    .set({ status: "completed", teamCredits: null, personalCredits: 10 });
+  assert.equal((await own()).totalCredits, null);
+  assert.equal((await own()).knownCredits, 1570);
+  await db
+    .doc(`learningPrivacy/${uid}`)
+    .set({ state: "active", blockedSessions: ["CREDIT03", "CREDIT02"] });
+  assert.equal((await own()).totalCredits, 1320);
+  await db.doc(`learningPrivacy/${uid}`).set({ state: "erased" });
+  await assert.rejects(own(), { code: "not-found" });
+  assert.equal(
+    (await readApi(db, actor, "/students/scores", { limit: "100" })).items
+      .length,
+    0,
   );
 });

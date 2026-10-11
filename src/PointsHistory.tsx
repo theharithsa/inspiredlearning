@@ -2,23 +2,25 @@ import { useRows } from "./hooks";
 import { Link } from "react-router-dom";
 export default function PointsHistory({ uid }: { uid: string }) {
   const { rows, error } = useRows<{
-    sid: string;
-    delta: number;
+    workshopId: string;
+    delta: number | null;
     reason: string;
     at?: { seconds: number };
-  }>(`learningLearners/${uid}/points`);
+  }>(`learningLearners/${uid}/creditTransactions`);
   return (
     <section className="panel">
-      <span className="eyebrow">LEARNING POINTS</span>
-      <h2>Earned, not estimated.</h2>
+      <span className="eyebrow">CREDIT ADJUSTMENTS</span>
+      <h2>Your credit history.</h2>
       <p>
-        Each verified workshop completion adds 100 points once. Revoked
-        completions reverse that award.
+        Published workshops award the final team score plus your individual
+        credits. Corrections adjust the award; revocations reverse it. Existing
+        historical awards are included in your total even if they predate this
+        adjustment log.
       </p>
       {error ? (
         <p role="alert">{error}</p>
       ) : rows === undefined ? (
-        <p role="status">Loading points history…</p>
+        <p role="status">Loading credit history…</p>
       ) : rows.length ? (
         rows
           .slice()
@@ -26,16 +28,17 @@ export default function PointsHistory({ uid }: { uid: string }) {
           .map((r) => (
             <div className="result-row" key={r.id}>
               <span>
-                <Link to={"/workshops/" + r.sid}>{r.sid}</Link> · {r.reason}
+                <Link to={"/workshops/" + r.workshopId}>{r.workshopId}</Link> ·{" "}
+                {r.reason}
               </span>
               <strong>
-                {r.delta > 0 ? "+" : ""}
-                {r.delta}
+                {r.delta !== null && r.delta > 0 ? "+" : ""}
+                {r.delta ?? "Unknown"}
               </strong>
             </div>
           ))
       ) : (
-        <p className="muted">No learning points awarded yet.</p>
+        <p className="muted">No credit adjustments recorded yet.</p>
       )}
     </section>
   );

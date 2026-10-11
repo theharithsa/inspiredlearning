@@ -1,3 +1,4 @@
+import { recordCreditTransition } from "./credits.js";
 import { privacyBlocked } from "./erasure.js";
 import { FieldValue } from "firebase-admin/firestore";
 import { randomUUID } from "node:crypto";
@@ -114,6 +115,7 @@ export async function finalize(db, actor, c, sid, uid, reason) {
       { uids: FieldValue.arrayUnion(uid) },
       { merge: true },
     );
+    recordCreditTransition(tx, db, actor, c, uid, sid, old, updated, reason);
     tx.set(ref, updated);
     tx.create(ref.collection("versions").doc(String(revision)), {
       ...updated,
