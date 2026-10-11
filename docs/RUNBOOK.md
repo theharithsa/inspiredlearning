@@ -69,3 +69,5 @@ Use `GET /api/v1/students/scores?limit=100` for bulk totals; follow nextCursor u
 After a reviewed score correction, republish through the existing attendance/completion workflow. Identical publication does not append a second adjustment or award. Credit transaction logs are prospective and omit private reasons; original historical awards still count even when they predate that log. Removal recursively deletes contributions/adjustments. Community producer write APIs are not part of this release.
 
 The production web build needs the existing project's public Firebase web configuration. Keep `.env.production.local` ignored; never commit environment/secret files. Functions target Node 22; local emulator verification used host Node 24. Shared rules/indexes remain owned by ChaiCart Live. The docs-only local preview on port 8787 is not an authenticated API server.
+
+Latest verified release: source `050ecbc`, deployed 11 October 2026. Live portal/API docs on inspi.in and the stable Firebase URL are verified. All nine dedicated Functions are ACTIVE (Node 22). See RELEASE-CHECKS.md for source CI and release evidence.

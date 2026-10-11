@@ -27,7 +27,7 @@ GitHub CI passed for portal source `79f6313`, the Live integration source, and t
 
 ## Remaining external checks
 
-`inspi.in` still needs GoDaddy sign-in and DNS changes. Firebase's verified requested records are:
+Historical initial-release DNS state (resolved by this release): `inspi.in` originally needed GoDaddy sign-in and DNS changes. The 11 October verification confirms it now serves the same Firebase app over HTTPS. The original requested records were:
 
 | Type | Name | Required value |
 | --- | --- | --- |
@@ -44,4 +44,14 @@ Release candidate includes OpenAPI v1.2.0 with 34 described operations, role-gat
 
 The user explicitly authorized production deployment and GitHub README/handover updates. Preflight verified `chaicloud-workshop`, Hosting target `inspiredlearning-vh`, private GitHub repository/main branch, and the existing public Firebase app configuration. inspi.in currently maps to the same app; no DNS change is required. The production build embeds the existing shared Firebase configuration, not demo settings. Production dependency audits report zero vulnerabilities for web, Functions and MCP. Nine unit tests also pass under the declared production Node 22 runtime. Shared rules/indexes and the Live codebase are excluded from deployment.
 
-Final full-browser/shared-regression and deployment outcomes will be appended after completion. No production learner records are intentionally changed during release verification. Production sign-in/authorized student data require a real Google session; isolated emulator fixtures exercise those flows without altering production records. The MCP adapter remains local stdio and GET-only; no hosted MCP server is part of deployment.
+Release source `050ecbc` is deployed successfully. No production learner records are intentionally changed during release verification. Production sign-in/authorized student data require a real Google session; isolated emulator fixtures exercise those flows without altering production records. The MCP adapter remains local stdio and GET-only; no hosted MCP server is part of deployment.
+
+### Completed production verification
+
+- Deployed only `functions:inspiredlearning,hosting:inspiredlearning` to chaicloud-workshop. All nine dedicated functions, including new learningApi, are ACTIVE on Node 22; all eight other-codebase function metadata records are unchanged. Hosting released successfully to inspiredlearning-vh.
+- Live [portal](https://inspi.in/) and [Swagger](https://inspi.in/api/docs) render without browser JavaScript errors. Expanded `/students/scores` descriptions are visible. Both inspi.in and inspiredlearning-vh.web.app serve the exact checked-in OpenAPI v1.2.0 contract.
+- Both domains reject unauthenticated `/api/v1/students/scores` with 401 and unsupported PATCH /api/v1/me with 405. The configured shared Firebase project/app matches the previous production site. No DNS, Auth migration, shared rule/index deployment or production learner data migration occurred.
+- 101 automated cases passed: 9 unit, 30 Auth/Firestore, 39 shared Live rules/actions/audit, 19 complete portal browser, 3 MCP and 1 Swagger browser test. Unit tests also passed on Node 22. Production build and lint pass with the existing main.tsx warning. Web/Functions/MCP production dependency audits report zero vulnerabilities.
+- GitHub [Checks run 38158934221](https://github.com/theharithsa/inspiredlearning/actions/runs/38158934221) passed for source 050ecbc. README, API documentation, operations and handover are updated. Environment files, credentials and deployment logs are excluded from Git.
+
+Production screenshots were inspected from `/tmp/inspi-production-portal.png` and `/tmp/inspi-production-swagger.png`. Authenticated admin/student flows were verified with isolated Google emulator identities; verification did not use or alter a real production learner account. Real account Google OAuth and authorized score reads remain operator checks, rather than a simulated production login.

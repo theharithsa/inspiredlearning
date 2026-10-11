@@ -83,3 +83,5 @@ Global facilitators can create scoped, expiring read credentials from Admin cont
 - The [MCP adapter](mcp/README.md) exposes eleven local GET-only tools using the same REST permissions.
 
 See [API contracts and privacy](docs/API.md), [release validation](docs/API-VALIDATION.md), [operations](docs/RUNBOOK.md) and [handover](docs/PROJECT-HANDOVER.md). Existing historical awards are included from their latest published snapshots without republishing. Community contributions share the same total, but public provider award/consumption write endpoints remain future work.
+
+Production release verified on 11 October 2026 from source `050ecbc`: portal, Swagger and all nine dedicated Node 22 functions are live; 101 automated checks and source GitHub CI passed. Deployment evidence and remaining operator checks are in [RELEASE-CHECKS.md](docs/RELEASE-CHECKS.md).

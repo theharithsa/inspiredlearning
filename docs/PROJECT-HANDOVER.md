@@ -8,7 +8,7 @@ Credentials reside in existing Firebase Secret Manager, never in this document. 
 
 Initial deployment evidence and DNS state are recorded in the task delivery and repository history. The stable Firebase URL is the certificate verification origin. Custom-domain DNS propagation must not block workshop access through Firebase.
 
-Release verification and pending GoDaddy records: [RELEASE-CHECKS.md](RELEASE-CHECKS.md). Core portal deployment is complete; custom-domain mapping awaits owner sign-in. PDFs are generated on demand from versioned certificate records rather than stored as permanent downloadable objects.
+Release verification and pending GoDaddy records: [RELEASE-CHECKS.md](RELEASE-CHECKS.md). Core portal deployment is complete; custom-domain mapping is now verified live on inspi.in (11 October 2026). PDFs are generated on demand from versioned certificate records rather than stored as permanent downloadable objects.
 
 ## Admin support release
 
@@ -34,4 +34,6 @@ New completion transitions atomically append prospective immutable credit adjust
 
 Explicit `learningColleges`, `learningWorkshopMetadata`, learner collegeMemberships and `learningCollegeRoster` records support college/workshop filters. No existing affiliation is inferred. Reasoned POST/PUT corrections cover colleges, workshop hosting college, learner institutional/workshop membership and profile name only. UUID idempotency keys and optimistic versions protect retries. No score, attendance or certificate mutation endpoint was added. Erasure deletes learner credit records and roster pointers; minimal hashed replay tombstones prevent delayed webhook retries from restoring removed data.
 
-The separate `mcp/` package has eleven typed GET-only tools and delegates all identity/policy decisions to REST. It is a local stdio adapter; no hosted MCP server is deployed. Read [API.md](API.md), [API-RESOURCE-CONTRACT.md](API-RESOURCE-CONTRACT.md), [API-VALIDATION.md](API-VALIDATION.md) and [RUNBOOK.md](RUNBOOK.md) before maintenance. The production release outcome will be recorded in [RELEASE-CHECKS.md](RELEASE-CHECKS.md).
+The separate `mcp/` package has eleven typed GET-only tools and delegates all identity/policy decisions to REST. It is a local stdio adapter; no hosted MCP server is deployed. Read [API.md](API.md), [API-RESOURCE-CONTRACT.md](API-RESOURCE-CONTRACT.md), [API-VALIDATION.md](API-VALIDATION.md) and [RUNBOOK.md](RUNBOOK.md) before maintenance. The successful production release and live verification are recorded in [RELEASE-CHECKS.md](RELEASE-CHECKS.md).
+
+Production release completed on 11 October 2026 from source `050ecbc`. All nine InspiredLearning functions are ACTIVE on Node 22; Hosting, inspi.in and Swagger are verified live. All 101 automated checks and GitHub source CI passed. Other codebase metadata, shared rules/indexes and shared Authentication were preserved. No production learner data migration was run.
