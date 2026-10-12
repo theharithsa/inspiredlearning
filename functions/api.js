@@ -194,7 +194,12 @@ async function readResources(
       if (await filter(d.data(), d.id)) items.push(map(d.id, d.data()));
     return envelope(items, s.size > p.limit ? p.cursor(docs.at(-1).id) : null);
   }
-  if (parts[0] === "students" && validUid(parts[1]) && parts.length <= 3) {
+  if (
+    parts[0] === "students" &&
+    validUid(parts[1]) &&
+    (parts.length <= 3 ||
+      (parts.length === 4 && parts[2] === "credit-contributions"))
+  ) {
     const uid = parts[1];
     await authorize(uid);
     const p = await privacy(uid);
@@ -215,6 +220,30 @@ async function readResources(
           : null,
       };
     }
+    if (parts[2] === "credit-contributions") {
+      if (
+        Object.keys(query).length ||
+        parts.length !== 4 ||
+        !/^[a-f0-9]{64}$/.test(parts[3])
+      )
+        fail("invalid-argument", "Use one contributionId with no filters.");
+      const r = (
+        await db
+          .doc(`learningLearners/${uid}/creditContributions/${parts[3]}`)
+          .get()
+      ).data();
+      if (!r) fail("not-found", "Contribution unavailable.");
+      return {
+        studentId: uid,
+        contributionId: parts[3],
+        credits: r.credits,
+        revision: r.revision,
+        sourceId: r.sourceId,
+        eventId: r.eventId,
+        activityId: r.activityId,
+        updatedAt: iso(r.updatedAt),
+      };
+    }
     if (parts[2] === "credit-transactions") {
       if (query.workshopId && !validSid(query.workshopId))
         fail("invalid-argument", "Invalid workshopId.");
@@ -226,6 +255,14 @@ async function readResources(
           studentId: uid,
           workshopId: r.workshopId || null,
           sourceType: r.sourceType,
+          ...(r.sourceType === "activity"
+            ? {
+                sourceId: r.sourceId,
+                eventId: r.eventId,
+                activityId: r.activityId,
+                contributionId: r.contributionId,
+              }
+            : {}),
           revision: r.revision,
           policy: r.policy,
           before: r.before,

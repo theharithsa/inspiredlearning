@@ -85,3 +85,9 @@ Global facilitators can create scoped, expiring read credentials from Admin cont
 See [API contracts and privacy](docs/API.md), [release validation](docs/API-VALIDATION.md), [operations](docs/RUNBOOK.md) and [handover](docs/PROJECT-HANDOVER.md). Existing historical awards are included from their latest published snapshots without republishing. Community contributions share the same total, but public provider award/consumption write endpoints remain future work.
 
 Production release verified on 11 October 2026 from source `050ecbc`: portal, Swagger and all nine dedicated Node 22 functions are live; 101 automated checks and source GitHub CI passed. Deployment evidence and remaining operator checks are in [RELEASE-CHECKS.md](docs/RELEASE-CHECKS.md).
+
+## Webhook credit writes (API v1.3)
+
+Admins can create a token with the new **credits:write** permission in `/#/admin` (unchecked by default). POST `/api/v1/students/{studentId}/credits` awards or deducts an activity contribution; PUT `/api/v1/students/{studentId}/credit-contributions/{contributionId}` corrects its amount using expectedVersion. Add scores:read for contribution revisions and unified totals. Existing tokens retain their permissions.
+
+Webhook callers send a UUID Idempotency-Key and stable sourceId/eventId; identical events deduplicate across credentials. Writes append immutable deltas and audit events, preserve reviewed workshop results/certificates and enforce current admin authority, student restrictions and removal. Minimal event tombstones prevent replay after reactivation. Legacy learningPoints are compatibility data; use credits for the single Inspi total. Account capacity is 500 external adjustments (429 at capacity). MCP remains read-only. Full payloads and error/retry semantics: [API.md](docs/API.md).

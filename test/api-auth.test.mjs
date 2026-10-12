@@ -94,7 +94,12 @@ test("HTTP API verifies shared Google tokens with real Firebase Auth and rejects
       },
       body: JSON.stringify({
         name: "Auth emulator token",
-        scopes: ["students:read", "students:profile:write"],
+        scopes: [
+          "students:read",
+          "students:profile:write",
+          "credits:write",
+          "scores:read",
+        ],
         studentIds: [user.uid],
         expiresInDays: 1,
       }),
@@ -132,6 +137,46 @@ test("HTTP API verifies shared Google tokens with real Firebase Auth and rejects
       body: writeBody,
     });
     assert.deepEqual(await repeated.json(), await corrected.json());
+    const creditUrl = url.replace(/\/me$/, `/students/${user.uid}/credits`);
+    const creditHeaders = {
+      ...writeHeaders,
+      "Idempotency-Key": "88888888-8888-4888-8888-888888888888",
+    };
+    const awarded = await fetch(creditUrl, {
+      method: "POST",
+      headers: creditHeaders,
+      body: JSON.stringify({
+        credits: 75,
+        sourceId: "auth-test",
+        eventId: "one",
+        reason: "Webhook award",
+      }),
+    });
+    assert.equal(awarded.status, 200, await awarded.clone().text());
+    const contribution = await awarded.json();
+    const contributionUrl = url.replace(
+      /\/me$/,
+      `/students/${user.uid}/credit-contributions/${contribution.contributionId}`,
+    );
+    const current = await fetch(contributionUrl, { headers: creditHeaders });
+    assert.equal(current.status, 200);
+    assert.equal((await current.json()).credits, 75);
+    const adjusted = await fetch(contributionUrl, {
+      method: "PUT",
+      headers: {
+        ...creditHeaders,
+        "Idempotency-Key": "99999999-9999-4999-8999-999999999999",
+      },
+      body: JSON.stringify({
+        credits: 100,
+        expectedVersion: 1,
+        reason: "Correction",
+      }),
+    });
+    assert.equal(adjusted.status, 200, await adjusted.clone().text());
+    assert.equal((await adjusted.json()).delta, 25);
+    const total = await fetch(url + "/scores", { headers: creditHeaders });
+    assert.equal((await total.json()).totalCredits, 100);
     const deniedCollege = await fetch(url.replace(/\/me$/, "/colleges"), {
       method: "POST",
       headers: writeHeaders,

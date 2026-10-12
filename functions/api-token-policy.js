@@ -14,6 +14,10 @@ export const API_PERMISSIONS = [
   { scope: "workshops:college:write", label: "Assign workshop colleges" },
   { scope: "memberships:write", label: "Correct learner college memberships" },
   { scope: "students:profile:write", label: "Correct learner names" },
+  {
+    scope: "credits:write",
+    label: "Award, deduct and correct student credits",
+  },
 ];
 const unavailable = () => {
   throw new HttpsError("not-found", "Resource unavailable.");
@@ -38,6 +42,7 @@ export function checkTokenAccess(actor, path, query) {
               workshops: "history:read",
               scores: "scores:read",
               "credit-transactions": "scores:read",
+              "credit-contributions": "scores:read",
               participation: "participation:read",
               submissions: "submissions:read",
               certificates: "certificates:read",
@@ -47,7 +52,9 @@ export function checkTokenAccess(actor, path, query) {
     (path === "/students/scores" ||
       path === "/scores" ||
       (parts[0] === "students" &&
-        ["scores", "credit-transactions"].includes(parts[2]))) &&
+        ["scores", "credit-transactions", "credit-contributions"].includes(
+          parts[2],
+        ))) &&
     !query.workshopId;
   if (actor.apiWorkshopIds.length && globalScores)
     throw new HttpsError(

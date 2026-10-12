@@ -53,3 +53,15 @@ External webhook callers can later invoke these protected write routes with scop
 ## Acceptance
 
 Verify AND filters, bounded continuation, no college inference, private/erased participants, credit null/zero/provenance, scoped read/write separation, stale versions, duplicate webhook-style replay, concurrent creation, profile/callable consistency, membership index consistency, erasure/recovery cleanup, OpenAPI responses and grouped Swagger rendering. Keep MCP tools read-only and map their filters to the same services.
+
+## Webhook credit writes (API v1.3)
+
+Global facilitators can select **credits:write** when creating a token in `/#/admin`. Existing tokens are unchanged: create a new scoped token for this integration. Add scores:read to inspect totals and contribution revisions. Student restrictions are enforced; workshop-restricted credentials cannot change community credits. The caller must keep its token on its backend.
+
+- `POST /api/v1/students/{studentId}/credits` creates a signed contribution. Example: `{"credits":50,"sourceId":"community","eventId":"activity-123","activityId":"mentoring","reason":"Completed mentoring"}`.
+- `GET /api/v1/students/{studentId}/credit-contributions/{contributionId}` returns its current amount and revision.
+- `PUT /api/v1/students/{studentId}/credit-contributions/{contributionId}` corrects that contribution: `{"credits":80,"expectedVersion":1,"reason":"Corrected award"}`. This appends +30 to the same account; it does not set the entire student balance to 80.
+
+Send `Authorization: Bearer <token>`, `Content-Type: application/json` and a fresh UUID `Idempotency-Key` for each new POST/PUT operation. Retry the same operation with its original key. POST returns contributionId, revision, credits and delta. Stable sourceId/eventId deduplicate identical source events even across different retry keys or token rotations; conflicting event settings return 409. Replaying the initial POST after a correction returns its original receipt; GET provides the current revision. Negative contributions support deductions. credits must be an integer from -1,000,000,000 to 1,000,000,000; reasons are mandatory and at most 500 characters.
+
+These writes affect the **single Inspi credit total**, read through `/students/scores` or `/students/{studentId}/scores`. Legacy learningPoints are compatibility data, not a second writable balance. Published workshop scores/certificates retain their existing reviewed correction workflow. Immutable credit entries, version records and audit/outbox events accompany every successful new adjustment; transaction reads expose event provenance but exclude private reasons. Removal deletes learner contributions and retains minimal opaque event tombstones to block delayed replay after reactivation. Accounts are bounded to 500 external adjustments; writes at capacity return 429 and require a future archival extension. MCP remains read-only. This is an authenticated API for webhook callers, not an unsigned public webhook receiver.

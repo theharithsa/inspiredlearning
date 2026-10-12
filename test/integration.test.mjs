@@ -524,6 +524,9 @@ test("approved erasure removes certificates and all learner descendants, retains
     requestHash: "retained-replay-digest",
     result: { name: "Remove me" },
   });
+  await db
+    .doc("learningCreditEventGuards/erasure-event")
+    .set({ uid: "one", erased: false });
   await run(fac, "eraseLearner", {
     requestId: req.id,
     uid: "one",
@@ -538,6 +541,10 @@ test("approved erasure removes certificates and all learner descendants, retains
   const tombstone = (
     await db.doc("learningApiOperations/erasure-operation").get()
   ).data();
+  assert.deepEqual(
+    (await db.doc("learningCreditEventGuards/erasure-event").get()).data(),
+    { uid: "one", erased: true },
+  );
   assert.equal(tombstone.erased, true);
   assert.equal(tombstone.result, null);
   assert.equal(JSON.stringify(tombstone).includes("Remove me"), false);
@@ -1584,14 +1591,12 @@ test("unified credit account spans workshops and activities; publication correct
       .size,
     1,
   );
-  await db
-    .doc(`learningLearners/${uid}/workshops/CREDIT02`)
-    .set({
-      status: "completed",
-      teamCredits: 200,
-      personalCredits: 50,
-      learningPoints: 100,
-    });
+  await db.doc(`learningLearners/${uid}/workshops/CREDIT02`).set({
+    status: "completed",
+    teamCredits: 200,
+    personalCredits: 50,
+    learningPoints: 100,
+  });
   await db
     .doc(`learningLearners/${uid}/creditEntries/community-earn`)
     .set({ sourceType: "community", delta: 30 });
@@ -1700,4 +1705,103 @@ test("unified credit account spans workshops and activities; publication correct
       .length,
     0,
   );
+});
+
+test("activity credit writes deduplicate events and apply versioned corrections with scope/privacy enforcement", async () => {
+  const { writeDomain } = await import("../functions/api-domain-writes.js");
+  const { readApi } = await import("../functions/api.js");
+  const { randomUUID } = await import("node:crypto");
+  const uid = "webhook-credit-student";
+  await db.doc(`learningLearners/${uid}`).set({ name: "Webhook learner" });
+  const token = {
+    ...fac,
+    apiTokenId: "credit-writer",
+    apiScopes: ["credits:write", "scores:read"],
+    apiStudentIds: [uid],
+    apiWorkshopIds: [],
+  };
+  const post = `/students/${uid}/credits`;
+  const body = {
+    credits: 50,
+    sourceId: "community",
+    eventId: "event1",
+    reason: "Activity completed",
+  };
+  const write = (method, path, data, actor = token, key = randomUUID()) =>
+    writeDomain(db, actor, method, path, data, {}, c, key);
+  const receipts = await Promise.all(
+    Array.from({ length: 4 }, () => write("POST", post, body)),
+  );
+  const first = receipts[0];
+  receipts.forEach((receipt) => assert.deepEqual(receipt, first));
+  assert.deepEqual(
+    await write("POST", post, body, { ...token, apiTokenId: "rotated" }),
+    first,
+  );
+  assert.equal((await readApi(db, { uid }, "/me/scores", {})).totalCredits, 50);
+  await assert.rejects(write("POST", post, { ...body, credits: 60 }), {
+    code: "already-exists",
+  });
+  const path = `/students/${uid}/credit-contributions/${first.contributionId}`;
+  assert.equal((await readApi(db, token, path, {})).revision, 1);
+  const key = randomUUID(),
+    correction = {
+      credits: 80,
+      expectedVersion: 1,
+      reason: "Correct activity award",
+    };
+  const changed = await write("PUT", path, correction, token, key);
+  assert.equal(changed.delta, 30);
+  assert.deepEqual(await write("PUT", path, correction, token, key), changed);
+  await assert.rejects(write("PUT", path, correction), {
+    code: "failed-precondition",
+  });
+  await write("POST", post, { ...body, eventId: "event2", credits: -20 });
+  assert.equal((await readApi(db, { uid }, "/me/scores", {})).totalCredits, 60);
+  assert.equal(
+    (await db.collection(`learningLearners/${uid}/creditEntries`).get()).size,
+    3,
+  );
+  await assert.rejects(
+    write("POST", post, body, { ...token, apiScopes: ["scores:read"] }),
+    { code: "permission-denied" },
+  );
+  await assert.rejects(
+    write("POST", post, body, { ...token, apiWorkshopIds: ["LEARN001"] }),
+    { code: "permission-denied" },
+  );
+  await assert.rejects(write("POST", post, { ...body, credits: 0.5 }), {
+    code: "invalid-argument",
+  });
+  await assert.rejects(write("POST", post, { ...body, learningPoints: 100 }), {
+    code: "invalid-argument",
+  });
+  await db.doc(`learningPrivacy/${uid}`).set({ state: "erased" });
+  await assert.rejects(write("POST", post, body), {
+    code: "failed-precondition",
+  });
+  await db.doc(`learningPrivacy/${uid}`).set({ state: "active" });
+  const { createHash } = await import("node:crypto");
+  const guardId = createHash("sha256")
+    .update(JSON.stringify([uid, first.contributionId]))
+    .digest("hex");
+  await db
+    .doc(`learningCreditEventGuards/${guardId}`)
+    .set({ uid, erased: true });
+  await db
+    .doc(`learningLearners/${uid}/creditContributions/${first.contributionId}`)
+    .delete();
+  await assert.rejects(
+    write("POST", post, body, { ...token, apiTokenId: "fresh-credential" }),
+    { code: "failed-precondition" },
+  );
+  const batch = db.batch();
+  for (let i = 0; i < 497; i++)
+    batch.set(db.doc(`learningLearners/${uid}/creditEntries/capacity-${i}`), {
+      delta: 0,
+    });
+  await batch.commit();
+  await assert.rejects(write("POST", post, { ...body, eventId: "capacity" }), {
+    code: "resource-exhausted",
+  });
 });

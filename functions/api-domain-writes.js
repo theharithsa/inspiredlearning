@@ -1,3 +1,4 @@
+import { validateCreditWrite, creditWrite } from "./api-credit-writes.js";
 import { createHash } from "node:crypto";
 import { Timestamp } from "firebase-admin/firestore";
 import { HttpsError } from "firebase-functions/v2/https";
@@ -14,6 +15,18 @@ export function domainWriteRoute(method, path) {
   if (method === "POST" && path === "/colleges")
     return { kind: "college-create", scope: "colleges:write" };
   let m;
+  if (method === "POST" && (m = /^\/students\/([^/]+)\/credits$/.exec(path)))
+    return { kind: "credit-create", uid: m[1], scope: "credits:write" };
+  if (
+    method === "PUT" &&
+    (m = /^\/students\/([^/]+)\/credit-contributions\/([^/]+)$/.exec(path))
+  )
+    return {
+      kind: "credit-update",
+      uid: m[1],
+      contributionId: m[2],
+      scope: "credits:write",
+    };
   if (method === "PUT" && (m = /^\/colleges\/([^/]+)$/.exec(path)))
     return { kind: "college", collegeId: m[1], scope: "colleges:write" };
   if (method === "PUT" && (m = /^\/workshops\/([^/]+)\/college$/.exec(path)))
@@ -56,13 +69,15 @@ function inputFor(route, body) {
     "workshop-college": ["collegeId", "reason", "expectedVersion"],
     membership: ["collegeId", "status", "reason", "expectedVersion"],
     profile: ["name", "reason", "expectedVersion"],
+    "credit-create": ["credits", "sourceId", "eventId", "activityId", "reason"],
+    "credit-update": ["credits", "expectedVersion", "reason"],
   }[route.kind];
   if (Object.keys(body).some((k) => !fields.includes(k)))
     fail("invalid-argument", "Unsupported write field.");
   const reason = reviewReason(body),
     d = { ...body, reason };
   if (
-    route.kind !== "college-create" &&
+    !["college-create", "credit-create"].includes(route.kind) &&
     (!Number.isInteger(d.expectedVersion) || d.expectedVersion < 0)
   )
     fail("invalid-argument", "Provide the current expectedVersion.");
@@ -90,6 +105,7 @@ function inputFor(route, body) {
     (route.workshopId && !validSid(route.workshopId))
   )
     fail("invalid-argument", "Invalid resource ID.");
+  if (route.kind.startsWith("credit-")) validateCreditWrite(route, d);
   if (d.name) d.name = d.name.trim();
   return d;
 }
@@ -163,7 +179,9 @@ export async function writeDomain(
     }
     const now = Timestamp.now();
     let result;
-    if (route.kind === "profile") {
+    if (route.kind.startsWith("credit-"))
+      result = await creditWrite(tx, db, actor, c, route, d, now, ref.id);
+    else if (route.kind === "profile") {
       const changed = await correctProfile(
         tx,
         db,

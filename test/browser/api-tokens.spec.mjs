@@ -55,6 +55,11 @@ test("administrator can create a scoped credential, copy it once, use it and rev
   await expect(
     page.getByLabel("Correct learner names", { exact: true }),
   ).not.toBeChecked();
+  await expect(
+    page.getByLabel("Award, deduct and correct student credits", {
+      exact: true,
+    }),
+  ).not.toBeChecked();
   await page.getByLabel("Token name").fill("Browser scoped token");
   await page.getByLabel("Learner profiles", { exact: true }).check();
   await page.getByLabel("Learner IDs (optional)").fill(uid);

@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "InspiredLearning API",
-    "version": "1.2.0",
+    "version": "1.3.0",
     "description": "Shared verified Google identity and existing owner/facilitator permissions. Resource catalogs and all writes require a current global facilitator. Explicit token permissions apply on every request. Credits use latest published workshop results, preserve three separate measures and unknown null values. College affiliations are explicit, never inferred. Writes require a UUID Idempotency-Key and review reason; updates also require current expectedVersion. MCP remains read-only. Unified student credits award final team score plus individual score per completed workshop, intentionally counting individual credits twice. Legacy learning points remain compatibility data and are excluded from the unified total."
   },
   "servers": [
@@ -1613,7 +1613,8 @@
                               "colleges:write",
                               "workshops:college:write",
                               "memberships:write",
-                              "students:profile:write"
+                              "students:profile:write",
+                              "credits:write"
                             ]
                           },
                           "label": {
@@ -4758,6 +4759,443 @@
         ],
         "description": "Lists prospective immutable workshop award adjustments, with before/after amounts and delta. Publication, correction, revocation and reinstatement each record one change per result revision. Private review reasons are excluded. Existing historical awards count in the total even if they predate this log; this log is not a complete historical balance ledger. Owner or global facilitator access and scores:read for tokens are required. Optional workshopId filters entries. Workshop-restricted tokens must supply a permitted workshopId. Pagination uses limit and nextCursor; continue even after an empty filtered page. Removed or blocked workshop records remain unavailable."
       }
+    },
+    "/students/{studentId}/credits": {
+      "post": {
+        "operationId": "post_student_credit_contribution",
+        "summary": "Award or deduct student activity credits",
+        "tags": [
+          "Students"
+        ],
+        "parameters": [
+          {
+            "name": "studentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreditAdjustment"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter or cursor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Verified Google Firebase ID token required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unavailable or privacy blocked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Stale revision, ambiguous email or conflicting retry",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "firebaseIdToken": []
+          },
+          {
+            "apiToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "credits",
+                  "sourceId",
+                  "eventId",
+                  "reason"
+                ],
+                "properties": {
+                  "credits": {
+                    "type": "integer",
+                    "minimum": -1000000000,
+                    "maximum": 1000000000
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  },
+                  "sourceId": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9_-]{1,128}$"
+                  },
+                  "eventId": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9_-]{1,128}$"
+                  },
+                  "activityId": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9_-]{1,128}$"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "description": "Creates a signed activity contribution to the single Inspi credit account. credits is the contribution amount, not the account total or legacy learningPoints. Use stable sourceId/eventId per student: identical events deduplicate across tokens and retry keys; changed events return 409. Workshop awards and published certificates remain unchanged. Requires a current global facilitator and credits:write for token callers. Student restrictions apply; workshop-restricted tokens cannot write community credits. Requires a UUID Idempotency-Key and review reason. Erasure blocks old-event replay. Account history is bounded to 500 external adjustments; capacity returns 429."
+      }
+    },
+    "/students/{studentId}/credit-contributions/{contributionId}": {
+      "put": {
+        "operationId": "put_student_credit_contribution",
+        "summary": "Correct a student credit contribution",
+        "tags": [
+          "Students"
+        ],
+        "parameters": [
+          {
+            "name": "studentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "contributionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreditAdjustment"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter or cursor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Verified Google Firebase ID token required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unavailable or privacy blocked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Stale revision, ambiguous email or conflicting retry",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "firebaseIdToken": []
+          },
+          {
+            "apiToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "credits",
+                  "expectedVersion",
+                  "reason"
+                ],
+                "properties": {
+                  "credits": {
+                    "type": "integer",
+                    "minimum": -1000000000,
+                    "maximum": 1000000000
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  },
+                  "expectedVersion": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                }
+              }
+            }
+          }
+        },
+        "description": "Sets the amount of an existing activity contribution. credits is its replacement amount, not the whole account balance. The difference is appended as an immutable adjustment. Read the contribution first and send its revision as expectedVersion; stale revisions return 409. Requires a current global facilitator and credits:write for token callers. Student restrictions apply; workshop-restricted tokens cannot write community credits. Requires a UUID Idempotency-Key and review reason. Erasure blocks old-event replay. Account history is bounded to 500 external adjustments; capacity returns 429."
+      },
+      "get": {
+        "operationId": "get_student_credit_contribution",
+        "summary": "Read current activity contribution",
+        "tags": [
+          "Students"
+        ],
+        "parameters": [
+          {
+            "name": "studentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "contributionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreditContribution"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter or cursor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Verified Google Firebase ID token required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unavailable or privacy blocked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Stale revision, ambiguous email or conflicting retry",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "firebaseIdToken": []
+          },
+          {
+            "apiToken": []
+          }
+        ],
+        "description": "Returns the contribution amount, current revision and external event identifiers for a subsequent correction. Owner or global facilitator access; token callers require scores:read. Workshop-restricted tokens cannot read global activity contributions. Privacy removal rules apply."
+      }
     }
   },
   "components": {
@@ -5347,7 +5785,7 @@
           "scopes": {
             "type": "array",
             "minItems": 1,
-            "maxItems": 14,
+            "maxItems": 15,
             "uniqueItems": true,
             "items": {
               "type": "string",
@@ -5365,7 +5803,8 @@
                 "colleges:write",
                 "workshops:college:write",
                 "memberships:write",
-                "students:profile:write"
+                "students:profile:write",
+                "credits:write"
               ]
             }
           },
@@ -5432,7 +5871,8 @@
                 "colleges:write",
                 "workshops:college:write",
                 "memberships:write",
-                "students:profile:write"
+                "students:profile:write",
+                "credits:write"
               ]
             }
           },
@@ -5708,6 +6148,85 @@
             ]
           },
           "at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sourceId": {
+            "type": "string"
+          },
+          "eventId": {
+            "type": "string"
+          },
+          "activityId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "contributionId": {
+            "type": "string"
+          }
+        }
+      },
+      "CreditAdjustment": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "studentId",
+          "contributionId",
+          "revision",
+          "credits",
+          "delta"
+        ],
+        "properties": {
+          "studentId": {
+            "type": "string"
+          },
+          "contributionId": {
+            "type": "string"
+          },
+          "revision": {
+            "type": "integer"
+          },
+          "credits": {
+            "type": "integer"
+          },
+          "delta": {
+            "type": "integer"
+          }
+        }
+      },
+      "CreditContribution": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "studentId": {
+            "type": "string"
+          },
+          "contributionId": {
+            "type": "string"
+          },
+          "credits": {
+            "type": "integer"
+          },
+          "revision": {
+            "type": "integer"
+          },
+          "sourceId": {
+            "type": "string"
+          },
+          "eventId": {
+            "type": "string"
+          },
+          "activityId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "updatedAt": {
             "type": [
               "string",
               "null"

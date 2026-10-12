@@ -71,3 +71,9 @@ After a reviewed score correction, republish through the existing attendance/com
 The production web build needs the existing project's public Firebase web configuration. Keep `.env.production.local` ignored; never commit environment/secret files. Functions target Node 22; local emulator verification used host Node 24. Shared rules/indexes remain owned by ChaiCart Live. The docs-only local preview on port 8787 is not an authenticated API server.
 
 Latest verified release: source `050ecbc`, deployed 11 October 2026. Live portal/API docs on inspi.in and the stable Firebase URL are verified. All nine dedicated Functions are ACTIVE (Node 22). See RELEASE-CHECKS.md for source CI and release evidence.
+
+## Webhook credit writes (API v1.3)
+
+Admins can create a token with the new **credits:write** permission in `/#/admin` (unchecked by default). POST `/api/v1/students/{studentId}/credits` awards or deducts an activity contribution; PUT `/api/v1/students/{studentId}/credit-contributions/{contributionId}` corrects its amount using expectedVersion. Add scores:read for contribution revisions and unified totals. Existing tokens retain their permissions.
+
+Webhook callers send a UUID Idempotency-Key and stable sourceId/eventId; identical events deduplicate across credentials. Writes append immutable deltas and audit events, preserve reviewed workshop results/certificates and enforce current admin authority, student restrictions and removal. Minimal event tombstones prevent replay after reactivation. Legacy learningPoints are compatibility data; use credits for the single Inspi total. Account capacity is 500 external adjustments (429 at capacity). MCP remains read-only. Full payloads and error/retry semantics: [API.md](API.md).

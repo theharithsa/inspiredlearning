@@ -112,6 +112,11 @@ export async function completeErasure(db, uid, actor, c) {
       .where("uid", "==", uid)
       .get();
     for (const doc of rosters.docs) await doc.ref.delete();
+    const guards = await db
+      .collection("learningCreditEventGuards")
+      .where("uid", "==", uid)
+      .get();
+    for (const guard of guards.docs) await guard.ref.set({ uid, erased: true });
     // Keep minimal replay tombstones so a delayed webhook cannot recreate erased data after reactivation.
     let cursor, operations;
     do {

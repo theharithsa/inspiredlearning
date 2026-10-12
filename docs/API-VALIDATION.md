@@ -45,3 +45,11 @@ The two real Functions/Auth/Firestore browser rehearsals also pass: existing tok
 Production deployment and GitHub documentation updates were explicitly authorized on 11 October 2026 after the unified-credit implementation. The deployment outcome and final release checks are recorded in RELEASE-CHECKS.md; earlier local-only statements describe their original validation stage.
 
 Final release verification: all 19 portal browser tests and 39 shared Live tests passed again; combined release matrix is 101 cases. The token browser fixture explicitly seeds its administrator profile to avoid relying on asynchronous profile creation. Source `050ecbc` passed GitHub CI and deployed successfully to production; nine dedicated Node 22 functions are ACTIVE. Public portal/Swagger browser checks, exact live OpenAPI parity, 401 unauthenticated score rejection and 405 unsupported-method rejection passed on both domains. See RELEASE-CHECKS.md.
+
+## Authenticated activity credit writes (v1.3, 12 October 2026)
+
+Nine unit cases pass on the target Node 22 runtime. All 31 real Auth/Firestore cases pass, including token-authenticated HTTP POST/GET/PUT, concurrent source-event deduplication, cross-token retries, signed deductions, immutable delta records, stale versions, scope restrictions, invalid fields, removal and replay denial after reactivation, plus the 500-entry capacity boundary. Existing publication/revocation/reinstatement and shared-identity cases remain passing. Swagger renders every expanded description and all 37 operations; all three GET-only MCP cases pass. Frontend build passes; lint reports only the existing main.tsx Fast Refresh warning. No dependency changes or shared rules/index changes.
+
+Production and browser outcomes are recorded in RELEASE-CHECKS.md.
+
+The two real Functions/Auth/Firestore browser cases pass: admin token creation/copy/use/revoke with credits:write unchecked, and a POST activity award changing the dashboard from 1420 to 1470 without a page reload. These are the affected browser flows; the previous full 19-case portal release remains recorded above.

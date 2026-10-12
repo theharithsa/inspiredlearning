@@ -55,3 +55,7 @@ Release source `050ecbc` is deployed successfully. No production learner records
 - GitHub [Checks run 38158934221](https://github.com/theharithsa/inspiredlearning/actions/runs/38158934221) passed for source 050ecbc. README, API documentation, operations and handover are updated. Environment files, credentials and deployment logs are excluded from Git.
 
 Production screenshots were inspected from `/tmp/inspi-production-portal.png` and `/tmp/inspi-production-swagger.png`. Authenticated admin/student flows were verified with isolated Google emulator identities; verification did not use or alter a real production learner account. Real account Google OAuth and authorized score reads remain operator checks, rather than a simulated production login.
+
+## Activity credit write release (12 October 2026)
+
+Predeployment checks pass: 9 Node 22 unit cases, 31 Auth/Firestore cases, 3 read-only MCP cases, Swagger render and 2 affected real Functions/browser cases (46 cases). Production frontend build passes; lint has only the pre-existing main.tsx Fast Refresh warning. Tested token-authenticated POST/GET/PUT, stable-event concurrent deduplication, corrections/deductions, version conflicts, scope restrictions, erasure replay protection and capacity. Scope is InspiredLearning Functions and Hosting only; no shared rules/index deployment or production learner migration.

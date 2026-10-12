@@ -125,3 +125,7 @@ GMU0810 currently names a session code; the schema audit must establish its cano
 4. OpenAPI schemas, authorization/query tests, then matching read-only MCP tools.
 
 Preserve existing app APIs and published historical scores. This revision adds resource structure and provenance; it does not approve score recalculation or production deployment.
+
+## Delivered activity write extension (12 October 2026)
+
+OpenAPI v1.3 adds authenticated student activity credit POST awards/deductions, GET contribution revision and PUT contribution correction. `credits:write` is an explicit admin-token permission; UUID request keys, stable event IDs, immutable deltas and erasure replay tombstones preserve retries and privacy. These changes contribute to the existing unified student total. MCP stays GET-only. Contract and limits: [API.md](API.md).

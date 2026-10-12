@@ -34,13 +34,11 @@ test("portal shows one Inspi credit total and workshop attendance bonus without 
       m.login("credit-ui@example.invalid"),
     ),
   );
-  await db
-    .doc(`learningLearners/${uid}`)
-    .set({
-      name: "Credit learner",
-      email: "credit-ui@example.invalid",
-      learningPoints: 999,
-    });
+  await db.doc(`learningLearners/${uid}`).set({
+    name: "Credit learner",
+    email: "credit-ui@example.invalid",
+    learningPoints: 999,
+  });
   const row = {
     name: "Credit learner",
     title: "Credit workshop",
@@ -67,6 +65,28 @@ test("portal shows one Inspi credit total and workshop attendance bonus without 
   await expect(
     page.getByText("100 per verified completion", { exact: true }),
   ).toHaveCount(0);
+  await db.doc("admins/credit-ui@example.invalid").set({ role: "facilitator" });
+  const awarded = await page.evaluate(async (uid) => {
+    const { auth } = await import("/src/firebase.ts");
+    const token = await auth.currentUser.getIdToken();
+    const response = await fetch(`/api/v1/students/${uid}/credits`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+        "Idempotency-Key": crypto.randomUUID(),
+      },
+      body: JSON.stringify({
+        credits: 50,
+        sourceId: "browser",
+        eventId: "activity1",
+        reason: "Activity completed",
+      }),
+    });
+    return { status: response.status, data: await response.json() };
+  }, uid);
+  expect(awarded.status).toBe(200);
+  await expect(total.getByText("1470", { exact: true })).toBeVisible();
   await page.goto("/#/workshops/CREDITUI");
   await expect(
     page.getByRole("heading", { name: "1200 credits awarded to you" }),
