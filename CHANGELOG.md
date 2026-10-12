@@ -30,6 +30,6 @@
 - Grouped resource APIs and Swagger categories; explicit colleges and memberships, filtered student/workshop rosters and latest published credits. Added scoped, version-checked, idempotent POST/PUT college, assignment, membership and name corrections with atomic audits and erasure cleanup. MCP remains read-only.
 - Unified student credit totals across Inspi: completed workshop team score plus individual score, intentionally counting individual awards again as the attendance benefit. Added global bulk/owner score reads, prospective adjustment logs, correction/revocation/reinstatement safety and unified portal displays; preserved legacy completion data and certificates.
 
-## [Unreleased]
+## API 1.3.0 — 12 October 2026
 
 - **Webhook student credit writes** — Add scoped, idempotent POST activity awards/deductions and versioned PUT corrections to the unified Inspi credit account, with immutable adjustments, removal replay protection, OpenAPI v1.3 descriptions and admin token permission.

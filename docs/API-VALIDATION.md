@@ -53,3 +53,5 @@ Nine unit cases pass on the target Node 22 runtime. All 31 real Auth/Firestore c
 Production and browser outcomes are recorded in RELEASE-CHECKS.md.
 
 The two real Functions/Auth/Firestore browser cases pass: admin token creation/copy/use/revoke with credits:write unchecked, and a POST activity award changing the dashboard from 1420 to 1470 without a page reload. These are the affected browser flows; the previous full 19-case portal release remains recorded above.
+
+Source GitHub CI passed: https://github.com/theharithsa/inspiredlearning/actions/runs/38191807603 (commit c486bb2). The workflow includes the complete portal browser regression suite, API Auth/Firestore tests, unit/build/lint checks, Swagger rendering and the GET-only MCP adapter.
