@@ -30,6 +30,9 @@ export interface Workshop {
   surveyPost?: Record<string, number> | null;
 }
 export interface Certificate {
+  kind?: "participation" | "award";
+  awardTitle?: string;
+  awards?: string[];
   id: string;
   uid: string;
   sid: string;

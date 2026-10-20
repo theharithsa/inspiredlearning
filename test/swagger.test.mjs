@@ -25,7 +25,10 @@ test("Swagger renders the OpenAPI read contract using local resources", async ()
   const base = `http://127.0.0.1:${server.address().port}`;
   let browser;
   try {
-    browser = await chromium.launch({ headless: true });
+    browser = await chromium.launch({
+      headless: true,
+      channel: process.env.CI ? undefined : "chrome",
+    });
     const page = await browser.newPage();
     const errors = [];
     page.on("pageerror", (error) => errors.push(error.message));

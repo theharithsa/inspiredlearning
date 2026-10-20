@@ -47,3 +47,12 @@ Webhook callers send a UUID Idempotency-Key and stable sourceId/eventId; identic
 The v1.3 credit write extension is deployed to production from `c486bb2`. Nine InspiredLearning functions are ACTIVE on Node 22, both domains match OpenAPI v1.3 and anonymous credit writes are rejected. No Live deployment, shared Auth/rule/index modification or learner migration occurred. See RELEASE-CHECKS.md for evidence.
 
 Source GitHub CI passed: https://github.com/theharithsa/inspiredlearning/actions/runs/38191807603 (commit c486bb2). The workflow includes the complete portal browser regression suite, API Auth/Firestore tests, unit/build/lint checks, Swagger rendering and the GET-only MCP adapter.
+
+
+## Certificate recognition repair (20 October 2026)
+
+Deployed 20 October 2026: scoped award resolution; separate award certificates linked to participation certificates; lifecycle propagation on publish/correct/revoke/restore; Google-admin-only GET `/api/v1/certificates` register and POST `/api/v1/workshops/{id}/certificates/reconcile`. The repair preserves credits and privacy, adds explicitly confirmed individual award definitions, versions changed recognition and retires superseded duplicates. Award certificate IDs derive from parent certificate ID plus title, so reruns do not duplicate awards. Admin historical PDF previews are visibly marked revoked/superseded; owner downloads and public verification require a current completed result.
+
+Signature support looks for the approved `functions/assets/signature.png` (or JPG/JPEG). No such image was found in the current checkout or latest GitHub main; no signature has been fabricated. The admin register exposes whether a signature is configured. Treat this item as pending until the actual approved asset is located and its rendered PDF is checked. See the release evidence added to CERTIFICATE-AUDIT-2026-10-20.md before assuming deployment/repair happened.
+
+Certificate release status: code/Hosting deployed and validated; production learner repair awaits Google facilitator authentication, and signature remains pending the approved asset. No production learner/certificate records were mutated by this repair task. Read CERTIFICATE-AUDIT-2026-10-20.md for evidence and remaining actions.

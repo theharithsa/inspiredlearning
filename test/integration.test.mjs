@@ -1066,8 +1066,9 @@ test("HTTP API and Swagger serve authenticated reads without disclosing private 
 });
 
 test("admin token lifecycle preserves scopes, resource restrictions, privacy and current authority", async () => {
-  const { manageTokens, authenticateApiToken } =
-    await import("../functions/api-tokens.js");
+  const { manageTokens, authenticateApiToken } = await import(
+    "../functions/api-tokens.js"
+  );
   const { readApi } = await import("../functions/api.js");
   const { Timestamp } = require("firebase-admin/firestore");
   const opts = {
@@ -1804,4 +1805,246 @@ test("activity credit writes deduplicate events and apply versioned corrections 
   await assert.rejects(write("POST", post, { ...body, eventId: "capacity" }), {
     code: "resource-exhausted",
   });
+});
+
+test("certificate repair issues scoped awards once, retires duplicates and preserves credits", async () => {
+  const { reconcileCertificates } = await import(
+    "../functions/certificate-repair.js"
+  );
+  const { readApi } = await import("../functions/api.js");
+  const { randomUUID } = await import("node:crypto");
+  const sid = "AWARDTEST",
+    uid = "award-student",
+    id = randomUUID(),
+    duplicate = randomUUID();
+  const result = {
+    uid,
+    sid,
+    name: "Award Learner",
+    title: "Test workshop",
+    date: "2026-10-01",
+    teamId: "mumbai-1a",
+    role: "CTO",
+    revision: 1,
+    status: "completed",
+    certificateId: id,
+    awards: [],
+    personalCredits: 240,
+    teamCredits: 1200,
+    learningPoints: 1440,
+  };
+  await db.doc(`sessions/${sid}`).set({ completedAt: new Date() });
+  await db
+    .doc(`sessions/${sid}/students/${uid}`)
+    .set({ name: result.name, teamId: result.teamId, role: result.role });
+  await db
+    .doc(`sessions/${sid}/public/workshop`)
+    .set({
+      awards: [
+        {
+          scope: "team",
+          uid: "representative",
+          teamId: "mumbai-1a",
+          title: "Best Team",
+        },
+      ],
+    });
+  await db.doc(`learningEnrollments/${sid}`).set({ uids: [uid] });
+  await db.doc(`learningLearners/${uid}/workshops/${sid}`).set(result);
+  const cert = {
+    id,
+    uid,
+    sid,
+    name: result.name,
+    title: result.title,
+    date: result.date,
+    revision: 1,
+    status: "issued",
+    public: true,
+    awards: [],
+  };
+  await db.doc(`learningCertificates/${id}`).set(cert);
+  await db
+    .doc(`learningCertificates/${duplicate}`)
+    .set({ ...cert, id: duplicate });
+  await assert.rejects(
+    reconcileCertificates(db, captain, sid, { reason: "Test" }, c),
+    { code: "permission-denied" },
+  );
+  await assert.rejects(
+    reconcileCertificates(
+      db,
+      { ...fac, apiTokenId: "token" },
+      sid,
+      { reason: "Test" },
+      c,
+    ),
+    { code: "permission-denied" },
+  );
+  const data = {
+    reason: "Repair approved recognition",
+    additionalAwards: [{ uid, title: "Best CTO" }],
+  };
+  const first = await reconcileCertificates(db, fac, sid, data, c);
+  assert.equal(first.failed, 0);
+  const current = (
+    await db.doc(`learningLearners/${uid}/workshops/${sid}`).get()
+  ).data();
+  assert.deepEqual(current.awards, ["Best CTO", "Best Team"]);
+  assert.equal(current.personalCredits, 240);
+  assert.equal(current.teamCredits, 1200);
+  assert.equal(current.learningPoints, 1440);
+  assert.equal(current.revision, 2);
+  assert.equal(
+    (await db.doc(`learningCertificates/${id}`).get()).data().status,
+    "revoked",
+  );
+  assert.equal(
+    (await db.doc(`learningCertificates/${duplicate}`).get()).data().status,
+    "revoked",
+  );
+  const records = await db
+    .collection("learningCertificates")
+    .where("uid", "==", uid)
+    .get();
+  assert.equal(
+    records.docs.filter((d) => d.data().status === "issued").length,
+    3,
+  );
+  const second = await reconcileCertificates(db, fac, sid, data, c);
+  assert.equal(second.results[0].status, "unchanged");
+  assert.equal(
+    (await db.collection("learningCertificates").where("uid", "==", uid).get())
+      .size,
+    records.size,
+  );
+  await assert.rejects(readApi(db, { uid }, "/certificates", {}), {
+    code: "permission-denied",
+  });
+  let cursor,
+    all = [];
+  do {
+    const page = await readApi(db, fac, "/certificates", {
+      studentId: uid,
+      limit: "2",
+      ...(cursor ? { cursor } : {}),
+    });
+    all.push(...page.items);
+    cursor = page.nextCursor;
+  } while (cursor);
+  assert.equal(all.length, 5);
+  assert.equal(all.filter((x) => x.kind === "award").length, 2);
+  await db.doc(`learningPrivacy/${uid}`).set({ state: "erased" });
+  assert.equal(
+    (await reconcileCertificates(db, fac, sid, { reason: "Retry" }, c))
+      .results[0].status,
+    "skipped",
+  );
+  assert.equal(
+    (await readApi(db, fac, "/certificates", { studentId: uid, limit: "100" }))
+      .items.length,
+    0,
+  );
+});
+
+test("award certificates follow publication, correction, revocation and restoration", async () => {
+  const { finalize } = await import("../functions/finalize.js");
+  const uid = "award-family-student",
+    sid = "FAMILY001";
+  await db
+    .doc(`sessions/${sid}`)
+    .set({
+      title: "Lifecycle workshop",
+      workshopDate: "2026-10-01",
+      completedAt: new Date(),
+    });
+  await db
+    .doc(`sessions/${sid}/students/${uid}`)
+    .set({ name: "Lifecycle Learner", teamId: "mumbai-1a", role: "CTO" });
+  await db
+    .doc(`sessions/${sid}/learningAttendance/${uid}`)
+    .set({ status: "attended" });
+  await db
+    .doc(`sessions/${sid}/public/workshop`)
+    .set({
+      awards: [
+        {
+          scope: "team",
+          teamId: "mumbai-1a",
+          uid: "representative",
+          title: "Best Team",
+        },
+      ],
+    });
+  await db
+    .doc(`sessions/${sid}/public/leaderboard`)
+    .set({ scores: { "mumbai-1a": 800 } });
+  await db.doc(`sessions/${sid}/quizResults/${uid}`).set({ credits: 200 });
+  await db
+    .doc(`learningLearners/${uid}`)
+    .set({ name: "Lifecycle Learner", learningPoints: 0 });
+  await finalize(db, fac, c, sid, uid, "Verified test");
+  const certs = () =>
+    db.collection("learningCertificates").where("uid", "==", uid).get();
+  assert.equal(
+    (await certs()).docs.filter(
+      (d) => d.data().kind === "award" && d.data().status === "issued",
+    ).length,
+    1,
+  );
+  await execute(
+    db,
+    fac,
+    {
+      action: "correctCertificate",
+      uid,
+      sid,
+      name: "Corrected Learner",
+      reason: "Fix name",
+    },
+    c,
+  );
+  const after = (await certs()).docs;
+  assert.equal(after.filter((d) => d.data().status === "issued").length, 2);
+  assert.equal(
+    after
+      .filter(
+        (d) => d.data().kind === "award" && d.data().status === "issued",
+      )[0]
+      .data().name,
+    "Corrected Learner",
+  );
+  await execute(
+    db,
+    fac,
+    { action: "revoke", uid, sid, reason: "Review test" },
+    c,
+  );
+  assert.equal(
+    (await certs()).docs.filter((d) => d.data().status === "issued").length,
+    0,
+  );
+  await execute(
+    db,
+    fac,
+    { action: "restoreCompletion", uid, sid, reason: "Verified again" },
+    c,
+  );
+  assert.equal(
+    (await certs()).docs.filter((d) => d.data().status === "issued").length,
+    2,
+  );
+});
+
+test('certificate repair HTTP route accepts authenticated admins and rejects unsigned requests', async () => {
+  const {apiHandler}=await import('../functions/api-http.js');
+  const express=require('express'),serverApp=express();
+  serverApp.use(express.json());
+  serverApp.use(apiHandler({db,auth:{verifyIdToken:async()=>({uid:fac.uid,email:fac.email,email_verified:true,firebase:{sign_in_provider:'google.com'}})},rate(){},measured:async(_name,_actor,fn)=>fn(c),audit:async()=>{}}));
+  const server=serverApp.listen(0,'127.0.0.1');await new Promise(r=>server.once('listening',r));
+  const url=`http://127.0.0.1:${server.address().port}/api/v1/workshops/FAMILY001/certificates/reconcile`;
+  try {
+    const noAuth=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({reason:'Review test'})});assert.equal(noAuth.status,401);await noAuth.text();
+    const response=await fetch(url,{method:'POST',headers:{Authorization:'Bearer test-token','Content-Type':'application/json'},body:JSON.stringify({reason:'Verified certificate review'})});const body=await response.json();assert.equal(response.status,200);assert.equal(body.failed,0);assert.ok(body.results.length>0);
+  }finally{server.closeAllConnections();await new Promise(r=>server.close(r));}
 });

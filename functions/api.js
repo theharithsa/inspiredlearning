@@ -1,3 +1,4 @@
+import { certificateRendering } from "./pdf.js";
 import { creditAccount } from "./credits.js";
 import { catalogRead } from "./api-catalog.js";
 import { collegeFor } from "./college-model.js";
@@ -127,6 +128,11 @@ const certificate = (id, r) => ({
   status: r.status,
   revision: r.revision ?? null,
   issuedAt: iso(r.issuedAt),
+  kind: r.kind === "award" ? "award" : "participation",
+  awardTitle: r.awardTitle || null,
+  awards: r.awards || [],
+  parentCertificateId: r.parentCertificateId || null,
+  verificationPath: `/#/verify/${id}`,
 });
 async function readResources(
   db,
@@ -395,6 +401,55 @@ async function readResources(
       status: r.completedAt ? "closed" : "open",
       collegeId: meta?.collegeId || null,
       collegeRevision: meta?.collegeRevision || 0,
+    };
+  }
+  if (path === "/certificates") {
+    if (actor.apiTokenId || !(await admin()))
+      fail(
+        "permission-denied",
+        "Google-authenticated facilitator access required.",
+      );
+    const opts = pageOptions(query, actor.uid + path, [
+      "workshopId",
+      "studentId",
+      "status",
+      "kind",
+    ]);
+    if (
+      (query.workshopId && !validSid(query.workshopId)) ||
+      (query.studentId && !validUid(query.studentId)) ||
+      (query.status && !["issued", "revoked"].includes(query.status)) ||
+      (query.kind && !["participation", "award"].includes(query.kind))
+    )
+      fail("invalid-argument", "Invalid certificate filter.");
+    let q = db
+      .collection("learningCertificates")
+      .orderBy(FieldPath.documentId());
+    if (opts.after) q = q.startAfter(opts.after);
+    const found = await q.limit(opts.limit).get(),
+      items = [];
+    for (const d of found.docs) {
+      const r = d.data();
+      if (
+        (query.workshopId && r.sid !== query.workshopId) ||
+        (query.studentId && r.uid !== query.studentId) ||
+        (query.status && r.status !== query.status) ||
+        (query.kind && (r.kind || "participation") !== query.kind)
+      )
+        continue;
+      const p = (await db.doc(`learningPrivacy/${r.uid}`).get()).data();
+      if (!privacyBlocked(p, r.sid)) items.push(certificate(d.id, r));
+    }
+    await audit("certificates.list", {
+      count: items.length,
+      workshopId: query.workshopId || null,
+    });
+    return {
+      ...envelope(
+        items,
+        found.size === opts.limit ? opts.cursor(found.docs.at(-1).id) : null,
+      ),
+      rendering: certificateRendering(),
     };
   }
   if (

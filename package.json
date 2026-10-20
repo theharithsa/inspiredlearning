@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint src test scripts",
-    "test": "node --test test/model.test.mjs test/api.test.mjs",
+    "test": "node --test test/model.test.mjs test/api.test.mjs test/certificate-policy.test.mjs",
     "test:browser": "playwright test",
     "test:rehearsal": "node scripts/rehearsal.mjs",
     "test:integration": "firebase emulators:exec --config firebase.rehearsal.json --project demo-chaicart --only firestore \"node --test test/integration.test.mjs\"",

@@ -1,3 +1,8 @@
+import {
+  issueAwardFamily,
+  readAwardFamily,
+  revokeAwardFamily,
+} from "./certificate-policy.js";
 import { recordCreditTransition } from "./credits.js";
 import { privacyBlocked } from "./erasure.js";
 import { FieldValue } from "firebase-admin/firestore";
@@ -91,6 +96,7 @@ export async function finalize(db, actor, c, sid, uid, reason) {
     const previousCertificate = old?.certificateId
       ? await tx.get(db.doc(`learningCertificates/${old.certificateId}`))
       : null;
+    const priorAwards = await readAwardFamily(tx, db, old);
     const updated = {
       ...result,
       ...(old?.certificateNameOverride
@@ -146,13 +152,19 @@ export async function finalize(db, actor, c, sid, uid, reason) {
         "learning.points.delta": delta,
       });
     }
+    revokeAwardFamily(
+      tx,
+      priorAwards,
+      FieldValue.serverTimestamp(),
+      "Superseded by corrected results",
+    );
     if (previousCertificate?.exists)
       tx.update(previousCertificate.ref, {
         status: "revoked",
         reason: "Superseded by corrected results",
         revokedAt: FieldValue.serverTimestamp(),
       });
-    tx.create(db.doc(`learningCertificates/${certificateId}`), {
+    const certificateRecord = {
       id: certificateId,
       uid,
       sid,
@@ -164,7 +176,13 @@ export async function finalize(db, actor, c, sid, uid, reason) {
       public: false,
       awards: result.awards,
       issuedAt: FieldValue.serverTimestamp(),
-    });
+    };
+    certificateRecord.kind = "participation";
+    tx.create(
+      db.doc(`learningCertificates/${certificateId}`),
+      certificateRecord,
+    );
+    issueAwardFamily(tx, db, certificateRecord);
     queue(
       tx,
       db,

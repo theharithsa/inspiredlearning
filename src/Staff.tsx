@@ -1,3 +1,4 @@
+import AdminCertificates from "./AdminCertificates";
 import ApiTokens from "./ApiTokens";
 import StaffRecords from "./StaffRecords";
 import { statusLabel } from "./constants";
@@ -79,7 +80,12 @@ export default function Staff({ admin = false }: { admin?: boolean }) {
           participation certificate.
         </p>
       </header>
-      {admin && globalFacilitator && <ApiTokens />}
+      {admin && globalFacilitator && (
+        <>
+          <ApiTokens />
+          <AdminCertificates />
+        </>
+      )}
       <form
         className="panel inline-form"
         onSubmit={(e) => {

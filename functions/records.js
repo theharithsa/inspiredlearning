@@ -1,3 +1,8 @@
+import {
+  issueAwardFamily,
+  readAwardFamily,
+  revokeAwardFamily,
+} from "./certificate-policy.js";
 import { privacyBlocked } from "./erasure.js";
 import { requireAdmin } from "./admin.js";
 import { FieldValue, FieldPath } from "firebase-admin/firestore";
@@ -192,6 +197,7 @@ export async function recordsAction(db, actor, d, c) {
       const prior = await tx.get(
         db.doc(`learningCertificates/${old.certificateId}`),
       );
+      const priorAwards = await readAwardFamily(tx, db, old);
       const revision = old.revision + 1,
         id = randomUUID(),
         updated = {
@@ -218,13 +224,19 @@ export async function recordsAction(db, actor, d, c) {
         ...updated,
         reason: d.reason,
       });
+      revokeAwardFamily(
+        tx,
+        priorAwards,
+        FieldValue.serverTimestamp(),
+        "Superseded by corrected results",
+      );
       if (prior.exists)
         tx.update(prior.ref, {
           status: "revoked",
           reason: "Replaced by name correction",
           revokedAt: FieldValue.serverTimestamp(),
         });
-      tx.create(db.doc(`learningCertificates/${id}`), {
+      const certificateRecord = {
         id,
         uid: d.uid,
         sid: d.sid,
@@ -236,7 +248,10 @@ export async function recordsAction(db, actor, d, c) {
         public: false,
         awards: old.awards || [],
         issuedAt: FieldValue.serverTimestamp(),
-      });
+      };
+      certificateRecord.kind = "participation";
+      tx.create(db.doc(`learningCertificates/${id}`), certificateRecord);
+      issueAwardFamily(tx, db, certificateRecord);
       queue(tx, db, "workshop.completion.corrected", actor, c, {
         "learner.id": d.uid,
         "workshop.session.id": d.sid,

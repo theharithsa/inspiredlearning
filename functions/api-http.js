@@ -1,3 +1,4 @@
+import { reconcileCertificates } from "./certificate-repair.js";
 import { domainWriteRoute, writeDomain } from "./api-domain-writes.js";
 import { authenticateApiToken, manageTokens } from "./api-tokens.js";
 import { randomUUID } from "node:crypto";
@@ -32,12 +33,17 @@ export function apiHandler({ db, auth, rate, measured, audit }) {
       req.path === tokenBase || req.path.startsWith(tokenBase + "/");
     const tokenId =
       req.path === tokenBase ? null : req.path.slice(tokenBase.length + 1);
+    const repair =
+      req.method === "POST" &&
+      /^\/api\/v1\/workshops\/([A-Z0-9-]{4,16})\/certificates\/reconcile$/.exec(
+        req.path,
+      );
     const writeRoute = domainWriteRoute(req.method, req.path);
     const methods = management
       ? tokenId
         ? ["DELETE"]
         : ["GET", "POST"]
-      : writeRoute
+      : writeRoute || repair
         ? [req.method]
         : ["GET"];
     if (!methods.includes(req.method))
@@ -89,7 +95,7 @@ export function apiHandler({ db, auth, rate, measured, audit }) {
       rate("api:" + actor.uid, 120);
       if (actor.apiTokenId) rate("api-token:" + actor.apiTokenId, 60);
       if (
-        ((management && req.method === "POST") || writeRoute) &&
+        ((management && req.method === "POST") || writeRoute || repair) &&
         (!req.is("application/json") ||
           JSON.stringify(req.body ?? null).length > 16384)
       )
@@ -102,11 +108,18 @@ export function apiHandler({ db, auth, rate, measured, audit }) {
       const result = await measured(
         management
           ? "api.tokens." + req.method.toLowerCase()
-          : writeRoute
+          : writeRoute || repair
             ? "api.write"
             : "api.read",
         actor,
         async (c) => {
+          if (repair) {
+            if (Object.keys(req.query).length)
+              throw Object.assign(new Error("No query parameters allowed."), {
+                code: "invalid-argument",
+              });
+            return reconcileCertificates(db, actor, repair[1], req.body, c);
+          }
           if (management)
             return manageTokens(
               db,

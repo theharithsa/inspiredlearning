@@ -1,3 +1,4 @@
+import { issueAwardFamily } from "./certificate-policy.js";
 import { recordCreditTransition } from "./credits.js";
 import { FieldValue } from "firebase-admin/firestore";
 import { randomUUID } from "node:crypto";
@@ -104,7 +105,7 @@ export async function adminAction(db, actor, d, c) {
         revision,
         at: FieldValue.serverTimestamp(),
       });
-      tx.create(db.doc(`learningCertificates/${id}`), {
+      const certificateRecord = {
         id,
         uid: d.uid,
         sid: d.sid,
@@ -116,7 +117,10 @@ export async function adminAction(db, actor, d, c) {
         public: false,
         awards: old.awards || [],
         issuedAt: FieldValue.serverTimestamp(),
-      });
+      };
+      certificateRecord.kind = "participation";
+      tx.create(db.doc(`learningCertificates/${id}`), certificateRecord);
+      issueAwardFamily(tx, db, certificateRecord);
       queue(tx, db, "workshop.completion.reinstated", actor, c, {
         "learner.id": d.uid,
         "workshop.session.id": d.sid,

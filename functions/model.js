@@ -1,3 +1,4 @@
+import { recipientAwards } from "./certificate-policy.js";
 import { createHash } from "node:crypto";
 export const LEARNING_POINTS = 100;
 export const regionFor = (team) =>
@@ -66,7 +67,7 @@ export function resultSnapshot(
     networking: networking?.completed || [],
     surveyPre: ratings("survey-pre"),
     surveyPost: ratings("survey-post"),
-    awards: (awards || []).filter((a) => a.uid === uid).map((a) => a.title),
+    awards: recipientAwards(awards, uid, student),
     pointsPolicy: "verified-completion-v1",
   });
 }
@@ -108,6 +109,8 @@ export function publicCertificate(c) {
     title: c.title,
     date: c.date,
     revision: c.revision,
+    kind: c.kind === "award" ? "award" : "participation",
+    awardTitle: c.awardTitle || null,
     issuedAt: c.issuedAt?.toDate?.().toISOString() || null,
   };
 }

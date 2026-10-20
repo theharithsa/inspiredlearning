@@ -1,3 +1,4 @@
+import { readAwardFamily, revokeAwardFamily } from "./certificate-policy.js";
 import { recordCreditTransition } from "./credits.js";
 import { eraseLearner, privacyBlocked } from "./erasure.js";
 import { adminAction } from "./admin.js";
@@ -245,6 +246,7 @@ export async function execute(db, actor, data, c) {
       const cert = await tx.get(
         db.doc(`learningCertificates/${old.certificateId}`),
       );
+      const priorAwards = await readAwardFamily(tx, db, old);
       const revision = old.revision + 1;
       const updated = {
         ...old,
@@ -285,6 +287,7 @@ export async function execute(db, actor, data, c) {
         revision,
         at: FieldValue.serverTimestamp(),
       });
+      revokeAwardFamily(tx, priorAwards, FieldValue.serverTimestamp(), reason);
       if (cert.exists)
         tx.update(cert.ref, {
           status: "revoked",
@@ -526,5 +529,17 @@ export async function execute(db, actor, data, c) {
 export async function verification(db, id) {
   if (!validCertificate(id)) return { status: "private-or-unavailable" };
   const c = await db.doc(`learningCertificates/${id}`).get();
-  return publicCertificate(c.data());
+  const cert = c.data();
+  if (!cert?.public) return { status: "private-or-unavailable" };
+  const [result, privacy] = await Promise.all([
+    db.doc(`learningLearners/${cert.uid}/workshops/${cert.sid}`).get(),
+    db.doc(`learningPrivacy/${cert.uid}`).get(),
+  ]);
+  if (privacyBlocked(privacy.data(), cert.sid))
+    return { status: "private-or-unavailable" };
+  const current =
+    result.data()?.status === "completed" &&
+    (cert.kind === "award" ? cert.parentCertificateId : cert.id) ===
+      result.data()?.certificateId;
+  return publicCertificate(current ? cert : { ...cert, status: "revoked" });
 }

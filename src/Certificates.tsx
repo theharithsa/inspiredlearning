@@ -105,7 +105,13 @@ export default function Certificates({ user }: { user: User }) {
               <div className="certificate-symbol" aria-hidden="true">
                 ✳
               </div>
-              <h2>{c.title}</h2>
+              <span className="eyebrow">
+                {c.kind === "award"
+                  ? "Award certificate"
+                  : "Participation certificate"}
+              </span>
+              <h2>{c.awardTitle || c.title}</h2>
+              {c.kind === "award" && <p>{c.title}</p>}
               <p>
                 {c.name} · {c.date || "Date recorded by staff"}
               </p>
@@ -131,7 +137,9 @@ export default function Certificates({ user }: { user: User }) {
                       : "Enable public verification"}
                   </button>
                   {c.public && (
-                    <Link to={"/verify/" + c.id}>Open verification page ↗</Link>
+                    <Link to={"/verify/" + c.id}>
+                      Open verification page ↗
+                    </Link>
                   )}
                 </>
               )}

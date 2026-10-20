@@ -12,6 +12,8 @@ export default function Verify() {
         title?: string;
         date?: string;
         revision?: number;
+        kind?: string;
+        awardTitle?: string;
       };
     } | null>(null),
     [error, setError] = useState("");
@@ -40,7 +42,9 @@ export default function Verify() {
           {!result
             ? "Checking certificate…"
             : result.status === "valid"
-              ? "Verified participation."
+              ? result.kind === "award"
+                ? "Verified achievement."
+                : "Verified participation."
               : result.status === "revoked"
                 ? "Certificate revoked."
                 : "Private or unavailable."}
@@ -51,6 +55,7 @@ export default function Verify() {
           <>
             <h2>{result.name}</h2>
             <p>{result.title}</p>
+            {result.awardTitle && <p>{result.awardTitle}</p>}
             <p>
               {result.date} · Revision {result.revision}
             </p>

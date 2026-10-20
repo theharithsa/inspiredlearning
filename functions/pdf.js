@@ -3,6 +3,14 @@ import fs from "node:fs";
 import { PDFDocument, rgb } from "pdf-lib";
 import fontkit from "@pdf-lib/fontkit";
 import QRCode from "qrcode";
+export const signatureAsset = () =>
+  ["signature.png", "signature.jpg", "signature.jpeg"]
+    .map((name) => new URL("./assets/" + name, import.meta.url))
+    .find((p) => fs.existsSync(p));
+export const certificateRendering = () => ({
+  version: "recognition-v2",
+  signatureConfigured: Boolean(signatureAsset()),
+});
 export async function certificatePdf(c) {
   const pdf = await PDFDocument.create();
   pdf.registerFontkit(fontkit);
@@ -48,10 +56,28 @@ export async function certificatePdf(c) {
     });
   };
   text("INSPIREDLEARNING", 520, 15);
-  text("Certificate of Participation", 447, 34);
+  if (c.status !== "issued")
+    text(
+      "REVOKED / SUPERSEDED — ADMINISTRATOR PREVIEW",
+      488,
+      13,
+      rgb(0.65, 0.15, 0.12),
+    );
+  text(
+    c.kind === "award"
+      ? "Certificate of Achievement"
+      : "Certificate of Participation",
+    447,
+    34,
+  );
   text("Presented to", 399, 14, muted);
   text(c.name, 347, 32);
-  text("for verified participation in", 304, 14, muted);
+  text(
+    c.kind === "award" ? c.awardTitle : "for verified participation in",
+    304,
+    c.kind === "award" ? 24 : 14,
+    muted,
+  );
   text(c.title, 271, 21);
   text(c.date || "Workshop date not available", 235, 14, muted);
   text(
@@ -60,8 +86,34 @@ export async function certificatePdf(c) {
     13,
     muted,
   );
-  if (c.awards?.length)
-    text("Recognition: " + c.awards.slice(0, 3).join(" · "), 168, 12);
+  if (c.kind !== "award" && c.awards?.length) {
+    const lines = [];
+    let line = "Recognition: ";
+    for (const award of c.awards) {
+      if ((line + award).length > 85) {
+        lines.push(line);
+        line = "";
+      }
+      line += (line && line !== "Recognition: " ? " · " : "") + award;
+    }
+    if (line) lines.push(line);
+    lines.slice(0, 4).forEach((v, i) => text(v, 180 - i * 15, 11));
+  }
+  const signaturePath = signatureAsset();
+  if (signaturePath) {
+    const bytes = fs.readFileSync(signaturePath);
+    const signature = signaturePath.pathname.endsWith(".png")
+      ? await pdf.embedPng(bytes)
+      : await pdf.embedJpg(bytes);
+    const scale = Math.min(180 / signature.width, 40 / signature.height);
+    page.drawImage(signature, {
+      x: (842 - signature.width * scale) / 2,
+      y: 111,
+      width: signature.width * scale,
+      height: signature.height * scale,
+    });
+    text("Workshop facilitator", 99, 10, muted);
+  }
   text("Certificate " + c.id + " · Revision " + c.revision, 77, 10, muted);
   const qr = await pdf.embedPng(
     await QRCode.toDataURL(

@@ -122,12 +122,33 @@ export const learningCertificate = onCall(options, async (r) => {
             "Add a reason for administrator certificate preview.",
           );
       }
-      if (cert.status !== "issued")
+      if (cert.status !== "issued" && !administratorPreview)
         throw new HttpsError(
           "failed-precondition",
           "This certificate has been revoked or replaced.",
         );
-      const bytes = await certificatePdf(cert);
+      const [result, privacy] = await Promise.all([
+        db.doc(`learningLearners/${cert.uid}/workshops/${cert.sid}`).get(),
+        db.doc(`learningPrivacy/${cert.uid}`).get(),
+      ]);
+      const { privacyBlocked } = await import("./erasure.js");
+      if (privacyBlocked(privacy.data(), cert.sid))
+        throw new HttpsError(
+          "failed-precondition",
+          "This learner requested removal.",
+        );
+      const current =
+        result.data()?.status === "completed" &&
+        (cert.kind === "award" ? cert.parentCertificateId : cert.id) ===
+          result.data()?.certificateId;
+      if (!current && !administratorPreview)
+        throw new HttpsError(
+          "failed-precondition",
+          "This certificate has been replaced. Download the current version.",
+        );
+      const bytes = await certificatePdf(
+        current ? cert : { ...cert, status: "revoked" },
+      );
       await db
         .collection("learningTelemetry")
         .add(
