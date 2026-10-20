@@ -38,3 +38,8 @@ Verification: 11 unit checks, 33 Firestore integration checks, Swagger browser v
 **Production record repair is pending:** the signed-in Firebase CLI infrastructure identity is not a facilitator in the app. The attempted repair preflight stopped before any production write; no authority was fabricated and no app role was granted. A Google-authenticated global facilitator must run the repair. The admin register includes a workshop refresh and an optional explicit individual-award entry, with a review reason.
 
 **Signature remains pending:** latest GitHub main and local assets contain only certificate fonts, with no approved signature image. Signature rendering support exists, and the admin register explicitly reports missing signature configuration. Nothing in this release claims signed PDFs. Locate the actual approved image before completing that part; files already downloaded must be downloaded again after the asset is deployed.
+
+
+## Signature asset found after the initial investigation
+
+The user-provided `assets/sign.png` appeared in the working tree during implementation. It was copied unchanged into `functions/assets/signature.png`, embedded in both participation and award PDFs, and visually verified on rendered previews. A regression check asserts signature configuration and both signature/QR image embedding. A follow-up deployment updates learningCertificate and learningApi (the latter reports signature configuration). This resolves the earlier asset blocker; the production data repair still requires an authorized facilitator account.
