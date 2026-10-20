@@ -1,6 +1,6 @@
 # Certificate delivery audit — GMU0810
 
-Read-only investigation, 20 October 2026. No certificates, awards, credits or deployment resources were changed.
+Initial read-only investigation, 20 October 2026. The sections below preserve the initial findings; the final production completion section records the subsequently authorized deployment and repair.
 
 ## Verified against production
 
@@ -45,3 +45,12 @@ Verification: 11 unit checks, 33 Firestore integration checks, Swagger browser v
 The user-provided `assets/sign.png` appeared in the working tree during implementation. It was copied unchanged into `functions/assets/signature.png`, embedded in both participation and award PDFs, and visually verified on rendered previews. A regression check asserts signature configuration and both signature/QR image embedding. A follow-up deployment updates learningCertificate and learningApi (the latter reports signature configuration). This resolves the earlier asset blocker; the production data repair still requires an authorized facilitator account.
 
 Signature follow-up deployment completed successfully. The active learningCertificate source bundle was downloaded read-only after deployment and its `pdf.js` and `assets/signature.png` hashes match the visually checked local files. Source commits: 39285bd (certificate fixes/register) and adf072b (approved signature), both pushed to the private repository. The final unit run has 12 passing checks including signature embedding. Production learner/certificate repair remains pending facilitator authentication; no learner credit or certificate documents were changed by this task.
+
+
+## Production repair completed after facilitator sign-in
+
+On 20 October 2026, the Google-authenticated facilitator ran the protected admin reconciliation workflow for GMU0810. Three explicit individual awards were recorded: Best CEO — Keerthana N S; Best CTO — Manasa Nadiger; Best COO — SM POOJA. Existing seven team/regional award definitions were expanded to all five members of each winning team.
+
+Fresh production reads verified 119 active participation certificates (one per learner), 38 active award certificates (35 team/regional and three individual), and 39 revoked historical/superseded versions, for 196 retained certificate documents. Every active award links to an active participation certificate belonging to the same learner. The sequential role repairs replaced Manasa's earlier regional award certificate when her participation revision changed; its history is retained, explaining the additional superseded record.
+
+A private before/after comparison verified personalCredits, teamCredits, learningPoints and completion status were unchanged for all 119 learners. The live authenticated register loaded all 38 issued awards, including the three role recipients, and exposes PDF preview controls. No new app role or shared Authentication/rules/index changes were used. Existing downloaded files must be downloaded again to obtain the approved signature and updated recognition. Earlier pending-status statements above are historical and are superseded by this completion record.
