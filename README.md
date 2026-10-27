@@ -33,7 +33,7 @@ The Firebase web SDK configuration is public identification, not a server creden
 npm run lint
 npm test
 npm run build
-npm install --global firebase-tools
+# Firebase CLI is installed from the root lockfile by npm ci.
 npm run test:integration
 npx playwright install chromium
 npm run test:rehearsal
@@ -91,3 +91,10 @@ Production release verified on 11 October 2026 from source `050ecbc`: portal, Sw
 Admins can create a token with the new **credits:write** permission in `/#/admin` (unchecked by default). POST `/api/v1/students/{studentId}/credits` awards or deducts an activity contribution; PUT `/api/v1/students/{studentId}/credit-contributions/{contributionId}` corrects its amount using expectedVersion. Add scores:read for contribution revisions and unified totals. Existing tokens retain their permissions.
 
 Webhook callers send a UUID Idempotency-Key and stable sourceId/eventId; identical events deduplicate across credentials. Writes append immutable deltas and audit events, preserve reviewed workshop results/certificates and enforce current admin authority, student restrictions and removal. Minimal event tombstones prevent replay after reactivation. Legacy learningPoints are compatibility data; use credits for the single Inspi total. Account capacity is 500 external adjustments (429 at capacity). MCP remains read-only. Full payloads and error/retry semantics: [API.md](docs/API.md).
+
+
+## Maintenance candidate 1.0.1
+
+Public certificates offer **Copy verification link** and **Show QR code** after public verification is enabled. These controls do not make private certificates public or bypass PDF authentication. Account removal remains a reviewed request; API-token revocation requires confirmation.
+
+The portal uses memory-only Firestore caching. If upgrade cleanup is blocked, close other InspiredLearning tabs and reload; shared Google identity is preserved. This candidate is not deployment evidence. See [pre-redesign issue review](docs/ISSUE-TRIAGE-2026-10-27.md). The Material 3 redesign and separate admin app remain tracked as v2.0.0 in issue #34.

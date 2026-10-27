@@ -65,7 +65,7 @@ function Landing() {
         <Link className="brand" to="/">
           ✳ InspiredLearning
         </Link>
-        <Link to="/community">Our community ↗</Link>
+        <Link to="/community">Our community</Link>
       </header>
       <div className="landing-hero">
         <section>
