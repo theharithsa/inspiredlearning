@@ -337,6 +337,11 @@ test("workshop history discloses its bounded window and loads the remaining reco
   await expect(
     page.getByRole("heading", { name: "Paged workshop 54", exact: true }),
   ).toHaveCount(0);
+  await page.goto("/#/workshops/PAGED054");
+  await expect(
+    page.getByRole("heading", { name: "Paged workshop 54", exact: true }),
+  ).toBeVisible();
+  await page.goto("/");
   await page
     .getByRole("button", { name: "Load more workshop records" })
     .click();

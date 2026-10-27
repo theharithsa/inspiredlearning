@@ -39,3 +39,7 @@ The maintenance candidate is 1.0.1. The Material 3/admin separation redesign rem
 Record actual final commands/results in the implementing PR. Local emulator results are not production deployment or tenant-searchability evidence. All test identities/data are synthetic under demo-chaicart; RUM requests are blocked and exports go to localhost. Do not use production data mutations to make a smoke test green.
 
 Production release, DNS, IAM, MFA, Dynatrace settings, TTL policies and paid capacity changes are not performed by this maintenance work. Changes to shared collections require both repositories' applicable regression evidence. GitHub issue closure means tested source is merged; deployment state must be stated separately.
+
+## Follow-up 1.0.2
+
+The original open-work list above is historical. The subsequent owner decisions and implementing PR #55 supersede it for remaining maintenance scope. See [current decisions](MAINTENANCE-POLICY-2026-10-27.md) and [verification/disposition](MAINTENANCE-1.0.2-VERIFICATION.md). Retention, resource limits, email attribution and fixed captain mapping were explicitly confirmed; do not ask those policy questions again for this release.
