@@ -370,6 +370,8 @@ test("public REST verification requires no authentication and accepts no writes 
 });
 
 test("platform and OTLP log sinks can avoid duplication without changing the default", async () => {
+  // Finish the preceding HTTP handler's coalesced flush before testing a new batch.
+  await flushTelemetry();
   const original = console.log,
     printed = [];
   try {
