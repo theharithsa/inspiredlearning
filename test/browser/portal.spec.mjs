@@ -1,6 +1,5 @@
 import { test, expect } from "@playwright/test";
 import { createRequire } from "node:module";
-import http from "node:http";
 import fs from "node:fs";
 const require = createRequire(
   new URL("../../functions/package.json", import.meta.url),
@@ -8,11 +7,15 @@ const require = createRequire(
 const { initializeApp, deleteApp } = require("firebase-admin/app");
 const { getFirestore } = require("firebase-admin/firestore");
 test.describe.configure({ mode: "serial" });
-let app, db, sink;
-const events = [],
-  sid = "INSPIRE01",
+let app, db;
+const sid = "INSPIRE01",
   fac = "facilitator@example.invalid";
 let learnerUid, secondUid, cert;
+async function recordedEvents() {
+  const response = await fetch("http://127.0.0.1:8799/test/events");
+  if (!response.ok) throw new Error("Test collector unavailable");
+  return response.json();
+}
 async function actor(browser, email, path = "/", mobile = false) {
   const context = await browser.newContext(
     mobile
@@ -41,16 +44,7 @@ test.beforeAll(async () => {
   process.env.FIRESTORE_EMULATOR_HOST = "127.0.0.1:8185";
   app = initializeApp({ projectId: "demo-chaicart" }, "portal-browser");
   db = getFirestore(app);
-  sink = http.createServer(async (req, res) => {
-    let b = "";
-    for await (const chunk of req) b += chunk;
-    if (req.url.includes("bizevents")) events.push(JSON.parse(b));
-    res.writeHead(req.url.includes("bizevents") ? 202 : 200, {
-      "Content-Type": "application/json",
-    });
-    res.end("{}");
-  });
-  await new Promise((r) => sink.listen(8799, "127.0.0.1", r));
+
   await db.doc("admins/" + fac).set({ role: "facilitator" });
   await db.doc("sessions/" + sid).set({
     title: "ChaiCart Cloud Workshop",
@@ -60,7 +54,6 @@ test.beforeAll(async () => {
   });
 });
 test.afterAll(async () => {
-  await new Promise((r) => sink.close(r));
   await deleteApp(app);
 });
 test("public mobile onboarding and Discord work without exposing records", async ({
@@ -372,9 +365,13 @@ test("revocation updates verification and points, and records survive deletion",
       .learningPoints,
   ).toBe(0);
   await expect
-    .poll(() => events.filter((e) => e.source === "inspiredlearning").length)
+    .poll(
+      async () =>
+        (await recordedEvents()).filter((e) => e.source === "inspiredlearning")
+          .length,
+    )
     .toBeGreaterThan(5);
-  for (const e of events) {
+  for (const e of await recordedEvents()) {
     expect(e.data["transaction.id"]).toBeTruthy();
     expect(e.data.trace_id).toMatch(/^[a-f0-9]{32}$/);
     expect(e.data.span_id).toMatch(/^[a-f0-9]{16}$/);
@@ -760,8 +757,10 @@ test("final canonical-event drain preserves trace and transaction correlation fo
     "account.reactivated",
     "certificate.admin-preview.prepared",
   ])
-    expect(events.some((e) => e.data?.["event.name"] === name)).toBe(true);
-  for (const event of events) {
+    expect(
+      (await recordedEvents()).some((e) => e.data?.["event.name"] === name),
+    ).toBe(true);
+  for (const event of await recordedEvents()) {
     expect(event.data["transaction.id"]).toBeTruthy();
     expect(event.data.trace_id).toMatch(/^[a-f0-9]{32}$/);
     expect(event.data.span_id).toMatch(/^[a-f0-9]{16}$/);

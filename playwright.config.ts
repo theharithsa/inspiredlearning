@@ -1,6 +1,7 @@
 import { defineConfig } from "@playwright/test";
 export default defineConfig({
   testDir: "test/browser",
+  globalSetup: "./test/collector-setup.mjs",
   workers: 1,
   fullyParallel: false,
   maxFailures: 1,

@@ -17,7 +17,7 @@ The maintenance candidate is 1.0.1. The Material 3/admin separation redesign rem
 | #20–#25 | Stable workshop derivation, removed-row selection filtering, live paged request window, recoverable top-level error boundary, feedback/form/verification/JSON errors, route title/focus/skip navigation and removal confirmation focus. Error recovery uses explicit reload to preserve unsaved work. |
 | #26 (partial) | Existing PR endpoint/verification-origin configuration and legacy-point constant retained; revocation reverses the record's awarded legacy amount, with fallback for old missing data. Authorization mapping is not converted to writable config. |
 | #27 (partial) | Shared safe JSON parser introduced. Broad component decomposition and strict TypeScript migration remain separate. |
-| #28 | SHA-pinned reviewed v4 actions, least privilege/concurrency, locked Firebase CLI, Node 22 Functions check, certificate/telemetry test script coverage, Dependabot and portable certificate screenshot paths. |
+| #28 | SHA-pinned supported upstream actions, least privilege/concurrency, locked Firebase CLI, Node 22 Functions check, certificate/telemetry test script coverage, Dependabot and portable certificate screenshot paths. |
 | #29–#31 | Public-only verification link copy/QR, roster deep-link/register initial load, revocation/removal-request confirmation, workshop names and request dates, absent-certificate link guard, unsupported-account sign-out. |
 
 ## Open decisions and follow-ups

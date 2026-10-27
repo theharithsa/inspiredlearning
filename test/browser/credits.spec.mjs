@@ -1,27 +1,19 @@
 import { test, expect } from "@playwright/test";
 import { createRequire } from "node:module";
-import http from "node:http";
 const require = createRequire(
   new URL("../../functions/package.json", import.meta.url),
 );
 const { initializeApp, deleteApp } = require("firebase-admin/app");
 const { getFirestore } = require("firebase-admin/firestore");
-let app, db, sink;
+let app, db;
 test.beforeAll(async () => {
   if (process.env.GCLOUD_PROJECT !== "demo-chaicart")
     throw Error("Emulator only");
   process.env.FIRESTORE_EMULATOR_HOST = "127.0.0.1:8185";
   app = initializeApp({ projectId: "demo-chaicart" }, "credit-ui");
   db = getFirestore(app);
-  sink = http.createServer((req, res) => {
-    req.resume();
-    res.writeHead(req.url.includes("bizevents") ? 202 : 200);
-    res.end("{}");
-  });
-  await new Promise((resolve) => sink.listen(8799, "127.0.0.1", resolve));
 });
 test.afterAll(async () => {
-  await new Promise((resolve) => sink.close(resolve));
   await deleteApp(app);
 });
 test("portal shows one Inspi credit total and workshop attendance bonus without legacy points", async ({

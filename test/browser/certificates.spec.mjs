@@ -1,7 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { createRequire } from "node:module";
 import { randomUUID } from "node:crypto";
-import http from "node:http";
 import { tmpdir } from "node:os";
 import path from "node:path";
 const require = createRequire(
@@ -9,7 +8,7 @@ const require = createRequire(
 );
 const { initializeApp, deleteApp } = require("firebase-admin/app");
 const { getFirestore } = require("firebase-admin/firestore");
-let app, db, sink;
+let app, db;
 const email = "certificate-admin@example.invalid";
 test.beforeAll(async () => {
   if (process.env.GCLOUD_PROJECT !== "demo-chaicart")
@@ -18,17 +17,8 @@ test.beforeAll(async () => {
   app = initializeApp({ projectId: "demo-chaicart" }, "certificate-browser");
   db = getFirestore(app);
   await db.doc(`admins/${email}`).set({ role: "facilitator" });
-  sink = http.createServer((req, res) => {
-    req.resume();
-    res.writeHead(req.url.includes("bizevents") ? 202 : 200, {
-      "Content-Type": "application/json",
-    });
-    res.end("{}");
-  });
-  await new Promise((r) => sink.listen(8799, "127.0.0.1", r));
 });
 test.afterAll(async () => {
-  await new Promise((r) => sink.close(r));
   await deleteApp(app);
 });
 test("administrator sees certificate types, status history and authorized PDF previews", async ({
@@ -48,15 +38,13 @@ test("administrator sees certificate types, status history and authorized PDF pr
     parent = randomUUID(),
     award = randomUUID(),
     revoked = randomUUID();
-  await db
-    .doc(`learningLearners/${student}/workshops/${sid}`)
-    .set({
-      uid: student,
-      sid,
-      name: "Test Recipient",
-      status: "completed",
-      certificateId: parent,
-    });
+  await db.doc(`learningLearners/${student}/workshops/${sid}`).set({
+    uid: student,
+    sid,
+    name: "Test Recipient",
+    status: "completed",
+    certificateId: parent,
+  });
   const base = {
     uid: student,
     sid,
@@ -85,13 +73,11 @@ test("administrator sees certificate types, status history and authorized PDF pr
   await expect(
     page.getByRole("heading", { name: "Issued certificates and history" }),
   ).toBeVisible();
-  const register = page
-    .locator("section")
-    .filter({
-      has: page.getByRole("heading", {
-        name: "Issued certificates and history",
-      }),
-    });
+  const register = page.locator("section").filter({
+    has: page.getByRole("heading", {
+      name: "Issued certificates and history",
+    }),
+  });
   await register.getByLabel("Workshop code", { exact: true }).fill(sid);
   await register
     .getByRole("button", { name: "Load certificates", exact: true })
@@ -113,7 +99,11 @@ test("administrator sees certificate types, status history and authorized PDF pr
     register.getByText("1 certificates loaded.", { exact: false }),
   ).toBeVisible();
   await page.screenshot({
-    path: path.join(tmpdir(), "inspi-certificate-audit", "admin-certificates.png"),
+    path: path.join(
+      tmpdir(),
+      "inspi-certificate-audit",
+      "admin-certificates.png",
+    ),
     fullPage: true,
   });
   await page.setViewportSize({ width: 390, height: 844 });
@@ -121,7 +111,11 @@ test("administrator sees certificate types, status history and authorized PDF pr
     register.getByRole("heading", { name: "Issued certificates and history" }),
   ).toBeVisible();
   await page.screenshot({
-    path: path.join(tmpdir(), "inspi-certificate-audit", "admin-certificates-mobile.png"),
+    path: path.join(
+      tmpdir(),
+      "inspi-certificate-audit",
+      "admin-certificates-mobile.png",
+    ),
     fullPage: true,
   });
 });

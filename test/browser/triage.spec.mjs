@@ -1,12 +1,11 @@
 import { test, expect } from "@playwright/test";
 import { createRequire } from "node:module";
-import http from "node:http";
 const require = createRequire(
   new URL("../../functions/package.json", import.meta.url),
 );
 const { initializeApp, deleteApp } = require("firebase-admin/app");
 const { getFirestore } = require("firebase-admin/firestore");
-let app, db, sink;
+let app, db;
 const email = "triage-admin@example.invalid";
 test.beforeAll(async () => {
   if (process.env.GCLOUD_PROJECT !== "demo-chaicart")
@@ -15,15 +14,8 @@ test.beforeAll(async () => {
   app = initializeApp({ projectId: "demo-chaicart" }, "triage-browser");
   db = getFirestore(app);
   await db.doc(`admins/${email}`).set({ role: "facilitator" });
-  sink = http.createServer((req, res) => {
-    req.resume();
-    res.writeHead(req.url.includes("bizevents") ? 202 : 200);
-    res.end();
-  });
-  await new Promise((resolve) => sink.listen(8799, "127.0.0.1", resolve));
 });
 test.afterAll(async () => {
-  await new Promise((resolve) => sink.close(resolve));
   await deleteApp(app);
 });
 async function login(page, account = email) {
