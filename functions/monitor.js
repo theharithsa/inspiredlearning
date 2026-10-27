@@ -1,3 +1,4 @@
+import { defaults } from "./config.js";
 import { errorOutcome, boundedFlush } from "./telemetry-policy.js";
 import {
   context,
@@ -6,6 +7,7 @@ import {
   SpanKind,
   SpanStatusCode,
   metrics,
+  createContextKey,
 } from "@opentelemetry/api";
 import { logs, SeverityNumber } from "@opentelemetry/api-logs";
 import { NodeSDK } from "@opentelemetry/sdk-node";
@@ -54,7 +56,7 @@ const packageVersion = () => {
 let sdk, processor, logProcessor, reader, count, duration;
 let flushInFlight = null,
   lastMetricFlush = 0;
-function initialize() {
+export function initialize() {
   if (sdk) return;
   const config = (signal) => ({
     url: dynatraceUrl("/api/v2/otlp/v1/" + signal),
@@ -84,7 +86,7 @@ function initialize() {
       "deployment.environment.name": local() ? "rehearsal" : "production",
       "cloud.provider": "gcp",
       "cloud.platform": "gcp_cloud_functions",
-      "cloud.region": "asia-south1",
+      "cloud.region": defaults.region,
       ...(process.env.K_SERVICE ? { "faas.name": process.env.K_SERVICE } : {}),
       ...(revision ? { "faas.version": revision } : {}),
       ...(process.env.GCLOUD_PROJECT
@@ -116,6 +118,7 @@ function parentFrom(traceparent) {
   const m = /^00-([0-9a-f]{32})-([0-9a-f]{16})-([0-9a-f]{2})$/.exec(
     typeof traceparent === "string" ? traceparent.trim().toLowerCase() : "",
   );
+  if (!traceparent) return context.active();
   if (!m || /^0+$/.test(m[1]) || /^0+$/.test(m[2])) return ROOT_CONTEXT;
   return trace.setSpanContext(ROOT_CONTEXT, {
     traceId: m[1],
@@ -183,35 +186,12 @@ export async function measured(
             outcome,
           });
           span.end();
-          if (!flushInFlight) {
-            const includeMetrics = Date.now() - lastMetricFlush >= 15000;
-            if (includeMetrics) lastMetricFlush = Date.now();
-            flushInFlight = Promise.allSettled([
-              processor.forceFlush(),
-              logProcessor.forceFlush(),
-              ...(includeMetrics ? [reader.forceFlush()] : []),
-            ])
-              .then((results) => {
-                if (results.some((r) => r.status === "rejected"))
-                  throw new Error("Telemetry export failed");
-              })
-              .finally(() => {
-                flushInFlight = null;
-              });
-          }
-          const flushOutcome = await boundedFlush(() => flushInFlight);
-          if (flushOutcome !== "flushed")
-            console.warn(
-              JSON.stringify({
-                message: "Telemetry flush incomplete",
-                outcome: flushOutcome,
-                operation: name,
-              }),
-            );
+          if (!context.active().getValue(requestKey)) await flushTelemetry();
         }
       }),
   );
 }
+let warnedLogSink = false;
 const severity = {
   ERROR: SeverityNumber.ERROR,
   WARN: SeverityNumber.WARN,
@@ -223,16 +203,30 @@ export function log(level, message, attributes = {}) {
     ...attributes,
     ...(sc ? { trace_id: sc.traceId, span_id: sc.spanId } : {}),
   };
-  console.log(
-    JSON.stringify({
-      level,
-      message,
-      "service.name": "inspiredlearning-api",
-      ...record,
-    }),
-  );
+  const configuredSink = process.env.TELEMETRY_LOG_SINK || "both";
+  const sink = ["both", "platform", "otlp"].includes(configuredSink)
+    ? configuredSink
+    : "both";
+  if (sink !== configuredSink && !warnedLogSink) {
+    warnedLogSink = true;
+    console.warn(
+      JSON.stringify({
+        message: "Invalid telemetry log sink; using both sinks",
+        operation: "telemetry.configuration",
+      }),
+    );
+  }
+  if (sink !== "otlp" || !sdk)
+    console.log(
+      JSON.stringify({
+        level,
+        message,
+        "service.name": "inspiredlearning-api",
+        ...record,
+      }),
+    );
   // log() can run before the first measured() call (e.g. rejected API authentication).
-  if (!sdk) return;
+  if (!sdk || sink === "platform") return;
   logs.getLogger("inspiredlearning").emit({
     body: message,
     severityNumber: severity[level] || SeverityNumber.INFO,
@@ -240,4 +234,145 @@ export function log(level, message, attributes = {}) {
     attributes: record,
     context: context.active(),
   });
+}
+
+const requestKey = createContextKey("inspiredlearning.http-request");
+export async function flushTelemetry() {
+  if (!sdk) return;
+  if (!flushInFlight) {
+    const includeMetrics = Date.now() - lastMetricFlush >= 15000;
+    if (includeMetrics) lastMetricFlush = Date.now();
+    flushInFlight = Promise.allSettled([
+      processor.forceFlush(),
+      logProcessor.forceFlush(),
+      ...(includeMetrics ? [reader.forceFlush()] : []),
+    ])
+      .then((results) => {
+        if (results.some((r) => r.status === "rejected"))
+          throw new Error("Telemetry export failed");
+      })
+      .finally(() => {
+        flushInFlight = null;
+      });
+  }
+  const flushOutcome = await boundedFlush(() => flushInFlight);
+  if (flushOutcome !== "flushed")
+    console.warn(
+      JSON.stringify({
+        message: "Telemetry flush incomplete",
+        outcome: flushOutcome,
+        operation: "telemetry.flush",
+      }),
+    );
+}
+export async function dependency(
+  name,
+  attributes,
+  work,
+  kind = SpanKind.CLIENT,
+) {
+  return trace
+    .getTracer("inspiredlearning.dependencies")
+    .startActiveSpan(name, { kind, attributes }, async (span) => {
+      try {
+        return await work(span);
+      } catch (error) {
+        const type = String(error?.code || "internal").slice(0, 80);
+        span.setAttribute("error.type", type);
+        if (
+          errorOutcome(error) === "failure" &&
+          ![
+            "auth/id-token-expired",
+            "auth/id-token-revoked",
+            "auth/argument-error",
+          ].includes(type)
+        )
+          span.setStatus({ code: SpanStatusCode.ERROR });
+        throw error;
+      } finally {
+        span.end();
+      }
+    });
+}
+export async function httpRequest(req, res, work, attributes = {}) {
+  initialize();
+  return context
+    .with(parentFrom(req.get("traceparent")).setValue(requestKey, true), () =>
+      dependency(
+        "api.request",
+        { "http.request.method": req.method, ...attributes },
+        async (span) => {
+          try {
+            return await work();
+          } finally {
+            span.setAttribute(
+              "http.response.status_code",
+              res.statusCode || 200,
+            );
+            if (res.statusCode >= 500)
+              span.setStatus({ code: SpanStatusCode.ERROR });
+          }
+        },
+        SpanKind.SERVER,
+      ),
+    )
+    .finally(flushTelemetry);
+}
+export function instrumentAuth(auth) {
+  return new Proxy(auth, {
+    get(target, key) {
+      const value = Reflect.get(target, key, target);
+      if (typeof value !== "function") return value;
+      return (...args) =>
+        ["verifyIdToken", "getUser"].includes(key)
+          ? dependency(
+              `firebase.auth.${key}`,
+              {},
+              () => value.apply(target, args),
+              key === "getUser" ? SpanKind.CLIENT : SpanKind.INTERNAL,
+            )
+          : value.apply(target, args);
+    },
+  });
+}
+let outboxSample, outboxInstruments, deliveryLag, outboxObservedAt;
+export function recordOutboxHealth(sample) {
+  initialize();
+  outboxSample = sample;
+  outboxObservedAt = Date.now();
+  if (outboxInstruments) return;
+  outboxInstruments = true;
+  const meter = metrics.getMeter("inspiredlearning.outbox");
+  for (const [metric, field] of [
+    ["pending", "pending"],
+    ["failed", "failed"],
+    ["pending_growing_15m", "pendingGrowing15Minutes"],
+    ["oldest_pending_age", "oldestPendingAgeSeconds"],
+  ])
+    meter
+      .createObservableGauge(`inspiredlearning.outbox.${metric}`, {
+        unit:
+          metric === "oldest_pending_age"
+            ? "s"
+            : metric === "pending_growing_15m"
+              ? "1"
+              : "{event}",
+      })
+      .addCallback((result) => {
+        if (Date.now() - outboxObservedAt > 7 * 60_000) return;
+        const value = outboxSample?.[field];
+        if (value != null)
+          result.observe(
+            metric === "oldest_pending_age" && outboxSample.pending > 0
+              ? value + (Date.now() - outboxObservedAt) / 1000
+              : value,
+          );
+      });
+}
+export function recordDeliveryLag(seconds) {
+  initialize();
+  deliveryLag ||= metrics
+    .getMeter("inspiredlearning.outbox")
+    .createHistogram("inspiredlearning.outbox.delivery.lag", { unit: "s" });
+  deliveryLag.record(seconds);
 }

@@ -8,7 +8,7 @@ export default function PointsHistory({
   uid: string;
   workshops?: Workshop[];
 }) {
-  const { rows, error } = useRows<{
+  const { rows, error, hasMore, loadMore } = useRows<{
     workshopId: string;
     delta: number | null;
     reason: string;
@@ -53,6 +53,11 @@ export default function PointsHistory({
           ))
       ) : (
         <p className="muted">No credit adjustments recorded yet.</p>
+      )}
+      {hasMore && (
+        <button className="button secondary" onClick={loadMore}>
+          Load more records
+        </button>
       )}
     </section>
   );

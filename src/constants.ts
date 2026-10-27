@@ -1,4 +1,6 @@
-export const DISCORD = "https://discord.gg/yMUe8Vy3U";
+import defaults from "../functions/runtime-defaults.json";
+export const DISCORD =
+  import.meta.env.VITE_COMMUNITY_URL || defaults.communityUrl;
 export const statusLabel = (status: string) =>
   ({
     registered: "Registered",

@@ -98,3 +98,7 @@ Webhook callers send a UUID Idempotency-Key and stable sourceId/eventId; identic
 Public certificates offer **Copy verification link** and **Show QR code** after public verification is enabled. These controls do not make private certificates public or bypass PDF authentication. Account removal remains a reviewed request; API-token revocation requires confirmation.
 
 The portal uses memory-only Firestore caching. If upgrade cleanup is blocked, close other InspiredLearning tabs and reload; shared Google identity is preserved. This candidate is not deployment evidence. See [pre-redesign issue review](docs/ISSUE-TRIAGE-2026-10-27.md). The Material 3 redesign and separate admin app remain tracked as v2.0.0 in issue #34.
+
+## Maintenance 1.0.2 (source candidate)
+
+Google global administrators gain metadata-only telemetry health and reasoned, retry-safe failed-event redrive through REST contract 1.4.0. Public verification/privacy load without Firebase initialization; history listeners have explicit load-more bounds. Runtime defaults and function profiles are centralized without changing capacity or captain authorization. See [maintenance decisions](docs/MAINTENANCE-POLICY-2026-10-27.md), [API extension](docs/API-MAINTENANCE-1.4.md), [agent guidance](skills/README.md) and [observability configuration](observability/README.md). This is distinct from planned Material 3 v2.0.0 (#34), and source changes are not production deployment evidence.

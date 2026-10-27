@@ -1,0 +1,28 @@
+configs:
+  - id: outbox-failed
+    type:
+      settings:
+        schema: builtin:davis.anomaly-detectors
+        scope: environment
+    config:
+      name: InspiredLearning failed outbox
+      template: failed.json
+      skip: false
+  - id: outbox-growing
+    type:
+      settings:
+        schema: builtin:davis.anomaly-detectors
+        scope: environment
+    config:
+      name: InspiredLearning pending growth
+      template: growth.json
+      skip: false
+  - id: removal-recovery-failure
+    type:
+      settings:
+        schema: builtin:davis.anomaly-detectors
+        scope: environment
+    config:
+      name: InspiredLearning removal recovery
+      template: removal.json
+      skip: false

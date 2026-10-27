@@ -13,3 +13,5 @@ test-results/
 
 # Local dependency symlinks are also ignored.
 node_modules
+
+/.firebase-rehearsal-*.json

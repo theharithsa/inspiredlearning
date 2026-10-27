@@ -1,0 +1,10 @@
+# API 1.4 maintenance contract
+
+The existing /api/v1 contract remains compatible. New operations are defined before their UI integration.
+
+- GET /admin/telemetry/health: verified Google global facilitator only; API tokens/captains/learners denied. No filters. Aggregate counts of pending/failed/delivered; oldestPendingAgeSeconds is null with oldestPendingAgeComplete=false when the bounded 501-record sample cannot establish the exact oldest age. These are operational observations across read times, not a financial snapshot.
+- GET /admin/telemetry/events?status=failed&limit=25&cursor=...: same access; status allowlist pending/failed/delivered; filter-bound cursors; default 25/max 100. Metadata only: no payload, actor email, reason or learner body. Reads are durably audited.
+- POST /admin/telemetry/events/{recordId}/redrive: same access, bounded JSON {reason, expectedAttempts}; UUID Idempotency-Key. Transaction rechecks current administrator authority, failed status, attempts and inactive lease. Append-only private receipt/reason plus canonical audit; restore pending/zero attempts while retaining the original payload/event ID. Identical retries return the original receipt; changed settings conflict. Scheduled delivery, not an unauthenticated browser write, retries it. No payload edits or automatic repeated redrive.
+- GET /public/certificates/{certificateId}/verification: public, minimal opt-in verification through the same domain policy as learningVerify; does not authorize PDF download. No extra query filters; no-store, bounded public rate throttle, no learner UID/email disclosure.
+
+401 missing/invalid identity, 403 wrong authority, 400 invalid input, 404 unavailable, 409 conflict/state change, 429 throttling. Standard request ID and tracing apply. New admin routes remain unavailable to scoped API tokens regardless of their permissions. No new identity/role or client Firestore grants. Tests must cover role denial, pagination, private payload exclusion, optimistic concurrency, idempotency, stable event identity and audit atomicity.

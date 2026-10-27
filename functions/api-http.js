@@ -1,3 +1,5 @@
+import { telemetryAdmin } from "./telemetry-admin.js";
+import { verification } from "./actions.js";
 import { reconcileCertificates } from "./certificate-repair.js";
 import { domainWriteRoute, writeDomain } from "./api-domain-writes.js";
 import { authenticateApiToken, manageTokens } from "./api-tokens.js";
@@ -5,7 +7,7 @@ import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { googleActor, readApi } from "./api.js";
-import { log } from "./monitor.js";
+import { log, httpRequest, instrumentAuth } from "./monitor.js";
 const require = createRequire(import.meta.url);
 const spec = JSON.parse(
   readFileSync(new URL("./openapi.json", import.meta.url)),
@@ -42,7 +44,8 @@ const rejectAuth = (req, res, requestId, reason) => {
   return res.status(401).json({ error: { code: "unauthenticated" } });
 };
 export function apiHandler({ db, auth, rate, measured, audit }) {
-  return async (req, res) => {
+  auth = instrumentAuth(auth);
+  const handle = async (req, res) => {
     const requestedId = req.get("X-Request-Id");
     const requestId =
       typeof requestedId === "string" && /^[0-9a-f-]{36}$/.test(requestedId)
@@ -61,12 +64,15 @@ export function apiHandler({ db, auth, rate, measured, audit }) {
       /^\/api\/v1\/workshops\/([A-Z0-9-]{4,16})\/certificates\/reconcile$/.exec(
         req.path,
       );
+    const telemetry = req.path.startsWith("/api/v1/admin/telemetry/");
+    const publicVerify =
+      /^\/api\/v1\/public\/certificates\/([^/]+)\/verification$/.exec(req.path);
     const writeRoute = domainWriteRoute(req.method, req.path);
     const methods = management
       ? tokenId
         ? ["DELETE"]
         : ["GET", "POST"]
-      : writeRoute || repair
+      : writeRoute || repair || (telemetry && req.method === "POST")
         ? [req.method]
         : ["GET"];
     if (!methods.includes(req.method))
@@ -90,7 +96,23 @@ export function apiHandler({ db, auth, rate, measured, audit }) {
         require.resolve("swagger-ui-dist/" + req.path.split("/").at(-1)),
       );
     try {
-      rate("api-ip:" + req.ip, 120);
+      rate("api-ip:" + req.ip, publicVerify ? 60 : 120);
+      if (publicVerify) {
+        if (Object.keys(req.query).length)
+          throw Object.assign(new Error("No query filters allowed."), {
+            code: "invalid-argument",
+          });
+        return res.json(
+          await measured(
+            "certificate.verify",
+            null,
+            () => verification(db, publicVerify[1]),
+            undefined,
+            requestId,
+            { kind: 0 },
+          ),
+        );
+      }
       const header = req.get("Authorization") || "";
       if (!/^Bearer \S+$/.test(header))
         return rejectAuth(req, res, requestId, "missing-bearer");
@@ -118,7 +140,10 @@ export function apiHandler({ db, auth, rate, measured, audit }) {
       rate("api:" + actor.uid, 120);
       if (actor.apiTokenId) rate("api-token:" + actor.apiTokenId, 60);
       if (
-        ((management && req.method === "POST") || writeRoute || repair) &&
+        ((management && req.method === "POST") ||
+          writeRoute ||
+          repair ||
+          (telemetry && req.method === "POST")) &&
         (!req.is("application/json") ||
           JSON.stringify(req.body ?? null).length > 16384)
       )
@@ -136,6 +161,18 @@ export function apiHandler({ db, auth, rate, measured, audit }) {
             : "api.read",
         actor,
         async (c) => {
+          if (telemetry)
+            return telemetryAdmin(
+              db,
+              actor,
+              req.method,
+              req.path,
+              req.body,
+              req.query,
+              c,
+              req.get("Idempotency-Key"),
+              audit,
+            );
           if (repair) {
             if (Object.keys(req.query).length)
               throw Object.assign(new Error("No query parameters allowed."), {
@@ -171,9 +208,10 @@ export function apiHandler({ db, auth, rate, measured, audit }) {
             audit(actor, c, operation, fields),
           );
         },
-        req.get("traceparent"),
+        undefined,
         requestId,
         {
+          kind: 0,
           attributes: {
             "http.request.method": req.method,
             "http.route": routeTemplate(req.path),
@@ -199,4 +237,8 @@ export function apiHandler({ db, auth, rate, measured, audit }) {
       });
     }
   };
+  return (req, res) =>
+    httpRequest(req, res, () => handle(req, res), {
+      "http.route": routeTemplate(req.path),
+    });
 }

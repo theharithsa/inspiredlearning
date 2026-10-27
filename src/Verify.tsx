@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { call, errorMessage } from "./observability";
+import { apiJson } from "./api";
 import { Message } from "./components";
 export default function Verify() {
   const { id } = useParams();
@@ -21,13 +21,28 @@ export default function Verify() {
     );
   const error = failure && failure.id === id ? failure.message : "";
   useEffect(() => {
+    document.title = "Certificate verification · InspiredLearning";
     let active = true;
-    void call<NonNullable<typeof state>["data"]>("learningVerify", { id })
+    void fetch(
+      `/api/v1/public/certificates/${encodeURIComponent(id || "")}/verification`,
+      { cache: "no-store" },
+    )
+      .then((response) =>
+        apiJson<NonNullable<typeof state>["data"]>(
+          response,
+          "Could not verify this certificate. Please try again.",
+        ),
+      )
       .then((r) => {
         if (active) set({ id, data: r });
       })
       .catch((e) => {
-        if (active) setFailure({ id, message: errorMessage(e) });
+        if (active)
+          setFailure({
+            id,
+            message:
+              e instanceof Error ? e.message : "Verification unavailable.",
+          });
       });
     return () => {
       active = false;

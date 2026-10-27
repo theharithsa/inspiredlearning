@@ -23,12 +23,7 @@ export async function eraseLearner(db, actor, d, c) {
     request = db.doc(`learningRequests/${d.requestId}`);
   const started = await db.runTransaction(async (tx) => {
     await requireAdmin(tx, db, actor);
-    const [r, p, sessions, history] = await Promise.all([
-      tx.get(request),
-      tx.get(marker),
-      tx.get(db.collection("sessions")),
-      tx.get(db.collection(`learningLearners/${d.uid}/workshops`)),
-    ]);
+    const [r, p] = await Promise.all([tx.get(request), tx.get(marker)]);
     if (!r.exists || r.data().uid !== d.uid || r.data().kind !== "erasure")
       throw new HttpsError(
         "failed-precondition",
@@ -46,22 +41,20 @@ export async function eraseLearner(db, actor, d, c) {
         "Another removal is already in progress.",
       );
     if (p.data()?.state === "erasing") return true;
-    const memberships = await Promise.all(
-      sessions.docs.map((s) => tx.get(s.ref.collection("students").doc(d.uid))),
-    );
-    const ownedSessions = [
-      ...history.docs.map((s) => s.id),
-      ...memberships.filter((s) => s.exists).map((s) => s.ref.parent.parent.id),
-    ];
     tx.set(
       marker,
       {
         state: "erasing",
+        reactivationScan: { done: true, after: null },
         scope: "learning-records",
         requestId: d.requestId,
-        blockedSessions: [
-          ...new Set([...(p.data()?.blockedSessions || []), ...ownedSessions]),
-        ],
+        blockedSessions: [...new Set(p.data()?.blockedSessions || [])],
+        discovery: {
+          historyAfter: null,
+          historyDone: false,
+          sessionAfter: null,
+          sessionDone: false,
+        },
         startedBy: actor.uid,
         startedAt: FieldValue.serverTimestamp(),
         leaseUntil: 0,
@@ -89,7 +82,13 @@ export async function eraseLearner(db, actor, d, c) {
       : "Removal is in progress; automatic recovery will complete it.",
   };
 }
-export async function completeErasure(db, uid, actor, c) {
+export async function completeErasure(
+  db,
+  uid,
+  actor,
+  c,
+  { discoveryBudgetMs = 30000 } = {},
+) {
   const marker = db.doc(`learningPrivacy/${uid}`),
     lease = randomUUID();
   const p = await db.runTransaction(async (tx) => {
@@ -101,6 +100,15 @@ export async function completeErasure(db, uid, actor, c) {
   });
   if (!p) return false;
   try {
+    const deadline = Date.now() + discoveryBudgetMs;
+    if (!(await discoverBlockedSessions(db, uid, marker, lease, deadline))) {
+      await db.runTransaction(async (tx) => {
+        const current = await tx.get(marker);
+        if (current.data()?.lease === lease)
+          tx.update(marker, { leaseUntil: 0 });
+      });
+      return false;
+    }
     const certificates = await db
       .collection("learningCertificates")
       .where("uid", "==", uid)
@@ -194,4 +202,59 @@ export async function completeErasure(db, uid, actor, c) {
     });
     throw error;
   }
+}
+
+// Legacy Live participants may have no portal index. Page this compatibility discovery
+// outside the transaction; a durable cursor and global erasing marker preserve recovery.
+async function discoverBlockedSessions(db, uid, marker, lease, deadline) {
+  for (const phase of ["history", "session"]) {
+    while (true) {
+      const privacy = (await marker.get()).data();
+      if (privacy?.lease !== lease || privacy.state !== "erasing") return false;
+      const state = privacy.discovery || {};
+      if (state[phase + "Done"]) break;
+      let query = (
+        phase === "history"
+          ? db.collection(`learningLearners/${uid}/workshops`)
+          : db.collection("sessions")
+      ).orderBy(FieldPath.documentId());
+      if (state[phase + "After"])
+        query = query.startAfter(state[phase + "After"]);
+      const page = await query.limit(50).get();
+      const ids =
+        phase === "history"
+          ? page.docs.map((d) => d.id)
+          : (
+              await Promise.all(
+                page.docs.map(async (session) =>
+                  (await session.ref.collection("students").doc(uid).get())
+                    .exists
+                    ? session.id
+                    : null,
+                ),
+              )
+            ).filter(Boolean);
+      const advanced = await db.runTransaction(async (tx) => {
+        const current = await tx.get(marker);
+        if (
+          current.data()?.lease !== lease ||
+          current.data().state !== "erasing"
+        )
+          return false;
+        tx.update(marker, {
+          ...(ids.length
+            ? { blockedSessions: FieldValue.arrayUnion(...ids) }
+            : {}),
+          [`discovery.${phase}After`]:
+            page.docs.at(-1)?.id || state[phase + "After"] || null,
+          [`discovery.${phase}Done`]: page.size < 50,
+        });
+        return true;
+      });
+      if (!advanced) return false;
+      if (page.size < 50) break;
+      if (Date.now() > deadline) return false;
+    }
+  }
+  return true;
 }

@@ -86,3 +86,11 @@ The app uses memory-only Firestore caching. On upgrade it clears only its Firest
 Outbox events marked failed are not delivered again automatically. Preserve their payload/event IDs and investigate HTTP status/configuration before a separately reviewed redrive. Pending/failed TTL, redrive UI and alert thresholds are tracked in #9/#32/#33. Do not delete pending records or change event IDs to make backlog numbers green. Retry recovery processes erasures before deliveries; inspect each failed erasure independently.
 
 CSP is report-only in the maintenance configuration. Validate actual Google OAuth, Swagger and Dynatrace script/beacon origins before enforcing it. Source headers are not proof that deployed responses contain them.
+
+## Maintenance telemetry recovery (1.0.2 source)
+
+In the current administrator controls, open **Telemetry delivery health**. Refresh aggregate counts and failed metadata; oldest pending age is explicitly unavailable when the bounded sample cannot prove it. Inspect HTTP status and diagnose the exporter/configuration before retrying. Enter a review reason and confirm **Redrive failed event**. The server rechecks current global administrator status, failed state/attempt count and inactive lease. Identical retries reuse their receipt and original event ID; payloads cannot be edited. The UI retains the request key and reason after a failed response. Refresh before starting a different review. Queued means pending, not Dynatrace accepted; scheduled retries run every five minutes.
+
+Do not bulk-reset pending/failed rows, delete events to hide backlog or grant a scoped API credential access to this panel. Firestore outbox retention remains unchanged by owner decision. Configuration and actual validation limits are in [observability/README.md](../observability/README.md). Use TELEMETRY_LOG_SINK=platform only after checking the GCP forwarder; otlp only after verifying OTLP visibility. Both remains the default. Do not promise console fallback for an OTLP export failure after initialization; bounded platform flush warnings are the fallback diagnostic.
+
+Privacy recovery processes paged erasure discovery and unfinished reactivation scans. Existing blocked workshops remain blocked. See the [maintenance policy](MAINTENANCE-POLICY-2026-10-27.md) before replacing legacy membership discovery with an index.

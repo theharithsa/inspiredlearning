@@ -1,3 +1,4 @@
+import type { LearnerRequest as Request } from "./types";
 import { useEffect, useRef, useState } from "react";
 import {
   collection,
@@ -11,16 +12,6 @@ import {
 import { db } from "./firebase";
 import { action, errorMessage } from "./observability";
 import { Message } from "./components";
-interface Request {
-  id: string;
-  uid: string;
-  email?: string;
-  reason?: string;
-  kind: string;
-  status: string;
-  resolution?: string;
-  resolutionAction?: string;
-}
 export default function RequestsPanel({
   onOpen,
   reason,

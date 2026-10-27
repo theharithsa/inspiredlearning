@@ -143,3 +143,29 @@ test("unexpected per-learner batch failures never expose dependency messages", a
   );
   assert.ok(!JSON.stringify(result).includes("private database"));
 });
+
+test("backlog growth requires fifteen minutes of increasing observations without a long gap", async () => {
+  const { backlogHistory } = await import("../functions/outbox-health.js");
+  let history = [],
+    result;
+  for (let i = 0; i < 4; i++) {
+    result = backlogHistory(history, i + 1, i * 300000);
+    history = result.points;
+  }
+  assert.equal(result.growingFor15Minutes, true);
+  assert.equal(
+    backlogHistory(history, 99, 900000).points.length,
+    4,
+    "duplicate is not a new sample",
+  );
+  assert.equal(
+    backlogHistory(history, 4, 1200000).growingFor15Minutes,
+    false,
+    "flat sample ends growth",
+  );
+  assert.equal(
+    backlogHistory(history, 99, 1500000).growingFor15Minutes,
+    false,
+    "missing scheduler interval does not count",
+  );
+});

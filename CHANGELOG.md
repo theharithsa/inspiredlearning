@@ -44,3 +44,11 @@ This is a source maintenance release candidate, not production release evidence.
 ## API 1.3.0 — 12 October 2026
 
 - **Webhook student credit writes** — Add scoped, idempotent POST activity awards/deductions and versioned PUT corrections to the unified Inspi credit account, with immutable adjustments, removal replay protection, OpenAPI v1.3 descriptions and admin token permission.
+
+## 1.0.2 — 27 October 2026 (source candidate)
+
+- **Operational recovery** — Google-admin-only API/UI for outbox health, bounded metadata and audited idempotent redrive; original payload/event identity retained. New backlog/lag metrics and source-owned SLO/alerts/dashboard.
+- **Dependencies and logs** — Native Firestore plus Auth, PDF, batch and outbound child spans; selectable log sinks preserve current defaults.
+- **Frontend maintenance** — Public routes avoid Firebase startup, live histories are bounded with load-more, transport/PDF helpers and types are shared, staff/token views split and strict TypeScript enabled.
+- **Configuration and privacy recovery** — Safe defaults and per-function profiles preserve existing limits and fixed captain mapping; legacy privacy discovery is paged/resumable, with the complete membership-index migration still open in #17.
+- No production deployment, retention change, paid provisioning, shared rule/index change or historical score/certificate migration.

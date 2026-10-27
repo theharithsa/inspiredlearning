@@ -1,0 +1,64 @@
+{
+  "name": "InspiredLearning maintenance operations",
+  "type": "dashboard",
+  "content": {
+    "version": 21,
+    "variables": [],
+    "tiles": {
+      "1": {
+        "type": "markdown",
+        "content": "## InspiredLearning operations\nSource configuration only. No deployment or native RUM-to-trace linkage is certified. Technical success target: 99.5%; p95 is measured without an invented threshold."
+      },
+      "2": {
+        "type": "data",
+        "title": "Technical success (%)",
+        "query": "timeseries {total=sum(inspiredlearning.operation.outcomes, default:0), good=sum(inspiredlearning.operation.outcomes, filter:{outcome != \"failure\"}, default:0)}, filter:{service.name == \"inspiredlearning-api\" and deployment.environment.name == \"production\" and startsWith(operation, \"learning.\")}, nonempty:true | fieldsAdd sli=100.0*good[]/total[] | fieldsRemove good,total",
+        "visualization": "lineChart",
+        "visualizationSettings": {},
+        "querySettings": {}
+      },
+      "3": {
+        "type": "data",
+        "title": "Operation p95 (seconds)",
+        "query": "timeseries p95=percentile(inspiredlearning.operation.duration,95),by:{operation},filter:{service.name == \"inspiredlearning-api\" and deployment.environment.name == \"production\"}",
+        "visualization": "lineChart",
+        "visualizationSettings": {},
+        "querySettings": {}
+      },
+      "4": {
+        "type": "data",
+        "title": "Canonical events and trace correlation",
+        "query": "fetch bizevents | filter event.provider == \"inspiredlearning\" | fields timestamp,event.name,transaction.id,trace_id | lookup [fetch spans | filter service.name == \"inspiredlearning-api\" | summarize span_count=count(),by:{trace.id}],sourceField:trace_id,lookupField:trace.id,fields:{span_count} | limit 50",
+        "visualization": "table",
+        "visualizationSettings": {},
+        "querySettings": {}
+      }
+    },
+    "layouts": {
+      "1": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 3
+      },
+      "2": {
+        "x": 0,
+        "y": 3,
+        "w": 12,
+        "h": 8
+      },
+      "3": {
+        "x": 12,
+        "y": 3,
+        "w": 12,
+        "h": 8
+      },
+      "4": {
+        "x": 0,
+        "y": 11,
+        "w": 24,
+        "h": 10
+      }
+    }
+  }
+}

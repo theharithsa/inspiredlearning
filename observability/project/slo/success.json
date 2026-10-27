@@ -1,0 +1,18 @@
+{
+  "name": "InspiredLearning callable technical success",
+  "description": "Technical availability of measured learning callables. Expected caller rejections count as non-failures. No traffic yields unknown, not 100%.",
+  "tags": [
+    "app:inspiredlearning"
+  ],
+  "criteria": [
+    {
+      "target": 99.5,
+      "timeframeFrom": "now-7d",
+      "timeframeTo": "now"
+    }
+  ],
+  "customSli": {
+    "filterSegments": [],
+    "indicator": "timeseries {total=sum(inspiredlearning.operation.outcomes, default:0), good=sum(inspiredlearning.operation.outcomes, filter:{outcome != \"failure\"}, default:0)}, filter:{service.name == \"inspiredlearning-api\" and deployment.environment.name == \"production\" and startsWith(operation, \"learning.\")}, nonempty:true | fieldsAdd sli=100.0*good[]/total[] | fieldsRemove good,total"
+  }
+}

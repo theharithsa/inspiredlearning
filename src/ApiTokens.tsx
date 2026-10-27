@@ -1,9 +1,12 @@
+import ApiTokenList from "./ApiTokenList";
+import TokenPermissions from "./TokenPermissions";
+import { apiFetch } from "./api";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { reauthenticateWithPopup } from "firebase/auth";
 import { auth, google } from "./firebase";
 import { errorMessage } from "./observability";
 import { Message } from "./components";
-type Token = {
+export type Token = {
   id: string;
   name: string;
   scopes: string[];
@@ -12,33 +15,17 @@ type Token = {
   expiresAt: string;
   status: "active" | "expired" | "revoked";
 };
-type Listing = {
+export type Listing = {
   items: Token[];
   nextCursor: string | null;
   permissions: { scope: string; label: string }[];
 };
-async function request<T>(path = "", options: RequestInit = {}): Promise<T> {
-  const user = auth.currentUser;
-  if (!user) throw Error("Sign in with Google.");
-  const idToken = await user.getIdToken();
-  if (auth.currentUser?.uid !== user.uid)
-    throw Error("Your signed-in account changed.");
-  const response = await fetch("/api/v1/admin/api-tokens" + path, {
-    ...options,
-    cache: "no-store",
-    headers: {
-      Authorization: `Bearer ${idToken}`,
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-  });
-  const data = await response.json();
-  if (!response.ok)
-    throw Error(data.error?.message || "Could not manage API tokens.");
-  if (auth.currentUser?.uid !== user.uid)
-    throw Error("Your signed-in account changed.");
-  return data as T;
-}
+const request = <T,>(path = "", options: RequestInit = {}) =>
+  apiFetch<T>(
+    "/api/v1/admin/api-tokens" + path,
+    options,
+    "Could not manage API tokens.",
+  );
 export default function ApiTokens() {
   const [tokens, setTokens] = useState<Token[]>([]),
     [permissions, setPermissions] = useState<Listing["permissions"]>([]),
@@ -211,27 +198,16 @@ export default function ApiTokens() {
             onChange={(e) => setName(e.target.value)}
           />
         </label>
-        <fieldset disabled={busy || !!secret}>
-          <legend>Permissions</legend>
-          <div className="token-permissions">
-            {permissions.map((p) => (
-              <label key={p.scope} className="token-permission">
-                <input
-                  type="checkbox"
-                  checked={scopes.includes(p.scope)}
-                  onChange={(e) =>
-                    setScopes((old) =>
-                      e.target.checked
-                        ? [...old, p.scope]
-                        : old.filter((s) => s !== p.scope),
-                    )
-                  }
-                />
-                {p.label}
-              </label>
-            ))}
-          </div>
-        </fieldset>
+        <TokenPermissions
+          permissions={permissions}
+          scopes={scopes}
+          disabled={busy || !!secret}
+          onChange={(scope, checked) =>
+            setScopes((old) =>
+              checked ? [...old, scope] : old.filter((s) => s !== scope),
+            )
+          }
+        />
         <div className="inline-form">
           <label>
             Expires after
@@ -279,81 +255,24 @@ export default function ApiTokens() {
           {busy ? "Working…" : "Confirm Google sign-in and create token"}
         </button>
       </form>
-      <h3>Your tokens</h3>
-      {!tokens.length && !busy && <p>No API tokens created yet.</p>}
-      {tokens.length > 0 && (
-        <div className="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Permissions and restrictions</th>
-                <th>Expiry</th>
-                <th>Status</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {tokens.map((t) => (
-                <tr key={t.id}>
-                  <td>{t.name}</td>
-                  <td>
-                    {t.scopes
-                      .map(
-                        (scope) =>
-                          permissions.find((p) => p.scope === scope)?.label ||
-                          scope,
-                      )
-                      .join(", ")}
-                    <br />
-                    <small>
-                      {t.studentIds.length
-                        ? `Learners: ${t.studentIds.join(", ")}`
-                        : "All authorized learners"}{" "}
-                      ·{" "}
-                      {t.workshopIds.length
-                        ? `Workshops: ${t.workshopIds.join(", ")}`
-                        : "All authorized workshops"}
-                    </small>
-                  </td>
-                  <td>{new Date(t.expiresAt).toLocaleString()}</td>
-                  <td>{t.status}</td>
-                  <td>
-                    {t.status === "active" && (
-                      <button
-                        className="text-button danger"
-                        disabled={busy}
-                        onClick={() => void revoke(t.id)}
-                      >
-                        Revoke {t.name}
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-      {cursor && (
-        <button
-          className="button secondary"
-          disabled={busy}
-          onClick={async () => {
-            setBusy(true);
-            setError("");
-            try {
-              await load(cursor);
-            } catch (e) {
-              if (mounted.current) setError(errorMessage(e));
-            } finally {
-              if (mounted.current) setBusy(false);
-            }
-          }}
-        >
-          Load more tokens
-        </button>
-      )}
+      <ApiTokenList
+        tokens={tokens}
+        permissions={permissions}
+        busy={busy}
+        revoke={revoke}
+        cursor={cursor}
+        load={async (cursor) => {
+          setBusy(true);
+          setError("");
+          try {
+            await load(cursor);
+          } catch (e) {
+            if (mounted.current) setError(errorMessage(e));
+          } finally {
+            if (mounted.current) setBusy(false);
+          }
+        }}
+      />
     </section>
   );
 }

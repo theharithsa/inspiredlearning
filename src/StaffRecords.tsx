@@ -1,3 +1,4 @@
+import { downloadPdf, type PdfResponse } from "./api";
 import CertificateCorrection from "./CertificateCorrection";
 import RequestsPanel from "./RequestsPanel";
 import { useState } from "react";
@@ -63,21 +64,9 @@ export default function StaffRecords() {
     setBusy(true);
     setError("");
     try {
-      const r = await call<{ base64: string; filename: string }>(
-        "learningCertificate",
-        { id, reason },
-      );
+      const r = await call<PdfResponse>("learningCertificate", { id, reason });
       if (auth.currentUser?.uid !== actor) return;
-      const url = URL.createObjectURL(
-        new Blob([Uint8Array.from(atob(r.base64), (c) => c.charCodeAt(0))], {
-          type: "application/pdf",
-        }),
-      );
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = r.filename;
-      link.click();
-      setTimeout(() => URL.revokeObjectURL(url), 30000);
+      downloadPdf(r);
       setNotice("Administrator certificate preview downloaded.");
     } catch (e) {
       setError(errorMessage(e));

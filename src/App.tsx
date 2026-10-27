@@ -1,13 +1,6 @@
 import { DISCORD } from "./constants";
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
-import {
-  HashRouter,
-  Routes,
-  Route,
-  NavLink,
-  Link,
-  useLocation,
-} from "react-router-dom";
+import { Routes, Route, NavLink, Link, useLocation } from "react-router-dom";
 import { signInWithPopup, signOut, type User } from "firebase/auth";
 import { auth, google } from "./firebase";
 import { useUser, useRows, useRecord, googleUser } from "./hooks";
@@ -21,7 +14,6 @@ const Certificates = lazy(() => import("./Certificates"));
 const RemovedAccount = lazy(() => import("./RemovedAccount"));
 const Profile = lazy(() => import("./Profile"));
 const Staff = lazy(() => import("./Staff"));
-const Verify = lazy(() => import("./Verify"));
 import { CommunityCard, Message, Qr } from "./components";
 function PageEvents() {
   const { pathname } = useLocation();
@@ -211,46 +203,6 @@ function Community() {
     </>
   );
 }
-function Privacy() {
-  return (
-    <main id="main-content" tabIndex={-1} className="public-page">
-      <Link className="brand" to="/">
-        ✳ InspiredLearning
-      </Link>
-      <section className="panel stack">
-        <h1>Your learning record, your privacy.</h1>
-        <p>
-          Google sign-in links your account to verified workshop participation.
-          We store your display name, email, attendance, results, learning
-          credits and certificates. Your workshop award combines team and
-          individual results.
-        </p>
-        <p>
-          Dynatrace monitors application performance and interactions. Signed-in
-          activity can include your email and user ID for support and trace
-          correlation. Unsigned visitors use a pseudonymous device identifier.
-          Free-text activity answers and PDF contents are not included in portal
-          telemetry.
-        </p>
-        <p>
-          Your records are private to your account and authorized workshop
-          staff. Public certificate verification is off by default; if enabled,
-          it exposes your name, workshop, certificate revision and validity. It
-          never exposes your email or scores.
-        </p>
-        <p>
-          You can request a correction or removal from your Profile page.
-          Completion records persist when an operational workshop session is
-          deleted. Downloaded certificates cannot be recalled; verification
-          reflects revocations.
-        </p>
-        <Link className="button" to="/">
-          Return to InspiredLearning →
-        </Link>
-      </section>
-    </main>
-  );
-}
 function LearnerLayout({ user }: { user: User }) {
   const privacy = useRecord<{ state: string }>(`learningPrivacy/${user.uid}`);
   const [administrator, setAdministrator] = useState<boolean | null>(null);
@@ -268,8 +220,10 @@ function LearnerLayout({ user }: { user: User }) {
     };
   }, [user.uid]);
   const profile = useRecord<LearnerProfile>(`learningLearners/${user.uid}`);
-  const { rows, error } = useRows<Workshop>(
+  const { rows, error, hasMore, loadMore } = useRows<Workshop>(
     `learningLearners/${user.uid}/workshops`,
+    [],
+    { pageSize: 50 },
   );
   const workshops = useMemo(
     () =>
@@ -318,6 +272,18 @@ function LearnerLayout({ user }: { user: User }) {
           <span className="status-dot" /> Your learning, connected.
         </div>
         {error && <Message error>{error}</Message>}
+        {hasMore && (
+          <div className="panel stack">
+            <p>
+              Showing {rows?.length} workshop records. Counts and milestones
+              below cover loaded records; the Inspi credit total comes from the
+              complete server calculation.
+            </p>
+            <button className="button secondary" onClick={loadMore}>
+              Load more workshop records
+            </button>
+          </div>
+        )}
         <Routes>
           <Route
             path="/"
@@ -334,7 +300,7 @@ function LearnerLayout({ user }: { user: User }) {
           />
           <Route
             path="/workshops/:sid"
-            element={<WorkshopDetail workshops={workshops} />}
+            element={<WorkshopDetail />}
           />
           <Route path="/certificates" element={<Certificates user={user} />} />
           <Route path="/community" element={<Community />} />
@@ -348,14 +314,17 @@ function LearnerLayout({ user }: { user: User }) {
               )
             }
           />
-          <Route path="/staff" element={<Staff />} />
+          <Route
+            path="/staff"
+            element={<Staff globalFacilitator={administrator === true} />}
+          />
           <Route
             path="/admin"
             element={
               administrator === null ? (
                 <p role="status">Checking administrator access…</p>
               ) : administrator ? (
-                <Staff admin />
+                <Staff admin globalFacilitator />
               ) : (
                 <Message error>Administrator access required.</Message>
               )
@@ -402,8 +371,6 @@ function Application() {
       </a>
       <PageEvents />
       <Routes>
-        <Route path="/verify/:id" element={<Verify />} />
-        <Route path="/privacy" element={<Privacy />} />
         <Route
           path="*"
           element={
@@ -441,16 +408,14 @@ function Application() {
 }
 export default function App() {
   return (
-    <HashRouter>
-      <Suspense
-        fallback={
-          <main id="main-content" tabIndex={-1} className="public-page">
-            <p role="status">Loading your page…</p>
-          </main>
-        }
-      >
-        <Application />
-      </Suspense>
-    </HashRouter>
+    <Suspense
+      fallback={
+        <main id="main-content" tabIndex={-1} className="public-page">
+          <p role="status">Loading your page…</p>
+        </main>
+      }
+    >
+      <Application />
+    </Suspense>
   );
 }

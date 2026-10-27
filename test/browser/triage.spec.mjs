@@ -148,8 +148,8 @@ test("generic clicks do not call telemetry and profile updates do not refetch cr
 test("verification recovers after an error and register handles non-JSON errors", async ({
   page,
 }) => {
-  await page.route("**/learningVerify", (route) =>
-    route.request().postDataJSON().data.id === "broken"
+  await page.route("**/api/v1/public/certificates/*/verification", (route) =>
+    route.request().url().includes("/broken/")
       ? route.fulfill({
           status: 503,
           contentType: "application/json",
@@ -160,12 +160,10 @@ test("verification recovers after an error and register handles non-JSON errors"
       : route.fulfill({
           contentType: "application/json",
           body: JSON.stringify({
-            result: {
-              status: "valid",
-              name: "Synthetic Learner",
-              title: "Synthetic workshop",
-              revision: 1,
-            },
+            status: "valid",
+            name: "Synthetic Learner",
+            title: "Synthetic workshop",
+            revision: 1,
           }),
         }),
   );
@@ -207,4 +205,150 @@ test("a failed lazy module shows reload recovery instead of a blank page", async
   await expect(
     page.getByRole("button", { name: "Continue with Google →" }),
   ).toBeVisible();
+});
+
+test("public privacy and verification do not initialize Firebase or load the production RUM agent", async ({
+  page,
+}) => {
+  const requests = [];
+  page.on("request", (r) => requests.push(r.url()));
+  await page.route("**/api/v1/public/certificates/*/verification", (r) =>
+    r.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ status: "private-or-unavailable" }),
+    }),
+  );
+  await page.goto("/#/privacy");
+  await expect(page).toHaveTitle("Privacy · InspiredLearning");
+  await page.goto("/#/verify/synthetic");
+  await expect(
+    page.getByRole("heading", { name: "Private or unavailable." }),
+  ).toBeVisible();
+  expect(
+    requests.filter((u) =>
+      /src\/firebase|firebase_auth|firebase_firestore|identitytoolkit|js-cdn\.dynatrace/.test(
+        u,
+      ),
+    ),
+  ).toEqual([]);
+});
+test("admin redrive keeps its request key and reason when the response fails", async ({
+  page,
+}) => {
+  await login(page);
+  let queued = false;
+  const attempts = [];
+  await page.route("**/api/v1/admin/telemetry/health", (r) =>
+    r.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        pending: queued ? 1 : 0,
+        failed: queued ? 0 : 1,
+        delivered: 0,
+        oldestPendingAgeSeconds: 0,
+        oldestPendingAgeComplete: true,
+        asOf: new Date().toISOString(),
+      }),
+    }),
+  );
+  await page.route("**/api/v1/admin/telemetry/events?*", (r) =>
+    r.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        items: queued
+          ? []
+          : [
+              {
+                id: "fixture-failed",
+                status: "failed",
+                eventId: "synthetic",
+                eventName: "test.fixture",
+                attempts: 20,
+                lastStatus: 400,
+              },
+            ],
+        nextCursor: null,
+      }),
+    }),
+  );
+  await page.route(
+    "**/api/v1/admin/telemetry/events/fixture-failed/redrive",
+    (r) => {
+      attempts.push({
+        key: r.request().headers()["idempotency-key"],
+        body: r.request().postDataJSON(),
+      });
+      queued = true;
+      return r.fulfill(
+        attempts.length === 1
+          ? {
+              status: 503,
+              contentType: "application/json",
+              body: JSON.stringify({
+                error: { message: "Synthetic lost response" },
+              }),
+            }
+          : {
+              contentType: "application/json",
+              body: JSON.stringify({
+                id: "fixture-failed",
+                queued: true,
+                status: "pending",
+              }),
+            },
+      );
+    },
+  );
+  page.on("dialog", (d) => d.accept());
+  await page.goto("/#/admin");
+  await page
+    .getByLabel("Redrive review reason")
+    .fill("Reviewed original reason");
+  await page.getByRole("button", { name: "Redrive failed event" }).click();
+  await expect(page.getByText("Synthetic lost response")).toBeVisible();
+  await page
+    .getByLabel("Redrive review reason")
+    .fill("Changed text after failed response");
+  await page.getByRole("button", { name: "Redrive failed event" }).click();
+  await expect(page.getByText(/Event queued\. Scheduled/)).toBeVisible();
+  expect(attempts).toHaveLength(2);
+  expect(attempts[1]).toEqual(attempts[0]);
+});
+
+test("workshop history discloses its bounded window and loads the remaining records", async ({
+  page,
+}) => {
+  const uid = await login(page, "triage-paging@example.invalid"),
+    batch = db.batch();
+  for (let i = 0; i < 55; i++) {
+    const sid = "PAGED" + String(i).padStart(3, "0");
+    batch.set(db.doc(`learningLearners/${uid}/workshops/${sid}`), {
+      sid,
+      uid,
+      title: `Paged workshop ${i}`,
+      date: "2026-10-27",
+      status: "registered",
+      revision: 0,
+      learningPoints: 0,
+    });
+  }
+  await batch.commit();
+  await expect(page.getByText(/Showing 50 workshop records/)).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Paged workshop 54", exact: true }),
+  ).toHaveCount(0);
+  await page.goto("/#/workshops/PAGED054");
+  await expect(
+    page.getByRole("heading", { name: "Paged workshop 54", exact: true }),
+  ).toBeVisible();
+  await page.goto("/");
+  await page
+    .getByRole("button", { name: "Load more workshop records" })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "Paged workshop 54", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Load more workshop records" }),
+  ).toHaveCount(0);
 });

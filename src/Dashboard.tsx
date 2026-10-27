@@ -1,3 +1,4 @@
+import { apiFetch } from "./api";
 import { useEffect, useState } from "react";
 import { auth } from "./firebase";
 import { useRows } from "./hooks";
@@ -14,6 +15,8 @@ export default function Dashboard({
     auth.currentUser
       ? `learningLearners/${auth.currentUser.uid}/creditEntries`
       : null,
+    [],
+    { pageSize: 501 },
   );
   const uid = auth.currentUser?.uid;
   const [state, setState] = useState<{
@@ -33,17 +36,9 @@ export default function Dashboard({
     let active = true;
     const user = auth.currentUser;
     if (!user) return;
-    void user
-      .getIdToken()
-      .then((token) =>
-        fetch("/api/v1/me/scores", {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-      )
-      .then(async (res) => {
-        if (!res.ok) throw Error();
-        return res.json();
-      })
+    void apiFetch<{ totalCredits: number | null; unknownAwards: number }>(
+      "/api/v1/me/scores",
+    )
       .then((data) => {
         if (active)
           setState({ uid, workshops, entries, account: data, error: false });

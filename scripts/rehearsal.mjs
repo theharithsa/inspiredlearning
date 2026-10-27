@@ -6,6 +6,13 @@ if (created)
   fs.writeFileSync(secret, "DYNATRACE_PLATFORM_TOKEN=emulator-placeholder\n", {
     mode: 0o600,
   });
+const port = Number(process.env.INSPI_REHEARSAL_FUNCTIONS_PORT || 5001);
+if (!Number.isSafeInteger(port) || port < 1024 || port > 65535)
+  throw new Error("Invalid rehearsal functions port");
+const config = `.firebase-rehearsal-${process.pid}.json`;
+const settings = JSON.parse(fs.readFileSync("firebase.rehearsal.json", "utf8"));
+settings.emulators.functions.port = port;
+fs.writeFileSync(config, JSON.stringify(settings));
 const child = spawn(
   "npx",
   [
@@ -13,7 +20,7 @@ const child = spawn(
     "firebase",
     "emulators:exec",
     "--config",
-    "firebase.rehearsal.json",
+    config,
     "--project",
     "demo-chaicart",
     "--only",
@@ -22,10 +29,15 @@ const child = spawn(
   ],
   {
     stdio: "inherit",
-    env: { ...process.env, GCLOUD_PROJECT: "demo-chaicart" },
+    env: {
+      ...process.env,
+      GCLOUD_PROJECT: "demo-chaicart",
+      VITE_FUNCTIONS_EMULATOR_PORT: String(port),
+    },
   },
 );
 const cleanup = () => {
+  fs.rmSync(config, { force: true });
   if (created) fs.rmSync(secret, { force: true });
 };
 child.on("error", (e) => {
