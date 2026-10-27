@@ -121,7 +121,7 @@ export async function adminAction(db, actor, d, c) {
       };
       certificateRecord.kind = "participation";
       tx.create(db.doc(`learningCertificates/${id}`), certificateRecord);
-      issueAwardFamily(tx, db, certificateRecord);
+      issueAwardFamily(tx, db, certificateRecord, actor, c);
       queue(tx, db, "workshop.completion.reinstated", actor, c, {
         "learner.id": d.uid,
         "workshop.session.id": d.sid,
@@ -133,9 +133,10 @@ export async function adminAction(db, actor, d, c) {
         "learning.points.delta": LEARNING_POINTS,
       });
       queue(tx, db, "certificate.issued", actor, c, {
+        "certificate.kind": "participation",
         "learner.id": d.uid,
-        "certificate.id": id,
         "workshop.session.id": d.sid,
+        "certificate.id": id,
       });
       return {
         message:

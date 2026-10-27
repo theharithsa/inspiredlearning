@@ -1,10 +1,6 @@
-import { SpanStatusCode } from "@opentelemetry/api";
-import { WebTracerProvider } from "@opentelemetry/sdk-trace-web";
 import { httpsCallable } from "firebase/functions";
 import type { User } from "firebase/auth";
-import { auth, functions, emulators } from "./firebase";
-const provider = new WebTracerProvider(),
-  tracer = provider.getTracer("inspiredlearning-browser");
+import { auth, functions } from "./firebase";
 declare global {
   interface Window {
     dtrum?: {
@@ -34,6 +30,7 @@ const safeNames = new Set([
   "auth.signed-in",
   "auth.signed-out",
   "certificate.download",
+  "certificate.link.copied",
   "discord.opened",
   "workshop.viewed",
   "profile.saved",
@@ -58,67 +55,32 @@ export function rum(name: string, fields: Record<string, unknown> = {}) {
 }
 export function interaction(name: string, sid?: string) {
   if (!safeNames.has(name)) return;
-  const span = tracer.startSpan("browser." + name);
-  const sc = span.spanContext(),
-    transactionId = crypto.randomUUID();
-  rum(name, {
-    "transaction.id": transactionId,
-    trace_id: sc.traceId,
-    span_id: sc.spanId,
-    ...(sid ? { "workshop.session.id": sid } : {}),
-  });
-  if (emulators || !auth.currentUser || auth.currentUser.isAnonymous) {
-    span.end();
-    return;
-  }
-  void httpsCallable(
-    functions,
-    "learningTelemetry",
-  )({
-    name,
-    sid,
-    transactionId,
-    traceparent: `00-${sc.traceId}-${sc.spanId}-01`,
-  })
-    .catch(() => {})
-    .finally(() => span.end());
+  rum(name, { ...(sid ? { "workshop.session.id": sid } : {}) });
 }
 export async function call<T>(
   endpoint: string,
   payload: Record<string, unknown>,
 ) {
-  const span = tracer.startSpan(
-    endpoint + "." + String(payload.action || "request"),
-  );
-  const sc = span.spanContext(),
-    transactionId = crypto.randomUUID();
-  const traceparent = `00-${sc.traceId}-${sc.spanId}-01`;
+  const transactionId = crypto.randomUUID();
   try {
     const response = await httpsCallable<Record<string, unknown>, T>(
       functions,
       endpoint,
       { timeout: 540000 },
-    )({ ...payload, traceparent, transactionId });
+    )({ ...payload, transactionId });
     rum("operation.completed", {
       "transaction.id": transactionId,
-      trace_id: sc.traceId,
-      span_id: sc.spanId,
       operation: endpoint,
       outcome: "success",
     });
     return response.data;
   } catch (error) {
-    span.setStatus({ code: SpanStatusCode.ERROR });
     rum("operation.completed", {
       "transaction.id": transactionId,
-      trace_id: sc.traceId,
-      span_id: sc.spanId,
       operation: endpoint,
       outcome: "failure",
     });
     throw error;
-  } finally {
-    span.end();
   }
 }
 export const action = <T = { message?: string }>(

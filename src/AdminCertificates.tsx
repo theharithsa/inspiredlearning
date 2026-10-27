@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { apiJson } from "./api";
 import { auth } from "./firebase";
 import { call, errorMessage } from "./observability";
 import { Message } from "./components";
@@ -43,11 +44,11 @@ export default function AdminCertificates() {
       const res = await fetch(`/api/v1/certificates?${q}`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        result = await res.json();
-      if (!res.ok)
-        throw new Error(
-          result.error?.message || "Could not load certificates.",
-        );
+        result = await apiJson<{
+          items: Row[];
+          nextCursor: string | null;
+          rendering: { signatureConfigured: boolean };
+        }>(res, "Could not load certificates. Please try again.");
       if (auth.currentUser?.uid !== actor.uid) return;
       setRows((old) => (next ? [...old, ...result.items] : result.items));
       setCursor(result.nextCursor);
@@ -58,6 +59,16 @@ export default function AdminCertificates() {
       setBusy(false);
     }
   }
+  const initialLoad = useRef(load);
+  useEffect(() => {
+    let active = true;
+    void Promise.resolve().then(() => {
+      if (active) void initialLoad.current();
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
   async function reconcile() {
     const actor = auth.currentUser;
     if (!actor || !workshop.trim() || !reason.trim()) return;
@@ -85,9 +96,10 @@ export default function AdminCertificates() {
           }),
         },
       );
-      const result = await response.json();
-      if (!response.ok)
-        throw new Error(result.error?.message || "Certificate refresh failed.");
+      const result = await apiJson<{ failed?: number }>(
+        response,
+        "Certificate refresh failed. Please try again.",
+      );
       if (result.failed)
         throw new Error(
           `${result.failed} learner certificate sets need review. Successful repairs are safe to repeat.`,
@@ -146,6 +158,7 @@ export default function AdminCertificates() {
         <label>
           Workshop code
           <input
+            disabled={busy}
             value={workshop}
             onChange={(e) => {
               setWorkshop(e.target.value);
@@ -159,6 +172,7 @@ export default function AdminCertificates() {
           Status
           <select
             aria-label="Certificate status"
+            disabled={busy}
             value={status}
             onChange={(e) => {
               setStatus(e.target.value);
@@ -174,6 +188,7 @@ export default function AdminCertificates() {
           Certificate type
           <select
             aria-label="Certificate type"
+            disabled={busy}
             value={kind}
             onChange={(e) => {
               setKind(e.target.value);

@@ -81,7 +81,7 @@ export const learningAction = onCall(options, async (r) => {
     "learning." + r.data.action,
     actor,
     (c) => execute(db, actor, r.data, c),
-    r.data.traceparent,
+    r.rawRequest?.headers?.traceparent,
     r.data.transactionId,
   );
 });
@@ -159,7 +159,12 @@ export const learningCertificate = onCall(options, async (r) => {
               : "certificate.download.prepared",
             actor,
             c,
-            { "certificate.id": cert.id, "workshop.session.id": cert.sid },
+            {
+              "certificate.id": cert.id,
+              "workshop.session.id": cert.sid,
+              "certificate.kind":
+                cert.kind === "award" ? "award" : "participation",
+            },
           ),
         );
       return {
@@ -167,7 +172,7 @@ export const learningCertificate = onCall(options, async (r) => {
         filename: `InspiredLearning-${cert.sid}-${cert.id.slice(0, 8)}.pdf`,
       };
     },
-    r.data.traceparent,
+    r.rawRequest?.headers?.traceparent,
     r.data.transactionId,
   );
 });
@@ -177,7 +182,7 @@ export const learningVerify = onCall(options, async (r) => {
     "certificate.verify",
     null,
     () => verification(db, r.data?.id),
-    r.data?.traceparent,
+    r.rawRequest?.headers?.traceparent,
     r.data?.transactionId,
   );
 });
@@ -207,7 +212,7 @@ export const learningTelemetry = onCall(options, async (r) => {
       });
       return { accepted: true };
     },
-    r.data.traceparent,
+    r.rawRequest?.headers?.traceparent,
     r.data.transactionId,
   );
 });
@@ -251,7 +256,9 @@ export const cancelLearningEnrollment = onDocumentDeleted(
                 `learningLearners/${uid}/workshops/${e.params.sid}`,
               ),
               s = await tx.get(ref);
-            if (["registered", "completion-pending"].includes(s.data()?.status)) {
+            if (
+              ["registered", "completion-pending"].includes(s.data()?.status)
+            ) {
               tx.update(ref, {
                 status: "cancelled",
                 updatedAt: FieldValue.serverTimestamp(),

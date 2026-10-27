@@ -2,6 +2,8 @@ import { test, expect } from "@playwright/test";
 import { createRequire } from "node:module";
 import { randomUUID } from "node:crypto";
 import http from "node:http";
+import { tmpdir } from "node:os";
+import path from "node:path";
 const require = createRequire(
   new URL("../../functions/package.json", import.meta.url),
 );
@@ -111,7 +113,7 @@ test("administrator sees certificate types, status history and authorized PDF pr
     register.getByText("1 certificates loaded.", { exact: false }),
   ).toBeVisible();
   await page.screenshot({
-    path: "/private/tmp/inspi-certificate-audit/admin-certificates.png",
+    path: path.join(tmpdir(), "inspi-certificate-audit", "admin-certificates.png"),
     fullPage: true,
   });
   await page.setViewportSize({ width: 390, height: 844 });
@@ -119,7 +121,7 @@ test("administrator sees certificate types, status history and authorized PDF pr
     register.getByRole("heading", { name: "Issued certificates and history" }),
   ).toBeVisible();
   await page.screenshot({
-    path: "/private/tmp/inspi-certificate-audit/admin-certificates-mobile.png",
+    path: path.join(tmpdir(), "inspi-certificate-audit", "admin-certificates-mobile.png"),
     fullPage: true,
   });
 });

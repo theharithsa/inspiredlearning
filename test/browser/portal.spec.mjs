@@ -233,7 +233,12 @@ test("learner sees distinct scores, downloads PDF and opts into public verificat
   await expect(
     s.page.getByRole("button", { name: "Turn off public verification" }),
   ).toBeVisible();
-  await s.page.getByRole("link", { name: "Open verification page ↗" }).click();
+  await s.page.getByRole("button", { name: "Show QR code" }).click();
+  await expect(s.page.getByRole("img", {name: "Public certificate verification QR code"})).toBeVisible();
+  await s.context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  await s.page.getByRole("button", {name: "Copy verification link"}).click();
+  expect(await s.page.evaluate(() => navigator.clipboard.readText())).toMatch(/^https:\/\/inspiredlearning-vh\.web\.app\/#\/verify\//);
+  await s.page.getByRole("link", { name: "Open verification page" }).click();
   await expect(
     s.page.getByRole("heading", { name: "Verified participation." }),
   ).toBeVisible();

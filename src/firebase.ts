@@ -6,8 +6,8 @@ import {
 } from "firebase/auth";
 import {
   initializeFirestore,
-  persistentLocalCache,
-  persistentMultipleTabManager,
+  memoryLocalCache,
+  clearIndexedDbPersistence,
   connectFirestoreEmulator,
 } from "firebase/firestore";
 import { getFunctions, connectFunctionsEmulator } from "firebase/functions";
@@ -28,9 +28,7 @@ const app = initializeApp({
 export const auth = getAuth(app),
   google = new GoogleAuthProvider();
 export const db = initializeFirestore(app, {
-  localCache: persistentLocalCache({
-    tabManager: persistentMultipleTabManager(),
-  }),
+  localCache: memoryLocalCache(),
 });
 export const functions = getFunctions(app, "asia-south1");
 if (emulators) {
@@ -38,3 +36,8 @@ if (emulators) {
   connectFirestoreEmulator(db, "127.0.0.1", 8185);
   connectFunctionsEmulator(functions, "127.0.0.1", 5001);
 }
+
+// Clear only this Firestore instance's legacy cache, before any listeners start.
+export const cacheReady = emulators
+  ? Promise.resolve()
+  : clearIndexedDbPersistence(db);

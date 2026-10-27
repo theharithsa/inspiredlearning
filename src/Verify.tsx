@@ -16,15 +16,18 @@ export default function Verify() {
         awardTitle?: string;
       };
     } | null>(null),
-    [error, setError] = useState("");
+    [failure, setFailure] = useState<{ id?: string; message: string } | null>(
+      null,
+    );
+  const error = failure && failure.id === id ? failure.message : "";
   useEffect(() => {
     let active = true;
-    void call<any>("learningVerify", { id })
+    void call<NonNullable<typeof state>["data"]>("learningVerify", { id })
       .then((r) => {
         if (active) set({ id, data: r });
       })
       .catch((e) => {
-        if (active) setError(errorMessage(e));
+        if (active) setFailure({ id, message: errorMessage(e) });
       });
     return () => {
       active = false;
@@ -39,15 +42,17 @@ export default function Verify() {
       <section className="panel verification">
         <span className="eyebrow">CERTIFICATE VERIFICATION</span>
         <h1>
-          {!result
-            ? "Checking certificate…"
-            : result.status === "valid"
-              ? result.kind === "award"
-                ? "Verified achievement."
-                : "Verified participation."
-              : result.status === "revoked"
-                ? "Certificate revoked."
-                : "Private or unavailable."}
+          {error
+            ? "Verification unavailable."
+            : !result
+              ? "Checking certificate…"
+              : result.status === "valid"
+                ? result.kind === "award"
+                  ? "Verified achievement."
+                  : "Verified participation."
+                : result.status === "revoked"
+                  ? "Certificate revoked."
+                  : "Private or unavailable."}
         </h1>
         {error ? (
           <Message error>{error}</Message>

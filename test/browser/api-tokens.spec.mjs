@@ -106,6 +106,22 @@ test("administrator can create a scoped credential, copy it once, use it and rev
   await expect(
     page.getByRole("button", { name: "Copy new token" }),
   ).toHaveCount(0);
+  page.once("dialog", (dialog) => dialog.dismiss());
+  await page
+    .getByRole("button", { name: "Revoke Browser scoped token", exact: true })
+    .click();
+  expect(
+    await page.evaluate(
+      async (token) =>
+        (
+          await fetch("/api/v1/me", {
+            headers: { Authorization: `Bearer ${token}` },
+          })
+        ).status,
+      secret,
+    ),
+  ).toBe(200);
+  page.once("dialog", (dialog) => dialog.accept());
   await page
     .getByRole("button", { name: "Revoke Browser scoped token", exact: true })
     .click();

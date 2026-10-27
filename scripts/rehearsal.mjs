@@ -9,8 +9,8 @@ if (created)
 const child = spawn(
   "npx",
   [
-    "--yes",
-    "firebase-tools",
+    "--no-install",
+    "firebase",
     "emulators:exec",
     "--config",
     "firebase.rehearsal.json",

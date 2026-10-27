@@ -197,6 +197,12 @@ export async function reconcileLearner(db, actor, sid, uid, reason, c) {
         ...parent,
         issuedAt: FieldValue.serverTimestamp(),
       });
+      queue(tx, db, "certificate.issued", actor, c, {
+        "certificate.id": parentId,
+        "certificate.kind": "participation",
+        "workshop.session.id": sid,
+        "learner.id": uid,
+      });
       issued++;
     }
     const expected = new Set(
@@ -214,6 +220,13 @@ export async function reconcileLearner(db, actor, sid, uid, reason, c) {
           revokedAt: FieldValue.serverTimestamp(),
           supersededBy: parentId,
         });
+        queue(tx, db, "certificate.revoked", actor, c, {
+          "certificate.id": d.id,
+          "certificate.kind": certificateKind(d.data()),
+          "workshop.session.id": sid,
+          "learner.id": uid,
+          "revocation.reason": "superseded",
+        });
         revoked++;
       }
     }
@@ -229,6 +242,12 @@ export async function reconcileLearner(db, actor, sid, uid, reason, c) {
         parentCertificateId: parentId,
         public: false,
         issuedAt: FieldValue.serverTimestamp(),
+      });
+      queue(tx, db, "certificate.issued", actor, c, {
+        "certificate.id": id,
+        "certificate.kind": "award",
+        "workshop.session.id": sid,
+        "learner.id": uid,
       });
       issued++;
     }

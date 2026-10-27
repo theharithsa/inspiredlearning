@@ -5,12 +5,13 @@ import { Link } from "react-router-dom";
 import { db, auth } from "./firebase";
 import type { Certificate } from "./types";
 import { action, call, errorMessage, interaction } from "./observability";
-import { Empty, Message } from "./components";
+import { Empty, Message, Qr } from "./components";
 export default function Certificates({ user }: { user: User }) {
   const [rows, setRows] = useState<Certificate[] | undefined>(),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(""),
-    [notice, setNotice] = useState("");
+    [notice, setNotice] = useState(""),
+    [qrId, setQrId] = useState("");
   useEffect(
     () =>
       onSnapshot(
@@ -30,6 +31,7 @@ export default function Certificates({ user }: { user: User }) {
   async function download(c: Certificate) {
     setBusy(c.id);
     setError("");
+    setNotice("");
     try {
       const result = await call<{ base64: string; filename: string }>(
         "learningCertificate",
@@ -55,9 +57,25 @@ export default function Certificates({ user }: { user: User }) {
       setBusy("");
     }
   }
+  const verificationUrl = (c: Certificate) =>
+    `https://inspiredlearning-vh.web.app/#/verify/${encodeURIComponent(c.id)}`;
+  async function copyLink(c: Certificate) {
+    setNotice("");
+    setError("");
+    try {
+      await navigator.clipboard.writeText(verificationUrl(c));
+      interaction("certificate.link.copied", c.sid);
+      setNotice("Verification link copied.");
+    } catch {
+      setError(
+        "Could not copy the link. Open the verification page and copy its address.",
+      );
+    }
+  }
   async function visibility(c: Certificate) {
     setBusy(c.id);
     setError("");
+    setNotice("");
     try {
       await action("certificateVisibility", {
         certificateId: c.id,
@@ -137,9 +155,28 @@ export default function Certificates({ user }: { user: User }) {
                       : "Enable public verification"}
                   </button>
                   {c.public && (
-                    <Link to={"/verify/" + c.id}>
-                      Open verification page ↗
-                    </Link>
+                    <>
+                      <Link to={"/verify/" + c.id}>Open verification page</Link>
+                      <button
+                        className="text-button"
+                        onClick={() => void copyLink(c)}
+                      >
+                        Copy verification link
+                      </button>
+                      <button
+                        className="text-button"
+                        aria-expanded={qrId === c.id}
+                        onClick={() => setQrId(qrId === c.id ? "" : c.id)}
+                      >
+                        Show QR code
+                      </button>
+                      {qrId === c.id && (
+                        <Qr
+                          url={verificationUrl(c)}
+                          label="Public certificate verification QR code"
+                        />
+                      )}
+                    </>
                   )}
                 </>
               )}

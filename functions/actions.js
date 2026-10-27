@@ -1,3 +1,5 @@
+import { trace } from "@opentelemetry/api";
+import { log } from "./monitor.js";
 import { readAwardFamily, revokeAwardFamily } from "./certificate-policy.js";
 import { recordCreditTransition } from "./credits.js";
 import { eraseLearner, privacyBlocked } from "./erasure.js";
@@ -209,6 +211,9 @@ export async function execute(db, actor, data, c) {
       tx.update(ref, { public: d.public });
       queue(tx, db, "certificate.visibility.changed", actor, c, {
         "certificate.id": d.certificateId,
+        "certificate.kind":
+          snap.data().kind === "award" ? "award" : "participation",
+        "workshop.session.id": snap.data().sid,
         public: d.public,
       });
       return { saved: true };
@@ -249,6 +254,9 @@ export async function execute(db, actor, data, c) {
       );
       const priorAwards = await readAwardFamily(tx, db, old);
       const revision = old.revision + 1;
+      const awardedPoints = Number.isFinite(old.learningPoints)
+        ? old.learningPoints
+        : LEARNING_POINTS;
       const updated = {
         ...old,
         status: "revoked",
@@ -276,19 +284,27 @@ export async function execute(db, actor, data, c) {
         {
           learningPoints: Math.max(
             0,
-            (profile.data()?.learningPoints || 0) - LEARNING_POINTS,
+            (profile.data()?.learningPoints || 0) - awardedPoints,
           ),
         },
         { merge: true },
       );
       tx.create(p.collection("points").doc(`${sid}__${revision}`), {
         sid,
-        delta: -LEARNING_POINTS,
+        delta: -awardedPoints,
         reason: "Completion revoked",
         revision,
         at: FieldValue.serverTimestamp(),
       });
-      revokeAwardFamily(tx, priorAwards, FieldValue.serverTimestamp(), reason);
+      revokeAwardFamily(
+        tx,
+        priorAwards,
+        FieldValue.serverTimestamp(),
+        reason,
+        db,
+        actor,
+        c,
+      );
       if (cert.exists)
         tx.update(cert.ref, {
           status: "revoked",
@@ -298,9 +314,11 @@ export async function execute(db, actor, data, c) {
       queue(tx, db, "learning.points.reversed", actor, c, {
         "learner.id": d.uid,
         "workshop.session.id": sid,
-        "learning.points.delta": -LEARNING_POINTS,
+        "learning.points.delta": -awardedPoints,
       });
       queue(tx, db, "certificate.revoked", actor, c, {
+        "certificate.kind": "participation",
+        "workshop.session.id": d.sid,
         "learner.id": d.uid,
         "certificate.id": old.certificateId,
       });
@@ -377,12 +395,29 @@ export async function execute(db, actor, data, c) {
   if (action === "close") {
     if (!role.facilitator)
       fail("permission-denied", "Only facilitators can close workshops.");
-    await root.update({
-      completedAt: FieldValue.serverTimestamp(),
-      learningArchiveRequired: true,
-      currentActivity: null,
-      networkingOpen: false,
-      "state.phase": "locked",
+    await db.runTransaction(async (tx) => {
+      const [current, admin] = await Promise.all([
+        tx.get(root),
+        tx.get(db.doc(`admins/${actor.email}`)),
+      ]);
+      if (
+        !admin.exists ||
+        (admin.data().role || "facilitator") !== "facilitator"
+      )
+        fail("permission-denied", "Facilitator access required.");
+      if (!current.exists || current.data().deleting)
+        fail("failed-precondition", "Workshop unavailable.");
+      if (current.data().completedAt) return;
+      tx.update(root, {
+        completedAt: FieldValue.serverTimestamp(),
+        learningArchiveRequired: true,
+        currentActivity: null,
+        networkingOpen: false,
+        "state.phase": "locked",
+      });
+      queue(tx, db, "workshop.closed", actor, c, {
+        "workshop.session.id": sid,
+      });
     });
     return {
       message: "Workshop closed. Review attendance, then publish results.",
@@ -484,10 +519,29 @@ export async function execute(db, actor, data, c) {
               );
               return { uid, status: "recorded" };
             } catch (e) {
-              return { uid, status: "failed", message: e.message };
+              const expected = e instanceof HttpsError;
+              log(expected ? "WARN" : "ERROR", "Learner batch item failed", {
+                "learner.id": uid,
+                "transaction.id": c.transactionId,
+                operation: action,
+                "error.type": expected ? e.code : "internal",
+              });
+              return {
+                uid,
+                status: "failed",
+                message: expected
+                  ? e.message
+                  : "Could not update this learner. Retry.",
+              };
             }
           }),
         )),
+      );
+    trace
+      .getActiveSpan()
+      ?.setAttribute(
+        "batch.failed",
+        results.filter((r) => r.status === "failed").length,
       );
     return {
       results,
@@ -514,12 +568,31 @@ export async function execute(db, actor, data, c) {
             try {
               return await finalize(db, actor, c, sid, uid, reason);
             } catch (e) {
-              return { uid, status: "failed", message: e.message };
+              const expected = e instanceof HttpsError;
+              log(expected ? "WARN" : "ERROR", "Learner batch item failed", {
+                "learner.id": uid,
+                "transaction.id": c.transactionId,
+                operation: action,
+                "error.type": expected ? e.code : "internal",
+              });
+              return {
+                uid,
+                status: "failed",
+                message: expected
+                  ? e.message
+                  : "Could not update this learner. Retry.",
+              };
             }
           }),
         )),
       );
     }
+    trace
+      .getActiveSpan()
+      ?.setAttribute(
+        "batch.failed",
+        results.filter((r) => r.status === "failed").length,
+      );
     return {
       results,
       message: `${results.filter((r) => r.status !== "failed").length} records published or already current; ${results.filter((r) => r.status === "failed").length} need review.`,

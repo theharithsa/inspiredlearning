@@ -31,6 +31,7 @@ export function eventRecord(name, actor, c, fields = {}) {
         "event.id": id,
         "event.name": name,
         "event.provider": "inspiredlearning",
+        "event.schema.version": "1.1",
         "event.authority": "server-confirmed",
         "event.source": "backend",
         "transaction.id": c.transactionId,
@@ -50,7 +51,7 @@ export function queue(tx, db, name, actor, c, fields) {
   tx.create(ref, eventRecord(name, actor, c, fields));
 }
 export async function deliver(ref) {
-  const db = getFirestore(),
+  const db = ref.firestore,
     lease = randomUUID(),
     now = Date.now();
   const row = await db.runTransaction(async (tx) => {
@@ -89,7 +90,7 @@ export async function deliver(ref) {
         });
         status = r.status;
       } catch {}
-      const delivered = status >= 200 && status < 300;
+      const delivered = status === 202;
       const deadLetter =
         !delivered &&
         (PERMANENT_FAILURES.has(status) ||
@@ -146,6 +147,29 @@ export const retryLearningEvents = onSchedule(
       started = Date.now();
     // Leave time for erasure recovery: 50 slow deliveries (7s timeout each) exceed timeoutSeconds.
     const budgetMs = (options.timeoutSeconds * 1000) / 2;
+    const pending = await db
+      .collection("learningPrivacy")
+      .where("state", "==", "erasing")
+      .limit(10)
+      .get();
+    const { completeErasure } = await import("./erasure.js");
+    for (const row of pending.docs) {
+      try {
+        await measured(
+          "account.removal.retry",
+          { uid: "system" },
+          (c) => completeErasure(db, row.id, { uid: "system" }, c),
+          undefined,
+          undefined,
+          { kind: SpanKind.CONSUMER },
+        );
+      } catch {
+        log("ERROR", "Erasure recovery failed", {
+          "learner.id": row.id,
+          "error.type": "internal",
+        });
+      }
+    }
     const rows = await db
       .collection("learningTelemetry")
       .where("status", "==", "pending")
@@ -154,22 +178,14 @@ export const retryLearningEvents = onSchedule(
       .get();
     for (const row of rows.docs) {
       if (Date.now() - started > budgetMs) break;
-      await deliver(row.ref);
+      try {
+        await deliver(row.ref);
+      } catch {
+        log("ERROR", "Outbox delivery attempt failed", {
+          "event.id": row.id,
+          "error.type": "internal",
+        });
+      }
     }
-    const pending = await db
-      .collection("learningPrivacy")
-      .where("state", "==", "erasing")
-      .limit(10)
-      .get();
-    const { completeErasure } = await import("./erasure.js");
-    for (const row of pending.docs)
-      await measured(
-        "account.removal.retry",
-        { uid: "system" },
-        (c) => completeErasure(db, row.id, { uid: "system" }, c),
-        undefined,
-        undefined,
-        { kind: SpanKind.CONSUMER },
-      );
   },
 );

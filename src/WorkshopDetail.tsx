@@ -162,9 +162,11 @@ export default function WorkshopDetail({
                 </span>
               ))}
             </div>
-            <Link className="button" to="/certificates">
-              View certificate →
-            </Link>
+            {w.certificateId && (
+              <Link className="button" to="/certificates">
+                View certificate →
+              </Link>
+            )}
           </section>
         </>
       )}

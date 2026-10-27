@@ -4,7 +4,7 @@
 
 `index.html` loads the approved Dynatrace JavaScript tag ending `99d1da35524716f0_complete.js`. Google sign-in identifies the user by email with `dtrum.identifyUser`; signed-out visits use a persistent pseudonymous device ID. No ingestion token is included in the browser. Native RUM business events use `dynatrace.sendBizEvent` and describe **client-observed** interactions; they do not certify backend success.
 
-Page views, buttons/links, profile updates, community navigation, certificate download/visibility and staff operations are recorded without copying form text or DOM contents. Backend mutations send an actual browser-generated OTel trace context and transaction ID. The backend continues that trace and validates account identity independently.
+Page views, buttons/links, profile updates, community navigation, certificate download/visibility and staff operations are recorded without copying form text or DOM contents. Browser interactions use RUM without a per-click backend relay. Mutations send a transaction ID; the backend continues only actual incoming HTTP W3C context. Browser OTel spans without an exporter are no longer created or sent as remote parents. Native RUM-to-trace navigation still needs independent verification.
 
 ## Backend logs, metrics and traces
 
@@ -22,11 +22,11 @@ Resource attributes include `service.version` (from `functions/package.json`), `
 
 Outcomes are `success`, `rejected` (expected caller errors such as `invalid-argument`, `permission-denied`, `not-found`, `failed-precondition`, `resource-exhausted`; logged at WARN, span status left unset) and `failure` (unexpected faults; logged at ERROR, span status ERROR with recorded exception). Alert on `failure`, not on `rejected`. Rejected REST API authentication is logged at WARN with method, route and request ID.
 
-Each measured operation logs its bounded operation name, outcome and authenticated `user.id`/`user.email`, plus genuine SDK `trace_id`, `span_id`, and `transaction.id`. Failed operations include bounded error type, not private request text. Metrics: operation outcomes counter, duration histogram in seconds, RSS, heap usage and uptime. High-cardinality user/session/certificate identifiers belong in logs/spans/events, never metric dimensions. Exporters are flushed at the end of serverless work.
+Each measured operation logs its bounded operation name, outcome and authenticated `user.id`/`user.email`, plus genuine SDK `trace_id`, `span_id`, and `transaction.id`. Failed operations include bounded error type, not private request text. Metrics: operation outcomes counter, duration histogram in seconds, RSS, heap usage and uptime. High-cardinality user/session/certificate identifiers belong in logs/spans/events, never metric dimensions. Serverless exporter waits are bounded to 1.5 seconds and coalesced across overlapping calls. Each exporter has a 1-second network timeout; metric flushes are throttled to at most once per 15 seconds. A timed-out export may finish on available CPU, but delivery is best effort and background CPU is not assumed. Flush failures/timeouts use bounded platform diagnostics. Per-operation success INFO logs are omitted; WARN/ERROR diagnostics retain both platform and OTLP sinks.
 
 ## Canonical business events
 
-Firestore transactions atomically write durable state and an outbox event. The outbox delivers CloudEvents to `https://indiacs.live.dynatrace.com/api/v2/bizevents/ingest`. A lease prevents competing retries, retries retain event IDs, and HTTP acceptance marks delivery. Delivery is at least once; consumers deduplicate by event ID. Any 2xx marks delivery. Permanent rejections (400, 404, 413, 415) and events that reach 20 attempts move to `status: "failed"` with `failedAt` and `lastStatus`, and are logged at ERROR; they are not retried automatically. The 5-minute retry job spends at most half its timeout on delivery so erasure recovery always runs.
+Firestore transactions atomically write durable state and an outbox event. The outbox delivers CloudEvents to `https://indiacs.live.dynatrace.com/api/v2/bizevents/ingest`. A lease prevents competing retries, retries retain event IDs, and HTTP acceptance marks delivery. Delivery is at least once; consumers deduplicate by event ID. Only HTTP 202 marks delivery. Permanent rejections (400, 404, 413, 415) and events that reach 20 attempts move to `status: "failed"` with `failedAt` and `lastStatus`, and are logged at ERROR; they are not retried automatically. The 5-minute retry job processes erasure recovery first, isolates per-record errors, then bounds the delivery loop by half the job timeout.
 
 Canonical events include enrollment, attendance review, completion publication/correction, learning points award/reversal, certificate issuance/revocation/visibility and account-request review. Every canonical event has `transaction.id`, `trace_id`, `span_id`, actor identity, learner/session identifiers as appropriate, and server-confirmed authority. Browser events are a separate client-observed source and must not be added to canonical award totals.
 
@@ -45,3 +45,14 @@ Start with `transaction.id` from an operation log or business event; join spans 
 New canonical events: `learner.profile.corrected`, `workshop.completion.reinstated`, `request.reviewed` (with decision and request kind), `account.removal.started`, `account.removal.completed`, `account.reactivated`, and `certificate.admin-preview.prepared`. Reinstatement also emits the normal point award and certificate issuance events. Every event retains transaction/trace/span correlation, including recovery jobs. Review form text, certificate corrections and removal reasons are not copied into telemetry.
 
 Removal deletes portal history/certificates; outbox/audit events and existing Dynatrace data have separate retention. Minimal privacy marker and request status remain. Do not interpret `account.removal.completed` as shared Google account deletion, Live workshop deletion, recalled PDFs or monitoring erasure.
+
+
+## Maintenance candidate 1.0.1 (not deployment evidence)
+
+Canonical schema version is 1.1. Certificate lifecycle events include certificate kind, ID, learner and workshop dimensions, including award families and superseded versions. Unknown credits are omitted with credits.known=false; they are not -1. workshop.closed is emitted atomically once per close transition. Existing ingested history is unchanged.
+
+The outbox retains stable IDs, retries transient failures and dead-letters permanent 400/404/413/415 responses or the twentieth unsuccessful attempt. Only documented HTTP 202 acceptance marks delivery. Erasure recovery runs before deliveries, isolates per-record failures and is not skipped after an ingestion exception. Failed events require reviewed recovery; automatic TTL/redrive/alerts are not implemented by this release.
+
+Runtime email attribution remains the documented existing policy while #12 is decided. No tenant retention changes, masking settings or Session Replay enablement are included. Browser Firestore records are now memory-only; legacy cache cleanup is scoped to this Firebase instance before app rendering. Shared Firebase Auth storage is preserved.
+
+See [issue triage](ISSUE-TRIAGE-2026-10-27.md) for implemented and outstanding scope. Local tests, deployed configuration, ingestion acceptance, tenant queries and native RUM linkage must be reported separately.

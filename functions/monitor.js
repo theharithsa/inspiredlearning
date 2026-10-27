@@ -1,3 +1,4 @@
+import { errorOutcome, boundedFlush } from "./telemetry-policy.js";
 import {
   context,
   trace,
@@ -42,16 +43,6 @@ export function dynatraceHeaders() {
       }
     : {};
 }
-// Caller mistakes are expected outcomes, not service faults: they must not inflate failure rates.
-const rejected = new Set([
-  "invalid-argument",
-  "unauthenticated",
-  "permission-denied",
-  "not-found",
-  "failed-precondition",
-  "already-exists",
-  "resource-exhausted",
-]);
 const packageVersion = () => {
   try {
     return JSON.parse(readFileSync(new URL("./package.json", import.meta.url)))
@@ -61,12 +52,14 @@ const packageVersion = () => {
   }
 };
 let sdk, processor, logProcessor, reader, count, duration;
+let flushInFlight = null,
+  lastMetricFlush = 0;
 function initialize() {
   if (sdk) return;
   const config = (signal) => ({
     url: dynatraceUrl("/api/v2/otlp/v1/" + signal),
     headers: dynatraceHeaders(),
-    timeoutMillis: 5000,
+    timeoutMillis: 1000,
     compression: "gzip",
   });
   processor = new BatchSpanProcessor({
@@ -168,14 +161,13 @@ export async function measured(
         let outcome = "success";
         try {
           const result = await work(correlation);
-          log("INFO", name + " completed", attrs);
           return result;
         } catch (error) {
           const type = error?.code || "internal";
-          outcome = rejected.has(type) ? "rejected" : "failure";
+          outcome = errorOutcome(error);
           span.setAttribute("error.type", type);
           if (outcome === "failure") {
-            span.recordException(error);
+            span.recordException({ name: type, message: "Operation failed" });
             span.setStatus({ code: SpanStatusCode.ERROR, message: type });
           }
           log(
@@ -191,11 +183,31 @@ export async function measured(
             outcome,
           });
           span.end();
-          await Promise.allSettled([
-            processor.forceFlush(),
-            logProcessor.forceFlush(),
-            reader.forceFlush(),
-          ]);
+          if (!flushInFlight) {
+            const includeMetrics = Date.now() - lastMetricFlush >= 15000;
+            if (includeMetrics) lastMetricFlush = Date.now();
+            flushInFlight = Promise.allSettled([
+              processor.forceFlush(),
+              logProcessor.forceFlush(),
+              ...(includeMetrics ? [reader.forceFlush()] : []),
+            ])
+              .then((results) => {
+                if (results.some((r) => r.status === "rejected"))
+                  throw new Error("Telemetry export failed");
+              })
+              .finally(() => {
+                flushInFlight = null;
+              });
+          }
+          const flushOutcome = await boundedFlush(() => flushInFlight);
+          if (flushOutcome !== "flushed")
+            console.warn(
+              JSON.stringify({
+                message: "Telemetry flush incomplete",
+                outcome: flushOutcome,
+                operation: name,
+              }),
+            );
         }
       }),
   );

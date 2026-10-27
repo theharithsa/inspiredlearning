@@ -1,5 +1,5 @@
 import { DISCORD } from "./constants";
-import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import {
   HashRouter,
   Routes,
@@ -25,14 +25,42 @@ const Verify = lazy(() => import("./Verify"));
 import { CommunityCard, Message, Qr } from "./components";
 function PageEvents() {
   const { pathname } = useLocation();
-  useEffect(() => interaction("page.view"), [pathname]);
+  useEffect(() => {
+    interaction("page.view");
+    const titles: Record<string, string> = {
+      "/": "My learning",
+      "/workshops": "My workshops",
+      "/certificates": "Certificates",
+      "/community": "Community",
+      "/profile": "Profile",
+      "/admin": "Administration",
+      "/staff": "Workshop staff",
+      "/privacy": "Privacy",
+    };
+    document.title = `${titles[pathname] || (pathname.startsWith("/verify/") ? "Certificate verification" : "Learning record")} · InspiredLearning`;
+    let observer: MutationObserver | undefined;
+    const focusHeading = () => {
+      const heading = document.querySelector<HTMLElement>("main h1");
+      if (!heading) return false;
+      heading.tabIndex = -1;
+      heading.focus({ preventScroll: true });
+      window.scrollTo(0, 0);
+      observer?.disconnect();
+      return true;
+    };
+    if (!focusHeading()) {
+      observer = new MutationObserver(focusHeading);
+      observer.observe(document.body, { childList: true, subtree: true });
+    }
+    return () => observer?.disconnect();
+  }, [pathname]);
   return null;
 }
 function Landing() {
   const [error, setError] = useState(""),
     [busy, setBusy] = useState(false);
   return (
-    <main className="landing">
+    <main id="main-content" tabIndex={-1} className="landing">
       <header className="public-header">
         <Link className="brand" to="/">
           ✳ InspiredLearning
@@ -71,13 +99,19 @@ function Landing() {
             {busy ? "Opening Google…" : "Continue with Google →"}
           </button>
           <p className="small muted">
-            Use the same Google account you used for ChaiCart.{" "}
+            Use the Google account linked to your learning records.{" "}
             <Link to="/privacy">How we use your data</Link>
           </p>
+          {auth.currentUser && (
+            <button className="text-button" onClick={() => void signOut(auth)}>
+              Sign out of this account
+            </button>
+          )}
           {error && <Message error>{error}</Message>}
         </section>
         <div
           className="journey-illustration"
+          role="img"
           aria-label="Participate, reflect, and keep learning"
         >
           <div className="orbit" aria-hidden="true">
@@ -179,7 +213,7 @@ function Community() {
 }
 function Privacy() {
   return (
-    <main className="public-page">
+    <main id="main-content" tabIndex={-1} className="public-page">
       <Link className="brand" to="/">
         ✳ InspiredLearning
       </Link>
@@ -237,9 +271,11 @@ function LearnerLayout({ user }: { user: User }) {
   const { rows, error } = useRows<Workshop>(
     `learningLearners/${user.uid}/workshops`,
   );
-  const workshops = rows
-    ?.slice()
-    .sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+  const workshops = useMemo(
+    () =>
+      rows?.slice().sort((a, b) => (b.date || "").localeCompare(a.date || "")),
+    [rows],
+  );
   useEffect(() => {
     void action("profile").catch(() => {});
   }, [user.uid]);
@@ -258,7 +294,7 @@ function LearnerLayout({ user }: { user: User }) {
           </NavLink>
           <NavLink to="/workshops">My workshops</NavLink>
           <NavLink to="/certificates">Certificates</NavLink>
-          <NavLink to="/community">Community ↗</NavLink>
+          <NavLink to="/community">Community</NavLink>
           <NavLink to="/profile">Profile</NavLink>
           {administrator && <NavLink to="/admin">Admin controls</NavLink>}
         </nav>
@@ -277,7 +313,7 @@ function LearnerLayout({ user }: { user: User }) {
           </button>
         </div>
       </aside>
-      <main className="workspace">
+      <main id="main-content" tabIndex={-1} className="workspace">
         <div className="workspace-top">
           <span className="status-dot" /> Your learning, connected.
         </div>
@@ -288,7 +324,7 @@ function LearnerLayout({ user }: { user: User }) {
             element={
               <>
                 <Dashboard profile={profile} workshops={workshops} />
-                <PointsHistory uid={user.uid} />
+                <PointsHistory uid={user.uid} workshops={workshops} />
               </>
             }
           />
@@ -350,6 +386,20 @@ function Application() {
   }, [user]);
   return (
     <>
+      <a
+        className="skip-link"
+        href="#main-content"
+        onClick={(e) => {
+          e.preventDefault();
+          const main = document.querySelector<HTMLElement>("main");
+          if (main) {
+            main.tabIndex = -1;
+            main.focus();
+          }
+        }}
+      >
+        Skip to main content
+      </a>
       <PageEvents />
       <Routes>
         <Route path="/verify/:id" element={<Verify />} />
@@ -358,7 +408,7 @@ function Application() {
           path="*"
           element={
             user === undefined ? (
-              <main className="public-page">
+              <main id="main-content" tabIndex={-1} className="public-page">
                 <p role="status">Connecting to your account…</p>
               </main>
             ) : user && googleUser(user) ? (
@@ -368,7 +418,11 @@ function Application() {
                 <Route
                   path="/community"
                   element={
-                    <main className="public-page">
+                    <main
+                      id="main-content"
+                      tabIndex={-1}
+                      className="public-page"
+                    >
                       <Link className="brand" to="/">
                         ✳ InspiredLearning
                       </Link>
@@ -390,7 +444,7 @@ export default function App() {
     <HashRouter>
       <Suspense
         fallback={
-          <main className="public-page">
+          <main id="main-content" tabIndex={-1} className="public-page">
             <p role="status">Loading your page…</p>
           </main>
         }

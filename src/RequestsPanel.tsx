@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   collection,
   documentId,
@@ -21,10 +21,6 @@ interface Request {
   resolution?: string;
   resolutionAction?: string;
 }
-interface Page {
-  requests: Request[];
-  nextCursor: string | null;
-}
 export default function RequestsPanel({
   onOpen,
   reason,
@@ -45,68 +41,66 @@ export default function RequestsPanel({
     [notice, setNotice] = useState(""),
     [removal, setRemoval] = useState<Request | null>(null),
     [confirmUid, setConfirmUid] = useState("");
-  const key = history + ":" + refresh,
+  const [pageSize, setPageSize] = useState(50);
+  const removalForm = useRef<HTMLFormElement>(null);
+  useEffect(() => {
+    if (removal) removalForm.current?.focus();
+  }, [removal]);
+  const key = history + ":" + refresh + ":" + pageSize,
     loading = loadedKey !== key;
-  useEffect(
-    () =>
-      onSnapshot(
-        query(
-          collection(db, "learningRequests"),
-          where(
-            "status",
-            "in",
-            history
-              ? ["resolved", "rejected", "reviewed", "superseded"]
-              : ["open", "processing"],
-          ),
-          orderBy(documentId()),
-          limit(50),
+  useEffect(() => {
+    let active = true;
+    const unsubscribe = onSnapshot(
+      query(
+        collection(db, "learningRequests"),
+        where(
+          "status",
+          "in",
+          history
+            ? ["resolved", "rejected", "reviewed", "superseded"]
+            : ["open", "processing"],
         ),
-        (snapshot) => {
-          setRows(
-            snapshot.docs.map(
-              (doc) => ({ ...doc.data(), id: doc.id }) as Request,
-            ),
-          );
-          setCursor(snapshot.size === 50 ? snapshot.docs.at(-1)!.id : null);
-          setError("");
-          setLoadedKey(key);
-        },
-        () => {
-          setRows([]);
-          setCursor(null);
-          setError(
-            "Could not load requests. Check your connection and administrator access.",
-          );
-          setLoadedKey(key);
-        },
+        orderBy(documentId()),
+        limit(pageSize + 1),
       ),
-    [history, key],
-  );
+      (snapshot) => {
+        if (!active) return;
+        setRows(
+          snapshot.docs
+            .slice(0, pageSize)
+            .map((doc) => ({ ...doc.data(), id: doc.id }) as Request),
+        );
+        setCursor(
+          snapshot.size > pageSize ? snapshot.docs[pageSize - 1].id : null,
+        );
+        setError("");
+        setLoadedKey(key);
+      },
+      () => {
+        if (!active) return;
+        setRows([]);
+        setCursor(null);
+        setError(
+          "Could not load requests. Check your connection and administrator access.",
+        );
+        setLoadedKey(key);
+      },
+    );
+    return () => {
+      active = false;
+      unsubscribe();
+    };
+  }, [history, key, pageSize]);
   async function run(work: () => Promise<{ message?: string }>) {
     setBusy(true);
     setError("");
+    setNotice("");
     try {
       const r = await work();
       setNotice(r.message || "Request updated.");
       setRemoval(null);
       setConfirmUid("");
       onDone();
-    } catch (e) {
-      setError(errorMessage(e));
-    } finally {
-      setBusy(false);
-    }
-  }
-  async function more() {
-    setBusy(true);
-    try {
-      const r = await action<Page>("requests", {
-        status: history ? "history" : "open",
-        cursor,
-      });
-      setRows((old) => [...old, ...r.requests]);
-      setCursor(r.nextCursor);
     } catch (e) {
       setError(errorMessage(e));
     } finally {
@@ -120,14 +114,26 @@ export default function RequestsPanel({
         <button
           className="button secondary"
           aria-pressed={!history}
-          onClick={() => setHistory(false)}
+          onClick={() => {
+            setHistory(false);
+            setPageSize(50);
+            setRemoval(null);
+            setError("");
+            setNotice("");
+          }}
         >
           Pending requests
         </button>
         <button
           className="button secondary"
           aria-pressed={history}
-          onClick={() => setHistory(true)}
+          onClick={() => {
+            setHistory(true);
+            setPageSize(50);
+            setRemoval(null);
+            setError("");
+            setNotice("");
+          }}
         >
           Request history
         </button>
@@ -247,14 +253,17 @@ export default function RequestsPanel({
       {cursor && (
         <button
           className="button secondary"
-          disabled={busy}
-          onClick={() => void more()}
+          disabled={busy || loading}
+          onClick={() => setPageSize((size) => size + 50)}
         >
           Load more requests
         </button>
       )}
       {removal && (
         <form
+          ref={removalForm}
+          tabIndex={-1}
+          aria-label="Confirm learning record removal"
           className="panel stack"
           onSubmit={(e) => {
             e.preventDefault();

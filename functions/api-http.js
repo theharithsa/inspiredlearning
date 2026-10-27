@@ -23,14 +23,15 @@ const status = {
   unavailable: 503,
 };
 // Collapse identifiers so span names and routes stay low-cardinality for Dynatrace service detection.
+const routePatterns = Object.keys(spec.paths)
+  .sort((a, b) => (a.match(/\{/g)?.length || 0) - (b.match(/\{/g)?.length || 0))
+  .map((path) => ({
+    path: "/api/v1" + path,
+    pattern: new RegExp("^/api/v1" + path.replace(/\{[^}]+\}/g, "[^/]+") + "$"),
+  }));
 export const routeTemplate = (path) =>
-  path
-    .replace(/\/[0-9a-f]{8}-[0-9a-f-]{27}(?=\/|$)/g, "/{id}")
-    .replace(/\/[a-f0-9]{64}(?=\/|$)/g, "/{contributionId}")
-    .replace(/^(\/api\/v1\/workshops)\/[^/]+/, "$1/{workshopId}")
-    .replace(/^(\/api\/v1\/students)\/(?!scores$)[^/]+/, "$1/{studentId}")
-    .replace(/^(\/api\/v1\/colleges)\/[^/]+/, "$1/{collegeId}")
-    .replace(/\/participants\/[^/]+/, "/participants/{studentId}");
+  routePatterns.find((route) => route.pattern.test(path))?.path ||
+  "/api/v1/{unmatched}";
 const rejectAuth = (req, res, requestId, reason) => {
   log("WARN", "API authentication rejected", {
     "http.request.method": req.method,
@@ -176,7 +177,6 @@ export function apiHandler({ db, auth, rate, measured, audit }) {
           attributes: {
             "http.request.method": req.method,
             "http.route": routeTemplate(req.path),
-            "url.path": req.path,
             "request.id": requestId,
             ...(actor.apiTokenId ? { "api.token.id": actor.apiTokenId } : {}),
           },
