@@ -198,11 +198,17 @@ test("verification recovers after an error and register handles non-JSON errors"
   await expect(page.getByText(/Unexpected token/)).toHaveCount(0);
 });
 
-test("a failed lazy module shows reload recovery instead of a blank page", async ({page}) => {
-  await page.route("**/src/App.tsx*", route => route.abort());
+test("a failed lazy module shows reload recovery instead of a blank page", async ({
+  page,
+}) => {
+  await page.route("**/src/App.tsx*", (route) => route.abort());
   await page.goto("/");
-  await expect(page.getByRole("heading", {name:"We couldn’t load this page."})).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "We couldn’t load this page." }),
+  ).toBeVisible();
   await page.unroute("**/src/App.tsx*");
-  await page.getByRole("button", {name:"Reload page", exact:true}).click();
-  await expect(page.getByRole("button", {name:"Continue with Google →"})).toBeVisible();
+  await page.getByRole("button", { name: "Reload page", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "Continue with Google →" }),
+  ).toBeVisible();
 });

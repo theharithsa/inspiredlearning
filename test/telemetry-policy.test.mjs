@@ -110,3 +110,36 @@ test("award lifecycle queues transactional events only for transitions", () => {
   );
   assert.ok(!JSON.stringify(creates).includes("private reason"));
 });
+
+test("unexpected per-learner batch failures never expose dependency messages", async () => {
+  const { execute } = await import("../functions/actions.js");
+  const db = {
+    doc: (path) => ({
+      get: async () => ({
+        exists: true,
+        data: () => (path.startsWith("admins/") ? { role: "facilitator" } : {}),
+      }),
+    }),
+    runTransaction: async () => {
+      throw new Error("private database endpoint and internal failure");
+    },
+  };
+  const result = await execute(
+    db,
+    { uid: "fac", email: "fac@example.invalid" },
+    {
+      action: "attendanceBatch",
+      sid: "BATCH001",
+      uids: ["learner"],
+      status: "attended",
+      reason: "Verified attendance",
+    },
+    { transactionId: "batch-test" },
+  );
+  assert.equal(result.results[0].status, "failed");
+  assert.equal(
+    result.results[0].message,
+    "Could not update this learner. Retry.",
+  );
+  assert.ok(!JSON.stringify(result).includes("private database"));
+});

@@ -25,7 +25,7 @@ The maintenance candidate is 1.0.1. The Material 3/admin separation redesign rem
 - #2: dependency spans require SDK/ESM and safe propagation review; exporter recursion and private attributes must be excluded.
 - #9/#32: Google-admin-only redrive/health API, transactional audit and bounded UI; proposed SLO/alert thresholds need agreement and actual tenant configuration. Integrate with the separate admin app in #34.
 - #10: unnecessary success logs removed, but GCP-forwarder duplication is unverified. Retain platform WARN/ERROR diagnostics until a sink/fallback policy is agreed.
-- #12: email identity is documented current behavior; a UID-only future policy needs explicit confirmation. Neither UID pseudonymity nor portal erasure implies monitoring erasure. No tenant settings/retention edits by this maintenance change.
+- #12: owner explicitly confirmed keeping the documented email telemetry policy on 27 October. The UID-only proposal was closed as not planned, with separate Dynatrace retention/capture verification retained in #34. No tenant settings/retention changes were made.
 - #15: local throttling remains best effort. Distributed quotas/App Check/edge controls need confirmed threat policy, proxy behavior and infrastructure/cost scope.
 - #17: all-session privacy scan remains. An index replacement must prove completeness for legacy and live-only records and preserve concurrent erasure blocking.
 - #18: do not guess paid instance/memory/concurrency settings from cohort size; measure synthetic load and agree a capacity budget.

@@ -53,6 +53,6 @@ Canonical schema version is 1.1. Certificate lifecycle events include certificat
 
 The outbox retains stable IDs, retries transient failures and dead-letters permanent 400/404/413/415 responses or the twentieth unsuccessful attempt. Only documented HTTP 202 acceptance marks delivery. Erasure recovery runs before deliveries, isolates per-record failures and is not skipped after an ingestion exception. Failed events require reviewed recovery; automatic TTL/redrive/alerts are not implemented by this release.
 
-Runtime email attribution remains the documented existing policy while #12 is decided. No tenant retention changes, masking settings or Session Replay enablement are included. Browser Firestore records are now memory-only; legacy cache cleanup is scoped to this Firebase instance before app rendering. Shared Firebase Auth storage is preserved.
+The owner explicitly reaffirmed the documented email attribution policy on 27 October 2026 (#12). No tenant retention changes, masking settings or Session Replay enablement are included. Browser Firestore records are now memory-only; legacy cache cleanup is scoped to this Firebase instance before app rendering. Shared Firebase Auth storage is preserved.
 
 See [issue triage](ISSUE-TRIAGE-2026-10-27.md) for implemented and outstanding scope. Local tests, deployed configuration, ingestion acceptance, tenant queries and native RUM linkage must be reported separately.

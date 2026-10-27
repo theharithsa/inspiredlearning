@@ -162,32 +162,26 @@ test("facilitator verifies attendance, closes workshop and publishes completion 
     .fill("Verified attendance at both workshop sessions.");
   await a.page.getByRole("button", { name: "Confirm attended (1)" }).click();
   await expect(
-    a.page
-      .getByRole("status")
-      .filter({
-        hasText: /reinstated|corrected|revoked|attendance|published|current/i,
-      }),
+    a.page.getByRole("status").filter({
+      hasText: /reinstated|corrected|revoked|attendance|published|current/i,
+    }),
   ).toContainText("attendance records saved");
   await a.page.getByRole("button", { name: "Close live workshop" }).click();
   await a.page
     .getByRole("button", { name: "Publish verified results (1)" })
     .click();
   await expect(
-    a.page
-      .getByRole("status")
-      .filter({
-        hasText: /reinstated|corrected|revoked|attendance|published|current/i,
-      }),
+    a.page.getByRole("status").filter({
+      hasText: /reinstated|corrected|revoked|attendance|published|current/i,
+    }),
   ).toContainText("records published");
   await a.page
     .getByRole("button", { name: "Publish verified results (1)" })
     .click();
   await expect(
-    a.page
-      .getByRole("status")
-      .filter({
-        hasText: /reinstated|corrected|revoked|attendance|published|current/i,
-      }),
+    a.page.getByRole("status").filter({
+      hasText: /reinstated|corrected|revoked|attendance|published|current/i,
+    }),
   ).toContainText("already current");
   const r = (
     await db.doc(`learningLearners/${learnerUid}/workshops/${sid}`).get()
@@ -234,10 +228,16 @@ test("learner sees distinct scores, downloads PDF and opts into public verificat
     s.page.getByRole("button", { name: "Turn off public verification" }),
   ).toBeVisible();
   await s.page.getByRole("button", { name: "Show QR code" }).click();
-  await expect(s.page.getByRole("img", {name: "Public certificate verification QR code"})).toBeVisible();
+  await expect(
+    s.page.getByRole("img", {
+      name: "Public certificate verification QR code",
+    }),
+  ).toBeVisible();
   await s.context.grantPermissions(["clipboard-read", "clipboard-write"]);
-  await s.page.getByRole("button", {name: "Copy verification link"}).click();
-  expect(await s.page.evaluate(() => navigator.clipboard.readText())).toMatch(/^https:\/\/inspiredlearning-vh\.web\.app\/#\/verify\//);
+  await s.page.getByRole("button", { name: "Copy verification link" }).click();
+  expect(await s.page.evaluate(() => navigator.clipboard.readText())).toMatch(
+    /^https:\/\/inspiredlearning-vh\.web\.app\/#\/verify\//,
+  );
   await s.page.getByRole("link", { name: "Open verification page" }).click();
   await expect(
     s.page.getByRole("heading", { name: "Verified participation." }),
@@ -351,11 +351,9 @@ test("revocation updates verification and points, and records survive deletion",
     .fill("Attendance record corrected after facilitator review.");
   await a.page.getByRole("button", { name: "Revoke", exact: true }).click();
   await expect(
-    a.page
-      .getByRole("status")
-      .filter({
-        hasText: /reinstated|corrected|revoked|attendance|published|current/i,
-      }),
+    a.page.getByRole("status").filter({
+      hasText: /reinstated|corrected|revoked|attendance|published|current/i,
+    }),
   ).toContainText("revoked");
   await a.context.close();
   const s = await actor(browser, "learner@example.invalid", "/verify/" + cert);
@@ -431,11 +429,9 @@ test("administrator navigation is role gated and archived certificates can be re
     .getByRole("button", { name: "Reinstate completion and certificate" })
     .click();
   await expect(
-    a.page
-      .getByRole("status")
-      .filter({
-        hasText: /reinstated|corrected|revoked|attendance|published|current/i,
-      }),
+    a.page.getByRole("status").filter({
+      hasText: /reinstated|corrected|revoked|attendance|published|current/i,
+    }),
   ).toContainText("reinstated");
   cert = (
     await db.doc(`learningLearners/${learnerUid}/workshops/${sid}`).get()
@@ -456,11 +452,9 @@ test("administrator navigation is role gated and archived certificates can be re
     .getByRole("button", { name: "Replace certificate with corrected details" })
     .click();
   await expect(
-    a.page
-      .getByRole("status")
-      .filter({
-        hasText: /reinstated|corrected|revoked|attendance|published|current/i,
-      }),
+    a.page.getByRole("status").filter({
+      hasText: /reinstated|corrected|revoked|attendance|published|current/i,
+    }),
   ).toContainText("Certificate details corrected");
   const updated = (
     await db.doc(`learningLearners/${learnerUid}/workshops/${sid}`).get()
@@ -479,11 +473,9 @@ test("administrator navigation is role gated and archived certificates can be re
     .getByRole("button", { name: "Correct learner display name" })
     .click();
   await expect(
-    a.page
-      .getByRole("status")
-      .filter({
-        hasText: /reinstated|corrected|revoked|attendance|published|current/i,
-      }),
+    a.page.getByRole("status").filter({
+      hasText: /reinstated|corrected|revoked|attendance|published|current/i,
+    }),
   ).toContainText("Display name corrected");
   expect((await db.doc(`learningCertificates/${cert}`).get()).data().name).toBe(
     "Verified Learner Name",
