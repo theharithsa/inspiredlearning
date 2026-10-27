@@ -1,3 +1,5 @@
+import { auth } from "./firebase";
+import { useRecord } from "./hooks";
 import { workshopCredits } from "./credits";
 import { activityLabel, statusLabel } from "./constants";
 import { Link, useParams } from "react-router-dom";
@@ -6,15 +8,16 @@ import type { Workshop } from "./types";
 import { Empty } from "./components";
 import { interaction } from "./observability";
 import { SURVEY_TOPICS } from "./surveyTopics";
-export default function WorkshopDetail({
-  workshops,
-}: {
-  workshops: Workshop[] | undefined;
-}) {
+export default function WorkshopDetail() {
   const { sid } = useParams();
-  const w = workshops?.find((w) => w.sid === sid);
+  const path =
+    auth.currentUser && /^[A-Za-z0-9-]{4,16}$/.test(sid || "")
+      ? `learningLearners/${auth.currentUser.uid}/workshops/${sid}`
+      : null;
+  const w = useRecord<Workshop>(path);
   useEffect(() => interaction("workshop.viewed", sid), [sid]);
-  if (!workshops) return <p role="status">Loading your workshop…</p>;
+  if (path && w === undefined)
+    return <p role="status">Loading your workshop…</p>;
   if (!w)
     return (
       <Empty title="Workshop not found">

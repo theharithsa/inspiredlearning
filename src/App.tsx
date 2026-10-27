@@ -300,7 +300,7 @@ function LearnerLayout({ user }: { user: User }) {
           />
           <Route
             path="/workshops/:sid"
-            element={<WorkshopDetail workshops={workshops} />}
+            element={<WorkshopDetail />}
           />
           <Route path="/certificates" element={<Certificates user={user} />} />
           <Route path="/community" element={<Community />} />
