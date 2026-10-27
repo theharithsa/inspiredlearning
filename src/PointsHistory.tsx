@@ -1,6 +1,13 @@
 import { useRows } from "./hooks";
 import { Link } from "react-router-dom";
-export default function PointsHistory({ uid }: { uid: string }) {
+import type { Workshop } from "./types";
+export default function PointsHistory({
+  uid,
+  workshops,
+}: {
+  uid: string;
+  workshops?: Workshop[];
+}) {
   const { rows, error } = useRows<{
     workshopId: string;
     delta: number | null;
@@ -28,8 +35,15 @@ export default function PointsHistory({ uid }: { uid: string }) {
           .map((r) => (
             <div className="result-row" key={r.id}>
               <span>
-                <Link to={"/workshops/" + r.workshopId}>{r.workshopId}</Link> ·{" "}
-                {r.reason}
+                {r.workshopId ? (
+                  <Link to={"/workshops/" + r.workshopId}>
+                    {workshops?.find((w) => w.sid === r.workshopId)?.title ||
+                      r.workshopId}
+                  </Link>
+                ) : (
+                  "Community contribution"
+                )}{" "}
+                · {r.reason}
               </span>
               <strong>
                 {r.delta !== null && r.delta > 0 ? "+" : ""}

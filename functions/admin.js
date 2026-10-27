@@ -3,7 +3,7 @@ import { recordCreditTransition } from "./credits.js";
 import { FieldValue } from "firebase-admin/firestore";
 import { randomUUID } from "node:crypto";
 import { HttpsError } from "firebase-functions/v2/https";
-import { validUid, validSid } from "./model.js";
+import { validUid, validSid, LEARNING_POINTS } from "./model.js";
 import { queue } from "./events.js";
 const fail = (code, message) => {
   throw new HttpsError(code, message);
@@ -70,7 +70,7 @@ export async function adminAction(db, actor, d, c) {
           status: "completed",
           revision,
           certificateId: id,
-          learningPoints: 100,
+          learningPoints: LEARNING_POINTS,
           reinstatedAt: FieldValue.serverTimestamp(),
           reinstatedBy: actor.uid,
         };
@@ -93,14 +93,15 @@ export async function adminAction(db, actor, d, c) {
       tx.set(
         p,
         {
-          learningPoints: (profile.data()?.learningPoints || 0) + 100,
+          learningPoints:
+            (profile.data()?.learningPoints || 0) + LEARNING_POINTS,
           updatedAt: FieldValue.serverTimestamp(),
         },
         { merge: true },
       );
       tx.create(p.collection("points").doc(`${d.sid}__${revision}`), {
         sid: d.sid,
-        delta: 100,
+        delta: LEARNING_POINTS,
         reason: "Verified completion reinstated",
         revision,
         at: FieldValue.serverTimestamp(),
@@ -120,7 +121,7 @@ export async function adminAction(db, actor, d, c) {
       };
       certificateRecord.kind = "participation";
       tx.create(db.doc(`learningCertificates/${id}`), certificateRecord);
-      issueAwardFamily(tx, db, certificateRecord);
+      issueAwardFamily(tx, db, certificateRecord, actor, c);
       queue(tx, db, "workshop.completion.reinstated", actor, c, {
         "learner.id": d.uid,
         "workshop.session.id": d.sid,
@@ -129,12 +130,13 @@ export async function adminAction(db, actor, d, c) {
       queue(tx, db, "learning.points.awarded", actor, c, {
         "learner.id": d.uid,
         "workshop.session.id": d.sid,
-        "learning.points.delta": 100,
+        "learning.points.delta": LEARNING_POINTS,
       });
       queue(tx, db, "certificate.issued", actor, c, {
+        "certificate.kind": "participation",
         "learner.id": d.uid,
-        "certificate.id": id,
         "workshop.session.id": d.sid,
+        "certificate.id": id,
       });
       return {
         message:

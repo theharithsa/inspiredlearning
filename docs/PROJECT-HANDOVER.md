@@ -61,3 +61,8 @@ Signature follow-up is now deployed and verified: the active backend source cont
 
 
 Production certificate repair is complete (20 October 2026), following Google facilitator sign-in through the admin portal. GMU0810 now has 119 active participation certificates and 38 active award certificates, including Best CEO (Keerthana N S), Best CTO (Manasa Nadiger), Best COO (SM POOJA), and all five members for each recorded team/regional award. All active award parent links were validated. There are 39 retained revoked/superseded versions. A before/after production check confirmed all 119 learners' personalCredits, teamCredits, learningPoints and completion status unchanged. The live admin register displays all 38 issued awards and PDF preview controls. The approved signature is deployed; students must redownload older PDFs. This supersedes the earlier pending-authentication repair status.
+
+
+## Pre-redesign maintenance candidate — 27 October 2026
+
+Issues #1–#33 have source-specific triage comments; main did not already resolve them. Maintenance candidate 1.0.1 is separate from redesign #34 (2.0.0, approved separate admin app at admin.inspi.in). See ISSUE-TRIAGE-2026-10-27.md for source scope, pending policy/infrastructure decisions and verification boundaries. This note is not evidence of production deployment or learner-data repair.

@@ -2,7 +2,7 @@ import AdminCertificates from "./AdminCertificates";
 import ApiTokens from "./ApiTokens";
 import StaffRecords from "./StaffRecords";
 import { statusLabel } from "./constants";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { action, errorMessage } from "./observability";
 import type { Roster } from "./types";
@@ -28,25 +28,44 @@ export default function Staff({ admin = false }: { admin?: boolean }) {
     [busy, setBusy] = useState(false),
     [message, setMessage] = useState(""),
     [error, setError] = useState("");
+  const loadGeneration = useRef(0);
+  const sessionCode = params.get("session") || "";
+  useEffect(() => {
+    let active = true;
+    void Promise.resolve().then(() => {
+      if (active && /^[A-Za-z0-9-]{4,16}$/.test(sessionCode))
+        void load(sessionCode);
+    });
+    const generation = loadGeneration;
+    return () => {
+      active = false;
+      generation.current++;
+    };
+  }, [sessionCode]);
   async function load(code = sid) {
+    const generation = ++loadGeneration.current;
     setBusy(true);
     setError("");
+    setMessage("");
     try {
       const r = await action<Roster>("roster", {
         sid: code.trim().toUpperCase(),
       });
+      if (generation !== loadGeneration.current) return;
       setRoster(r);
       setSelected([]);
     } catch (e) {
+      if (generation !== loadGeneration.current) return;
       setRoster(null);
       setError(errorMessage(e));
     } finally {
-      setBusy(false);
+      if (generation === loadGeneration.current) setBusy(false);
     }
   }
   async function run(work: () => Promise<any>) {
     setBusy(true);
     setError("");
+    setMessage("");
     try {
       const result = await work();
       setMessage(result.message || "Confirmed.");
@@ -128,7 +147,13 @@ export default function Staff({ admin = false }: { admin?: boolean }) {
               <button
                 className="button secondary"
                 disabled={busy}
-                onClick={() => setSelected(roster.students.map((s) => s.uid))}
+                onClick={() =>
+                  setSelected(
+                    roster.students
+                      .filter((s) => s.resultStatus !== "removed")
+                      .map((s) => s.uid),
+                  )
+                }
               >
                 Select all visible
               </button>

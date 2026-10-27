@@ -37,6 +37,24 @@ export default function RequestHistory({ uid }: { uid: string }) {
                   : "Record correction"}{" "}
                 · {r.status}
               </strong>
+              {r.createdAt && (
+                <p className="small">
+                  Submitted{" "}
+                  {new Intl.DateTimeFormat(undefined, {
+                    dateStyle: "medium",
+                    timeStyle: "short",
+                  }).format(new Date(r.createdAt.seconds * 1000))}
+                </p>
+              )}
+              {r.resolvedAt && (
+                <p className="small">
+                  Reviewed{" "}
+                  {new Intl.DateTimeFormat(undefined, {
+                    dateStyle: "medium",
+                    timeStyle: "short",
+                  }).format(new Date(r.resolvedAt.seconds * 1000))}
+                </p>
+              )}
               {r.reason && <p>{r.reason}</p>}
               {r.resolution && <p>{r.resolution}</p>}
             </article>

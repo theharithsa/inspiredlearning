@@ -20,6 +20,7 @@ export default function Profile({
   async function submit(work: () => Promise<unknown>, success: string) {
     setBusy(true);
     setError("");
+    setMessage("");
     try {
       await work();
       setMessage(success);
@@ -82,10 +83,17 @@ export default function Profile({
           className="panel stack"
           onSubmit={(e) => {
             e.preventDefault();
-            void submit(
-              () => action("requestCorrection", { kind, reason }),
-              "Request submitted. Your facilitator can review it with you.",
-            );
+            if (
+              kind === "erasure" &&
+              !window.confirm(
+                "Submit a request to remove your InspiredLearning history and certificates? A facilitator must review it before removal. Your shared Google sign-in and ChaiCart Live records stay available.",
+              )
+            )
+              return;
+            void submit(async () => {
+              await action("requestCorrection", { kind, reason });
+              setReason("");
+            }, "Request submitted. Your facilitator can review it with you.");
           }}
         >
           <h2>Need a record corrected?</h2>
@@ -109,7 +117,10 @@ export default function Profile({
               onChange={(e) => setReason(e.target.value)}
             />
           </label>
-          <button className="button secondary" disabled={busy}>
+          <button
+            className="button secondary"
+            disabled={busy || !reason.trim()}
+          >
             Send request
           </button>
         </form>

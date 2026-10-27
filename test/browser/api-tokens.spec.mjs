@@ -1,12 +1,11 @@
 import { test, expect } from "@playwright/test";
 import { createRequire } from "node:module";
-import http from "node:http";
 const require = createRequire(
   new URL("../../functions/package.json", import.meta.url),
 );
 const { initializeApp, deleteApp } = require("firebase-admin/app");
 const { getFirestore } = require("firebase-admin/firestore");
-let app, db, sink;
+let app, db;
 const email = "tokens-admin@example.invalid";
 test.beforeAll(async () => {
   if (process.env.GCLOUD_PROJECT !== "demo-chaicart")
@@ -15,17 +14,8 @@ test.beforeAll(async () => {
   app = initializeApp({ projectId: "demo-chaicart" }, "token-portal-browser");
   db = getFirestore(app);
   await db.doc(`admins/${email}`).set({ role: "facilitator" });
-  sink = http.createServer((req, res) => {
-    req.resume();
-    res.writeHead(req.url.includes("bizevents") ? 202 : 200, {
-      "Content-Type": "application/json",
-    });
-    res.end("{}");
-  });
-  await new Promise((resolve) => sink.listen(8799, "127.0.0.1", resolve));
 });
 test.afterAll(async () => {
-  await new Promise((resolve) => sink.close(resolve));
   await deleteApp(app);
 });
 test("administrator can create a scoped credential, copy it once, use it and revoke it", async ({
@@ -106,6 +96,22 @@ test("administrator can create a scoped credential, copy it once, use it and rev
   await expect(
     page.getByRole("button", { name: "Copy new token" }),
   ).toHaveCount(0);
+  page.once("dialog", (dialog) => dialog.dismiss());
+  await page
+    .getByRole("button", { name: "Revoke Browser scoped token", exact: true })
+    .click();
+  expect(
+    await page.evaluate(
+      async (token) =>
+        (
+          await fetch("/api/v1/me", {
+            headers: { Authorization: `Bearer ${token}` },
+          })
+        ).status,
+      secret,
+    ),
+  ).toBe(200);
+  page.once("dialog", (dialog) => dialog.accept());
   await page
     .getByRole("button", { name: "Revoke Browser scoped token", exact: true })
     .click();

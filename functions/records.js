@@ -229,12 +229,23 @@ export async function recordsAction(db, actor, d, c) {
         priorAwards,
         FieldValue.serverTimestamp(),
         "Superseded by corrected results",
+        db,
+        actor,
+        c,
       );
       if (prior.exists)
         tx.update(prior.ref, {
           status: "revoked",
           reason: "Replaced by name correction",
           revokedAt: FieldValue.serverTimestamp(),
+        });
+      if (prior?.data()?.status === "issued")
+        queue(tx, db, "certificate.revoked", actor, c, {
+          "certificate.id": prior.id,
+          "certificate.kind": "participation",
+          "workshop.session.id": d.sid,
+          "learner.id": d.uid,
+          "revocation.reason": "superseded",
         });
       const certificateRecord = {
         id,
@@ -251,14 +262,16 @@ export async function recordsAction(db, actor, d, c) {
       };
       certificateRecord.kind = "participation";
       tx.create(db.doc(`learningCertificates/${id}`), certificateRecord);
-      issueAwardFamily(tx, db, certificateRecord);
+      issueAwardFamily(tx, db, certificateRecord, actor, c);
       queue(tx, db, "workshop.completion.corrected", actor, c, {
         "learner.id": d.uid,
         "workshop.session.id": d.sid,
         "result.revision": revision,
       });
       queue(tx, db, "certificate.issued", actor, c, {
+        "certificate.kind": "participation",
         "learner.id": d.uid,
+        "workshop.session.id": d.sid,
         "certificate.id": id,
       });
       return {

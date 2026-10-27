@@ -120,6 +120,13 @@ export default function ApiTokens() {
     }
   }
   async function revoke(id: string) {
+    if (
+      !window.confirm(
+        "Revoke this API token? Integrations using it will lose access immediately.",
+      )
+    )
+      return;
+    setNotice("");
     setBusy(true);
     setError("");
     try {

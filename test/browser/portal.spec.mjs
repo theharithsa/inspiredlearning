@@ -1,6 +1,5 @@
 import { test, expect } from "@playwright/test";
 import { createRequire } from "node:module";
-import http from "node:http";
 import fs from "node:fs";
 const require = createRequire(
   new URL("../../functions/package.json", import.meta.url),
@@ -8,11 +7,15 @@ const require = createRequire(
 const { initializeApp, deleteApp } = require("firebase-admin/app");
 const { getFirestore } = require("firebase-admin/firestore");
 test.describe.configure({ mode: "serial" });
-let app, db, sink;
-const events = [],
-  sid = "INSPIRE01",
+let app, db;
+const sid = "INSPIRE01",
   fac = "facilitator@example.invalid";
 let learnerUid, secondUid, cert;
+async function recordedEvents() {
+  const response = await fetch("http://127.0.0.1:8799/test/events");
+  if (!response.ok) throw new Error("Test collector unavailable");
+  return response.json();
+}
 async function actor(browser, email, path = "/", mobile = false) {
   const context = await browser.newContext(
     mobile
@@ -41,16 +44,7 @@ test.beforeAll(async () => {
   process.env.FIRESTORE_EMULATOR_HOST = "127.0.0.1:8185";
   app = initializeApp({ projectId: "demo-chaicart" }, "portal-browser");
   db = getFirestore(app);
-  sink = http.createServer(async (req, res) => {
-    let b = "";
-    for await (const chunk of req) b += chunk;
-    if (req.url.includes("bizevents")) events.push(JSON.parse(b));
-    res.writeHead(req.url.includes("bizevents") ? 202 : 200, {
-      "Content-Type": "application/json",
-    });
-    res.end("{}");
-  });
-  await new Promise((r) => sink.listen(8799, "127.0.0.1", r));
+
   await db.doc("admins/" + fac).set({ role: "facilitator" });
   await db.doc("sessions/" + sid).set({
     title: "ChaiCart Cloud Workshop",
@@ -60,7 +54,6 @@ test.beforeAll(async () => {
   });
 });
 test.afterAll(async () => {
-  await new Promise((r) => sink.close(r));
   await deleteApp(app);
 });
 test("public mobile onboarding and Discord work without exposing records", async ({
@@ -80,7 +73,7 @@ test("public mobile onboarding and Discord work without exposing records", async
       page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
     )
     .toBe(true);
-  await page.getByRole("link", { name: "Our community ↗" }).click();
+  await page.getByRole("link", { name: "Our community" }).click();
   await expect(
     page.getByRole("heading", {
       name: "Bring your questions. Share your discoveries.",
@@ -162,32 +155,26 @@ test("facilitator verifies attendance, closes workshop and publishes completion 
     .fill("Verified attendance at both workshop sessions.");
   await a.page.getByRole("button", { name: "Confirm attended (1)" }).click();
   await expect(
-    a.page
-      .getByRole("status")
-      .filter({
-        hasText: /reinstated|corrected|revoked|attendance|published|current/i,
-      }),
+    a.page.getByRole("status").filter({
+      hasText: /reinstated|corrected|revoked|attendance|published|current/i,
+    }),
   ).toContainText("attendance records saved");
   await a.page.getByRole("button", { name: "Close live workshop" }).click();
   await a.page
     .getByRole("button", { name: "Publish verified results (1)" })
     .click();
   await expect(
-    a.page
-      .getByRole("status")
-      .filter({
-        hasText: /reinstated|corrected|revoked|attendance|published|current/i,
-      }),
+    a.page.getByRole("status").filter({
+      hasText: /reinstated|corrected|revoked|attendance|published|current/i,
+    }),
   ).toContainText("records published");
   await a.page
     .getByRole("button", { name: "Publish verified results (1)" })
     .click();
   await expect(
-    a.page
-      .getByRole("status")
-      .filter({
-        hasText: /reinstated|corrected|revoked|attendance|published|current/i,
-      }),
+    a.page.getByRole("status").filter({
+      hasText: /reinstated|corrected|revoked|attendance|published|current/i,
+    }),
   ).toContainText("already current");
   const r = (
     await db.doc(`learningLearners/${learnerUid}/workshops/${sid}`).get()
@@ -233,7 +220,18 @@ test("learner sees distinct scores, downloads PDF and opts into public verificat
   await expect(
     s.page.getByRole("button", { name: "Turn off public verification" }),
   ).toBeVisible();
-  await s.page.getByRole("link", { name: "Open verification page ↗" }).click();
+  await s.page.getByRole("button", { name: "Show QR code" }).click();
+  await expect(
+    s.page.getByRole("img", {
+      name: "Public certificate verification QR code",
+    }),
+  ).toBeVisible();
+  await s.context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  await s.page.getByRole("button", { name: "Copy verification link" }).click();
+  expect(await s.page.evaluate(() => navigator.clipboard.readText())).toMatch(
+    /^https:\/\/inspiredlearning-vh\.web\.app\/#\/verify\//,
+  );
+  await s.page.getByRole("link", { name: "Open verification page" }).click();
   await expect(
     s.page.getByRole("heading", { name: "Verified participation." }),
   ).toBeVisible();
@@ -346,11 +344,9 @@ test("revocation updates verification and points, and records survive deletion",
     .fill("Attendance record corrected after facilitator review.");
   await a.page.getByRole("button", { name: "Revoke", exact: true }).click();
   await expect(
-    a.page
-      .getByRole("status")
-      .filter({
-        hasText: /reinstated|corrected|revoked|attendance|published|current/i,
-      }),
+    a.page.getByRole("status").filter({
+      hasText: /reinstated|corrected|revoked|attendance|published|current/i,
+    }),
   ).toContainText("revoked");
   await a.context.close();
   const s = await actor(browser, "learner@example.invalid", "/verify/" + cert);
@@ -369,9 +365,13 @@ test("revocation updates verification and points, and records survive deletion",
       .learningPoints,
   ).toBe(0);
   await expect
-    .poll(() => events.filter((e) => e.source === "inspiredlearning").length)
+    .poll(
+      async () =>
+        (await recordedEvents()).filter((e) => e.source === "inspiredlearning")
+          .length,
+    )
     .toBeGreaterThan(5);
-  for (const e of events) {
+  for (const e of await recordedEvents()) {
     expect(e.data["transaction.id"]).toBeTruthy();
     expect(e.data.trace_id).toMatch(/^[a-f0-9]{32}$/);
     expect(e.data.span_id).toMatch(/^[a-f0-9]{16}$/);
@@ -426,11 +426,9 @@ test("administrator navigation is role gated and archived certificates can be re
     .getByRole("button", { name: "Reinstate completion and certificate" })
     .click();
   await expect(
-    a.page
-      .getByRole("status")
-      .filter({
-        hasText: /reinstated|corrected|revoked|attendance|published|current/i,
-      }),
+    a.page.getByRole("status").filter({
+      hasText: /reinstated|corrected|revoked|attendance|published|current/i,
+    }),
   ).toContainText("reinstated");
   cert = (
     await db.doc(`learningLearners/${learnerUid}/workshops/${sid}`).get()
@@ -451,11 +449,9 @@ test("administrator navigation is role gated and archived certificates can be re
     .getByRole("button", { name: "Replace certificate with corrected details" })
     .click();
   await expect(
-    a.page
-      .getByRole("status")
-      .filter({
-        hasText: /reinstated|corrected|revoked|attendance|published|current/i,
-      }),
+    a.page.getByRole("status").filter({
+      hasText: /reinstated|corrected|revoked|attendance|published|current/i,
+    }),
   ).toContainText("Certificate details corrected");
   const updated = (
     await db.doc(`learningLearners/${learnerUid}/workshops/${sid}`).get()
@@ -474,11 +470,9 @@ test("administrator navigation is role gated and archived certificates can be re
     .getByRole("button", { name: "Correct learner display name" })
     .click();
   await expect(
-    a.page
-      .getByRole("status")
-      .filter({
-        hasText: /reinstated|corrected|revoked|attendance|published|current/i,
-      }),
+    a.page.getByRole("status").filter({
+      hasText: /reinstated|corrected|revoked|attendance|published|current/i,
+    }),
   ).toContainText("Display name corrected");
   expect((await db.doc(`learningCertificates/${cert}`).get()).data().name).toBe(
     "Verified Learner Name",
@@ -763,8 +757,10 @@ test("final canonical-event drain preserves trace and transaction correlation fo
     "account.reactivated",
     "certificate.admin-preview.prepared",
   ])
-    expect(events.some((e) => e.data?.["event.name"] === name)).toBe(true);
-  for (const event of events) {
+    expect(
+      (await recordedEvents()).some((e) => e.data?.["event.name"] === name),
+    ).toBe(true);
+  for (const event of await recordedEvents()) {
     expect(event.data["transaction.id"]).toBeTruthy();
     expect(event.data.trace_id).toMatch(/^[a-f0-9]{32}$/);
     expect(event.data.span_id).toMatch(/^[a-f0-9]{16}$/);

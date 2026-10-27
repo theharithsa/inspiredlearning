@@ -77,3 +77,12 @@ Latest verified release: source `050ecbc`, deployed 11 October 2026. Live portal
 Admins can create a token with the new **credits:write** permission in `/#/admin` (unchecked by default). POST `/api/v1/students/{studentId}/credits` awards or deducts an activity contribution; PUT `/api/v1/students/{studentId}/credit-contributions/{contributionId}` corrects its amount using expectedVersion. Add scores:read for contribution revisions and unified totals. Existing tokens retain their permissions.
 
 Webhook callers send a UUID Idempotency-Key and stable sourceId/eventId; identical events deduplicate across credentials. Writes append immutable deltas and audit events, preserve reviewed workshop results/certificates and enforce current admin authority, student restrictions and removal. Minimal event tombstones prevent replay after reactivation. Legacy learningPoints are compatibility data; use credits for the single Inspi total. Account capacity is 500 external adjustments (429 at capacity). MCP remains read-only. Full payloads and error/retry semantics: [API.md](API.md).
+
+
+## Maintenance 1.0.1 recovery notes
+
+The app uses memory-only Firestore caching. On upgrade it clears only its Firestore instance's old IndexedDB cache before rendering; if an old tab blocks cleanup, close the other InspiredLearning tabs and reload. Firebase Auth persistence is not cleared by cache cleanup. No cache cleanup promises forensic secure erasure.
+
+Outbox events marked failed are not delivered again automatically. Preserve their payload/event IDs and investigate HTTP status/configuration before a separately reviewed redrive. Pending/failed TTL, redrive UI and alert thresholds are tracked in #9/#32/#33. Do not delete pending records or change event IDs to make backlog numbers green. Retry recovery processes erasures before deliveries; inspect each failed erasure independently.
+
+CSP is report-only in the maintenance configuration. Validate actual Google OAuth, Swagger and Dynatrace script/beacon origins before enforcing it. Source headers are not proof that deployed responses contain them.

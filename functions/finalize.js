@@ -8,7 +8,12 @@ import { privacyBlocked } from "./erasure.js";
 import { FieldValue } from "firebase-admin/firestore";
 import { randomUUID } from "node:crypto";
 import { HttpsError } from "firebase-functions/v2/https";
-import { resultSnapshot, fingerprint, pointsTransition } from "./model.js";
+import {
+  resultSnapshot,
+  fingerprint,
+  pointsTransition,
+  LEARNING_POINTS,
+} from "./model.js";
 import { queue } from "./events.js";
 const fail = (code, message) => {
   throw new HttpsError(code, message);
@@ -112,7 +117,7 @@ export async function finalize(db, actor, c, sid, uid, reason) {
       revision,
       fingerprint: hash,
       certificateId,
-      learningPoints: 100,
+      learningPoints: LEARNING_POINTS,
       finalizedAt: FieldValue.serverTimestamp(),
       finalizedBy: actor.uid,
     };
@@ -157,12 +162,23 @@ export async function finalize(db, actor, c, sid, uid, reason) {
       priorAwards,
       FieldValue.serverTimestamp(),
       "Superseded by corrected results",
+      db,
+      actor,
+      c,
     );
     if (previousCertificate?.exists)
       tx.update(previousCertificate.ref, {
         status: "revoked",
         reason: "Superseded by corrected results",
         revokedAt: FieldValue.serverTimestamp(),
+      });
+    if (previousCertificate?.data()?.status === "issued")
+      queue(tx, db, "certificate.revoked", actor, c, {
+        "certificate.id": previousCertificate.id,
+        "certificate.kind": "participation",
+        "workshop.session.id": sid,
+        "learner.id": uid,
+        "revocation.reason": "superseded",
       });
     const certificateRecord = {
       id: certificateId,
@@ -182,7 +198,7 @@ export async function finalize(db, actor, c, sid, uid, reason) {
       db.doc(`learningCertificates/${certificateId}`),
       certificateRecord,
     );
-    issueAwardFamily(tx, db, certificateRecord);
+    issueAwardFamily(tx, db, certificateRecord, actor, c);
     queue(
       tx,
       db,
@@ -195,11 +211,18 @@ export async function finalize(db, actor, c, sid, uid, reason) {
         "learner.id": uid,
         "workshop.session.id": sid,
         "result.revision": revision,
-        "credits.personal": result.personalCredits ?? -1,
-        "credits.team": result.teamCredits ?? -1,
+        "credits.known":
+          result.personalCredits != null && result.teamCredits != null,
+        ...(result.personalCredits != null
+          ? { "credits.personal": result.personalCredits }
+          : {}),
+        ...(result.teamCredits != null
+          ? { "credits.team": result.teamCredits }
+          : {}),
       },
     );
     queue(tx, db, "certificate.issued", actor, c, {
+      "certificate.kind": "participation",
       "learner.id": uid,
       "workshop.session.id": sid,
       "certificate.id": certificateId,
