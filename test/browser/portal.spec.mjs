@@ -80,7 +80,7 @@ test("public mobile onboarding and Discord work without exposing records", async
       page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
     )
     .toBe(true);
-  await page.getByRole("link", { name: "Our community ↗" }).click();
+  await page.getByRole("link", { name: "Our community" }).click();
   await expect(
     page.getByRole("heading", {
       name: "Bring your questions. Share your discoveries.",
