@@ -1,3 +1,4 @@
+import { SpanKind } from "@opentelemetry/api";
 import { getAuth } from "firebase-admin/auth";
 import { apiHandler } from "./api-http.js";
 import { googleActor } from "./api.js";
@@ -216,10 +217,22 @@ export const recordLearningEnrollment = onDocumentCreated(
     if (!validSid(e.params.sid) || !validUid(e.params.uid)) return;
     const session = await db.doc(`sessions/${e.params.sid}`).get();
     if (!session.exists || session.data().deleting) return;
-    return measured("enrollment.record", { uid: e.params.uid }, (c) =>
-      enroll(db, e.params.sid, e.params.uid, e.data.data(), session.data(), c, {
-        uid: e.params.uid,
-      }),
+    return measured(
+      "enrollment.record",
+      { uid: e.params.uid },
+      (c) =>
+        enroll(
+          db,
+          e.params.sid,
+          e.params.uid,
+          e.data.data(),
+          session.data(),
+          c,
+          { uid: e.params.uid },
+        ),
+      undefined,
+      undefined,
+      { kind: SpanKind.CONSUMER },
     );
   },
 );
@@ -227,29 +240,37 @@ export const cancelLearningEnrollment = onDocumentDeleted(
   { ...options, document: "sessions/{sid}", retry: true },
   async (e) => {
     if (!validSid(e.params.sid)) return;
-    return measured("enrollment.cancel", { uid: "system" }, async (c) => {
-      const index = await db.doc(`learningEnrollments/${e.params.sid}`).get();
-      for (const uid of index.data()?.uids || []) {
-        await db.runTransaction(async (tx) => {
-          const ref = db.doc(
-              `learningLearners/${uid}/workshops/${e.params.sid}`,
-            ),
-            s = await tx.get(ref);
-          if (["registered", "completion-pending"].includes(s.data()?.status)) {
-            tx.update(ref, {
-              status: "cancelled",
-              updatedAt: FieldValue.serverTimestamp(),
-            });
-            queue(tx, db, "enrollment.cancelled", { uid: "system" }, c, {
-              "learner.id": uid,
-              "workshop.session.id": e.params.sid,
-            });
-          }
-        });
-      }
-    });
+    return measured(
+      "enrollment.cancel",
+      { uid: "system" },
+      async (c) => {
+        const index = await db.doc(`learningEnrollments/${e.params.sid}`).get();
+        for (const uid of index.data()?.uids || []) {
+          await db.runTransaction(async (tx) => {
+            const ref = db.doc(
+                `learningLearners/${uid}/workshops/${e.params.sid}`,
+              ),
+              s = await tx.get(ref);
+            if (["registered", "completion-pending"].includes(s.data()?.status)) {
+              tx.update(ref, {
+                status: "cancelled",
+                updatedAt: FieldValue.serverTimestamp(),
+              });
+              queue(tx, db, "enrollment.cancelled", { uid: "system" }, c, {
+                "learner.id": uid,
+                "workshop.session.id": e.params.sid,
+              });
+            }
+          });
+        }
+      },
+      undefined,
+      undefined,
+      { kind: SpanKind.CONSUMER },
+    );
   },
 );
+
 export { deliverLearningEvent, retryLearningEvents } from "./events.js";
 
 export const learningApi = onRequest(

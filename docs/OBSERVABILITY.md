@@ -14,13 +14,19 @@ Service `inspiredlearning-api`, namespace `inspiredlearning`, production resourc
 - `https://indiacs.live.dynatrace.com/api/v2/otlp/v1/metrics`
 - `https://indiacs.live.dynatrace.com/api/v2/otlp/v1/logs`
 
+The tenant base URL defaults to `https://indiacs.live.dynatrace.com` and can be overridden per Firebase project with `DYNATRACE_ENDPOINT` in `functions/.env` (see `functions/.env.example`). The same setting drives business-event ingest.
+
 Classic credentials use `Authorization: Api-Token …`; platform credentials use `Bearer …`. Despite its historical name, Firebase Secret Manager `DYNATRACE_PLATFORM_TOKEN` contains the configured ingestion credential. Required classic scopes: `openTelemetryTrace.ingest`, `metrics.ingest`, `logs.ingest`, `bizevents.ingest`. Never copy the secret into frontend configuration or Git.
+
+Resource attributes include `service.version` (from `functions/package.json`), `cloud.provider`, `cloud.platform`, `cloud.region`, and, when Cloud Run provides them, `faas.name`, `faas.version` (revision) and `cloud.account.id`. Callable and HTTP entry spans use span kind `SERVER`; Firestore triggers, outbox delivery and erasure recovery use `CONSUMER`, so Dynatrace treats them as service entry points. API spans carry `http.request.method`, a templated `http.route`, `url.path` and `request.id`. An incoming `traceparent` is continued whatever its sampled flag.
+
+Outcomes are `success`, `rejected` (expected caller errors such as `invalid-argument`, `permission-denied`, `not-found`, `failed-precondition`, `resource-exhausted`; logged at WARN, span status left unset) and `failure` (unexpected faults; logged at ERROR, span status ERROR with recorded exception). Alert on `failure`, not on `rejected`. Rejected REST API authentication is logged at WARN with method, route and request ID.
 
 Each measured operation logs its bounded operation name, outcome and authenticated `user.id`/`user.email`, plus genuine SDK `trace_id`, `span_id`, and `transaction.id`. Failed operations include bounded error type, not private request text. Metrics: operation outcomes counter, duration histogram in seconds, RSS, heap usage and uptime. High-cardinality user/session/certificate identifiers belong in logs/spans/events, never metric dimensions. Exporters are flushed at the end of serverless work.
 
 ## Canonical business events
 
-Firestore transactions atomically write durable state and an outbox event. The outbox delivers CloudEvents to `https://indiacs.live.dynatrace.com/api/v2/bizevents/ingest`. A lease prevents competing retries, retries retain event IDs, and HTTP acceptance marks delivery. Delivery is at least once; consumers deduplicate by event ID.
+Firestore transactions atomically write durable state and an outbox event. The outbox delivers CloudEvents to `https://indiacs.live.dynatrace.com/api/v2/bizevents/ingest`. A lease prevents competing retries, retries retain event IDs, and HTTP acceptance marks delivery. Delivery is at least once; consumers deduplicate by event ID. Any 2xx marks delivery. Permanent rejections (400, 404, 413, 415) and events that reach 20 attempts move to `status: "failed"` with `failedAt` and `lastStatus`, and are logged at ERROR; they are not retried automatically. The 5-minute retry job spends at most half its timeout on delivery so erasure recovery always runs.
 
 Canonical events include enrollment, attendance review, completion publication/correction, learning points award/reversal, certificate issuance/revocation/visibility and account-request review. Every canonical event has `transaction.id`, `trace_id`, `span_id`, actor identity, learner/session identifiers as appropriate, and server-confirmed authority. Browser events are a separate client-observed source and must not be added to canonical award totals.
 

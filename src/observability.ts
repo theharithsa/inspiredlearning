@@ -1,3 +1,4 @@
+import { SpanStatusCode } from "@opentelemetry/api";
 import { WebTracerProvider } from "@opentelemetry/sdk-trace-web";
 import { httpsCallable } from "firebase/functions";
 import type { User } from "firebase/auth";
@@ -107,7 +108,7 @@ export async function call<T>(
     });
     return response.data;
   } catch (error) {
-    span.setStatus({ code: 2 });
+    span.setStatus({ code: SpanStatusCode.ERROR });
     rum("operation.completed", {
       "transaction.id": transactionId,
       trace_id: sc.traceId,

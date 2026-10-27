@@ -8,7 +8,12 @@ import { privacyBlocked } from "./erasure.js";
 import { FieldValue } from "firebase-admin/firestore";
 import { randomUUID } from "node:crypto";
 import { HttpsError } from "firebase-functions/v2/https";
-import { resultSnapshot, fingerprint, pointsTransition } from "./model.js";
+import {
+  resultSnapshot,
+  fingerprint,
+  pointsTransition,
+  LEARNING_POINTS,
+} from "./model.js";
 import { queue } from "./events.js";
 const fail = (code, message) => {
   throw new HttpsError(code, message);
@@ -112,7 +117,7 @@ export async function finalize(db, actor, c, sid, uid, reason) {
       revision,
       fingerprint: hash,
       certificateId,
-      learningPoints: 100,
+      learningPoints: LEARNING_POINTS,
       finalizedAt: FieldValue.serverTimestamp(),
       finalizedBy: actor.uid,
     };

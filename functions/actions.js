@@ -11,6 +11,7 @@ import {
   validUid,
   validCertificate,
   regionFor,
+  LEARNING_POINTS,
   publicCertificate,
 } from "./model.js";
 import { queue } from "./events.js";
@@ -275,14 +276,14 @@ export async function execute(db, actor, data, c) {
         {
           learningPoints: Math.max(
             0,
-            (profile.data()?.learningPoints || 0) - 100,
+            (profile.data()?.learningPoints || 0) - LEARNING_POINTS,
           ),
         },
         { merge: true },
       );
       tx.create(p.collection("points").doc(`${sid}__${revision}`), {
         sid,
-        delta: -100,
+        delta: -LEARNING_POINTS,
         reason: "Completion revoked",
         revision,
         at: FieldValue.serverTimestamp(),
@@ -297,7 +298,7 @@ export async function execute(db, actor, data, c) {
       queue(tx, db, "learning.points.reversed", actor, c, {
         "learner.id": d.uid,
         "workshop.session.id": sid,
-        "learning.points.delta": -100,
+        "learning.points.delta": -LEARNING_POINTS,
       });
       queue(tx, db, "certificate.revoked", actor, c, {
         "learner.id": d.uid,

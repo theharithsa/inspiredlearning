@@ -7,6 +7,18 @@ export const signatureAsset = () =>
   ["signature.png", "signature.jpg", "signature.jpeg"]
     .map((name) => new URL("./assets/" + name, import.meta.url))
     .find((p) => fs.existsSync(p));
+// Fonts are immutable bundle assets; read them once per instance instead of on every download.
+const fonts = {};
+const fontBytes = (name) =>
+  (fonts[name] ??= fs.readFileSync(new URL("./assets/" + name, import.meta.url)));
+// Set PUBLIC_BASE_URL in functions/.env when the portal moves to a custom domain.
+export const verificationUrl = (id) =>
+  (process.env.PUBLIC_BASE_URL || "https://inspiredlearning-vh.web.app").replace(
+    /\/+$/,
+    "",
+  ) +
+  "/#/verify/" +
+  id;
 export const certificateRendering = () => ({
   version: "recognition-v2",
   signatureConfigured: Boolean(signatureAsset()),
@@ -14,14 +26,11 @@ export const certificateRendering = () => ({
 export async function certificatePdf(c) {
   const pdf = await PDFDocument.create();
   pdf.registerFontkit(fontkit);
-  const regular = await pdf.embedFont(
-    fs.readFileSync(new URL("./assets/NotoSans-Regular.ttf", import.meta.url)),
-    { subset: true },
-  );
+  const regular = await pdf.embedFont(fontBytes("NotoSans-Regular.ttf"), {
+    subset: true,
+  });
   const deva = await pdf.embedFont(
-    fs.readFileSync(
-      new URL("./assets/NotoSansDevanagari-Regular.ttf", import.meta.url),
-    ),
+    fontBytes("NotoSansDevanagari-Regular.ttf"),
     { subset: true },
   );
   const page = pdf.addPage([842, 595]);
@@ -116,12 +125,14 @@ export async function certificatePdf(c) {
   }
   text("Certificate " + c.id + " · Revision " + c.revision, 77, 10, muted);
   const qr = await pdf.embedPng(
-    await QRCode.toDataURL(
-      "https://inspiredlearning-vh.web.app/#/verify/" + c.id,
-    ),
+    await QRCode.toDataURL(verificationUrl(c.id)),
   );
   page.drawImage(qr, { x: 734, y: 44, width: 60, height: 60 });
-  pdf.setTitle("InspiredLearning · Certificate of Participation");
+  pdf.setTitle(
+    c.kind === "award"
+      ? "InspiredLearning · Certificate of Achievement"
+      : "InspiredLearning · Certificate of Participation",
+  );
   pdf.setAuthor("InspiredLearning");
   pdf.setSubject(
     "Verify certificate status through the verification QR; public verification requires the learner’s permission.",

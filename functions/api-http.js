@@ -5,6 +5,7 @@ import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { googleActor, readApi } from "./api.js";
+import { log } from "./monitor.js";
 const require = createRequire(import.meta.url);
 const spec = JSON.parse(
   readFileSync(new URL("./openapi.json", import.meta.url)),
@@ -17,6 +18,27 @@ const status = {
   "failed-precondition": 409,
   "resource-exhausted": 429,
   "already-exists": 409,
+  aborted: 409,
+  "deadline-exceeded": 504,
+  unavailable: 503,
+};
+// Collapse identifiers so span names and routes stay low-cardinality for Dynatrace service detection.
+export const routeTemplate = (path) =>
+  path
+    .replace(/\/[0-9a-f]{8}-[0-9a-f-]{27}(?=\/|$)/g, "/{id}")
+    .replace(/\/[a-f0-9]{64}(?=\/|$)/g, "/{contributionId}")
+    .replace(/^(\/api\/v1\/workshops)\/[^/]+/, "$1/{workshopId}")
+    .replace(/^(\/api\/v1\/students)\/(?!scores$)[^/]+/, "$1/{studentId}")
+    .replace(/^(\/api\/v1\/colleges)\/[^/]+/, "$1/{collegeId}")
+    .replace(/\/participants\/[^/]+/, "/participants/{studentId}");
+const rejectAuth = (req, res, requestId, reason) => {
+  log("WARN", "API authentication rejected", {
+    "http.request.method": req.method,
+    "http.route": routeTemplate(req.path),
+    "request.id": requestId,
+    reason,
+  });
+  return res.status(401).json({ error: { code: "unauthenticated" } });
 };
 export function apiHandler({ db, auth, rate, measured, audit }) {
   return async (req, res) => {
@@ -70,7 +92,7 @@ export function apiHandler({ db, auth, rate, measured, audit }) {
       rate("api-ip:" + req.ip, 120);
       const header = req.get("Authorization") || "";
       if (!/^Bearer \S+$/.test(header))
-        return res.status(401).json({ error: { code: "unauthenticated" } });
+        return rejectAuth(req, res, requestId, "missing-bearer");
       let actor, authTime;
       const bearer = header.slice(7);
       if (bearer.startsWith("ilapi_")) {
@@ -87,7 +109,7 @@ export function apiHandler({ db, auth, rate, measured, audit }) {
         try {
           t = await auth.verifyIdToken(bearer, true);
         } catch {
-          return res.status(401).json({ error: { code: "unauthenticated" } });
+          return rejectAuth(req, res, requestId, "invalid-id-token");
         }
         actor = googleActor(t.uid, t);
         authTime = t.auth_time;
@@ -150,9 +172,25 @@ export function apiHandler({ db, auth, rate, measured, audit }) {
         },
         req.get("traceparent"),
         requestId,
+        {
+          attributes: {
+            "http.request.method": req.method,
+            "http.route": routeTemplate(req.path),
+            "url.path": req.path,
+            "request.id": requestId,
+            ...(actor.apiTokenId ? { "api.token.id": actor.apiTokenId } : {}),
+          },
+        },
       );
       return res.json(result);
     } catch (e) {
+      if (e.code === "unauthenticated")
+        log("WARN", "API authentication rejected", {
+          "http.request.method": req.method,
+          "http.route": routeTemplate(req.path),
+          "request.id": requestId,
+          reason: "api-token",
+        });
       return res.status(status[e.code] || 500).json({
         error: {
           code: status[e.code] ? e.code : "internal",

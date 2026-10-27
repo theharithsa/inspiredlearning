@@ -2,6 +2,7 @@ import {
   context,
   trace,
   ROOT_CONTEXT,
+  SpanKind,
   SpanStatusCode,
   metrics,
 } from "@opentelemetry/api";
@@ -19,24 +20,52 @@ import {
 } from "@opentelemetry/sdk-metrics";
 import { defineSecret } from "firebase-functions/params";
 import { randomUUID } from "node:crypto";
+import { readFileSync } from "node:fs";
 export const token = defineSecret("DYNATRACE_PLATFORM_TOKEN");
+const local = () => process.env.FUNCTIONS_EMULATOR === "true";
+// Override per environment in functions/.env (e.g. DYNATRACE_ENDPOINT=https://abc123.live.dynatrace.com).
+export function dynatraceUrl(path) {
+  const base = local()
+    ? "http://127.0.0.1:8799"
+    : (
+        process.env.DYNATRACE_ENDPOINT || "https://indiacs.live.dynatrace.com"
+      ).replace(/\/+$/, "");
+  return base + path;
+}
+export function dynatraceHeaders() {
+  const credential = local() ? "" : token.value();
+  return credential
+    ? {
+        Authorization:
+          (credential.startsWith("dt0c01.") ? "Api-Token " : "Bearer ") +
+          credential,
+      }
+    : {};
+}
+// Caller mistakes are expected outcomes, not service faults: they must not inflate failure rates.
+const rejected = new Set([
+  "invalid-argument",
+  "unauthenticated",
+  "permission-denied",
+  "not-found",
+  "failed-precondition",
+  "already-exists",
+  "resource-exhausted",
+]);
+const packageVersion = () => {
+  try {
+    return JSON.parse(readFileSync(new URL("./package.json", import.meta.url)))
+      .version;
+  } catch {
+    return "unknown";
+  }
+};
 let sdk, processor, logProcessor, reader, count, duration;
 function initialize() {
   if (sdk) return;
-  const local = process.env.FUNCTIONS_EMULATOR === "true";
-  const base = local
-    ? "http://127.0.0.1:8799/api/v2/otlp"
-    : "https://indiacs.live.dynatrace.com/api/v2/otlp";
-  const credential = local ? "" : token.value();
   const config = (signal) => ({
-    url: base + "/v1/" + signal,
-    headers: credential
-      ? {
-          Authorization:
-            (credential.startsWith("dt0c01.") ? "Api-Token " : "Bearer ") +
-            credential,
-        }
-      : {},
+    url: dynatraceUrl("/api/v2/otlp/v1/" + signal),
+    headers: dynatraceHeaders(),
     timeoutMillis: 5000,
     compression: "gzip",
   });
@@ -53,12 +82,21 @@ function initialize() {
     }),
     exportIntervalMillis: 15000,
   });
+  const revision = process.env.K_REVISION;
   sdk = new NodeSDK({
     resource: resourceFromAttributes({
       "service.name": "inspiredlearning-api",
       "service.namespace": "inspiredlearning",
-      "service.version": "1.0.0",
-      "deployment.environment.name": local ? "rehearsal" : "production",
+      "service.version": packageVersion(),
+      "deployment.environment.name": local() ? "rehearsal" : "production",
+      "cloud.provider": "gcp",
+      "cloud.platform": "gcp_cloud_functions",
+      "cloud.region": "asia-south1",
+      ...(process.env.K_SERVICE ? { "faas.name": process.env.K_SERVICE } : {}),
+      ...(revision ? { "faas.version": revision } : {}),
+      ...(process.env.GCLOUD_PROJECT
+        ? { "cloud.account.id": process.env.GCLOUD_PROJECT }
+        : {}),
     }),
     spanProcessors: [processor],
     logRecordProcessors: [logProcessor],
@@ -80,75 +118,93 @@ function initialize() {
     .createObservableGauge("process.uptime", { unit: "s" })
     .addCallback((result) => result.observe(process.uptime()));
 }
+// W3C trace context: keep the caller's sampling decision instead of dropping unsampled parents.
+function parentFrom(traceparent) {
+  const m = /^00-([0-9a-f]{32})-([0-9a-f]{16})-([0-9a-f]{2})$/.exec(
+    typeof traceparent === "string" ? traceparent.trim().toLowerCase() : "",
+  );
+  if (!m || /^0+$/.test(m[1]) || /^0+$/.test(m[2])) return ROOT_CONTEXT;
+  return trace.setSpanContext(ROOT_CONTEXT, {
+    traceId: m[1],
+    spanId: m[2],
+    traceFlags: parseInt(m[3], 16) & 1,
+    isRemote: true,
+  });
+}
 export async function measured(
   name,
   actor,
   work,
   parent,
   requestedTransaction,
+  { kind = SpanKind.SERVER, attributes = {} } = {},
 ) {
   initialize();
   const start = performance.now();
-  let parentContext = ROOT_CONTEXT;
-  if (/^00-[0-9a-f]{32}-[0-9a-f]{16}-01$/.test(parent || "")) {
-    const [, traceId, spanId] = parent.split("-");
-    if (!/^0+$/.test(traceId) && !/^0+$/.test(spanId))
-      parentContext = trace.setSpanContext(ROOT_CONTEXT, {
-        traceId,
-        spanId,
-        traceFlags: 1,
-        isRemote: true,
-      });
-  }
-  return context.with(parentContext, () =>
-    trace.getTracer("inspiredlearning").startActiveSpan(name, async (span) => {
-      const sc = span.spanContext();
-      const transactionId =
-        typeof requestedTransaction === "string" &&
-        /^[0-9a-f-]{36}$/.test(requestedTransaction)
-          ? requestedTransaction
-          : randomUUID();
-      const attrs = {
-        "transaction.id": transactionId,
-        "user.id": actor?.uid || "anonymous",
-        ...(actor?.email ? { "user.email": actor.email } : {}),
-        operation: name,
-      };
-      span.setAttributes(attrs);
-      const correlation = {
-        transactionId,
-        traceId: sc.traceId,
-        spanId: sc.spanId,
-      };
-      let outcome = "success";
-      try {
-        const result = await work(correlation);
-        log("INFO", name + " completed", attrs);
-        return result;
-      } catch (error) {
-        outcome = "failure";
-        span.setStatus({ code: SpanStatusCode.ERROR });
-        log("ERROR", name + " failed", {
-          ...attrs,
-          "error.type": error.code || "internal",
-        });
-        throw error;
-      } finally {
-        count.add(1, { operation: name, outcome });
-        duration.record((performance.now() - start) / 1000, {
+  return context.with(parentFrom(parent), () =>
+    trace
+      .getTracer("inspiredlearning")
+      .startActiveSpan(name, { kind }, async (span) => {
+        const sc = span.spanContext();
+        const transactionId =
+          typeof requestedTransaction === "string" &&
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(
+            requestedTransaction,
+          )
+            ? requestedTransaction
+            : randomUUID();
+        const attrs = {
+          "transaction.id": transactionId,
+          "user.id": actor?.uid || "anonymous",
+          ...(actor?.email ? { "user.email": actor.email } : {}),
           operation: name,
-          outcome,
-        });
-        span.end();
-        await Promise.allSettled([
-          processor.forceFlush(),
-          logProcessor.forceFlush(),
-          reader.forceFlush(),
-        ]);
-      }
-    }),
+        };
+        span.setAttributes({ ...attrs, ...attributes });
+        const correlation = {
+          transactionId,
+          traceId: sc.traceId,
+          spanId: sc.spanId,
+        };
+        let outcome = "success";
+        try {
+          const result = await work(correlation);
+          log("INFO", name + " completed", attrs);
+          return result;
+        } catch (error) {
+          const type = error?.code || "internal";
+          outcome = rejected.has(type) ? "rejected" : "failure";
+          span.setAttribute("error.type", type);
+          if (outcome === "failure") {
+            span.recordException(error);
+            span.setStatus({ code: SpanStatusCode.ERROR, message: type });
+          }
+          log(
+            outcome === "failure" ? "ERROR" : "WARN",
+            name + (outcome === "failure" ? " failed" : " rejected"),
+            { ...attrs, "error.type": type },
+          );
+          throw error;
+        } finally {
+          count.add(1, { operation: name, outcome });
+          duration.record((performance.now() - start) / 1000, {
+            operation: name,
+            outcome,
+          });
+          span.end();
+          await Promise.allSettled([
+            processor.forceFlush(),
+            logProcessor.forceFlush(),
+            reader.forceFlush(),
+          ]);
+        }
+      }),
   );
 }
+const severity = {
+  ERROR: SeverityNumber.ERROR,
+  WARN: SeverityNumber.WARN,
+  INFO: SeverityNumber.INFO,
+};
 export function log(level, message, attributes = {}) {
   const sc = trace.getSpan(context.active())?.spanContext();
   const record = {
@@ -163,10 +219,12 @@ export function log(level, message, attributes = {}) {
       ...record,
     }),
   );
+  // log() can run before the first measured() call (e.g. rejected API authentication).
+  if (!sdk) return;
   logs.getLogger("inspiredlearning").emit({
     body: message,
-    severityNumber:
-      level === "ERROR" ? SeverityNumber.ERROR : SeverityNumber.INFO,
+    severityNumber: severity[level] || SeverityNumber.INFO,
+    severityText: level,
     attributes: record,
     context: context.active(),
   });
