@@ -1,3 +1,6 @@
+import { dependency } from "./monitor.js";
+import { SpanKind } from "@opentelemetry/api";
+import { defaults } from "./config.js";
 import "regenerator-runtime/runtime.js";
 import fs from "node:fs";
 import { PDFDocument, rgb } from "pdf-lib";
@@ -10,20 +13,19 @@ export const signatureAsset = () =>
 // Fonts are immutable bundle assets; read them once per instance instead of on every download.
 const fonts = {};
 const fontBytes = (name) =>
-  (fonts[name] ??= fs.readFileSync(new URL("./assets/" + name, import.meta.url)));
+  (fonts[name] ??= fs.readFileSync(
+    new URL("./assets/" + name, import.meta.url),
+  ));
 // Set PUBLIC_BASE_URL in functions/.env when the portal moves to a custom domain.
 export const verificationUrl = (id) =>
-  (process.env.PUBLIC_BASE_URL || "https://inspiredlearning-vh.web.app").replace(
-    /\/+$/,
-    "",
-  ) +
+  (process.env.PUBLIC_BASE_URL || defaults.publicBaseUrl).replace(/\/+$/, "") +
   "/#/verify/" +
   id;
 export const certificateRendering = () => ({
   version: "recognition-v2",
   signatureConfigured: Boolean(signatureAsset()),
 });
-export async function certificatePdf(c) {
+async function renderCertificatePdf(c) {
   const pdf = await PDFDocument.create();
   pdf.registerFontkit(fontkit);
   const regular = await pdf.embedFont(fontBytes("NotoSans-Regular.ttf"), {
@@ -124,9 +126,7 @@ export async function certificatePdf(c) {
     text("Workshop facilitator", 99, 10, muted);
   }
   text("Certificate " + c.id + " · Revision " + c.revision, 77, 10, muted);
-  const qr = await pdf.embedPng(
-    await QRCode.toDataURL(verificationUrl(c.id)),
-  );
+  const qr = await pdf.embedPng(await QRCode.toDataURL(verificationUrl(c.id)));
   page.drawImage(qr, { x: 734, y: 44, width: 60, height: 60 });
   pdf.setTitle(
     c.kind === "award"
@@ -139,3 +139,11 @@ export async function certificatePdf(c) {
   );
   return Buffer.from(await pdf.save());
 }
+
+export const certificatePdf = (...args) =>
+  dependency(
+    "certificate.pdf.render",
+    {},
+    () => renderCertificatePdf(...args),
+    SpanKind.INTERNAL,
+  );

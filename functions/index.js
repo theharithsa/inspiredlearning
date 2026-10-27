@@ -1,3 +1,4 @@
+import { functionProfiles } from "./config.js";
 import { SpanKind } from "@opentelemetry/api";
 import { getAuth } from "firebase-admin/auth";
 import { apiHandler } from "./api-http.js";
@@ -16,14 +17,8 @@ import { validCertificate, validSid, validUid } from "./model.js";
 import { certificatePdf } from "./pdf.js";
 import { queue } from "./events.js";
 initializeApp();
-const db = getFirestore(),
-  options = {
-    region: "asia-south1",
-    secrets: [token],
-    maxInstances: 2,
-    memory: "512MiB",
-    timeoutSeconds: 540,
-  };
+const db = getFirestore();
+const options = (name) => ({ ...functionProfiles[name], secrets: [token] });
 const actorOf = (r) => {
   return googleActor(r.auth?.uid, r.auth?.token);
 };
@@ -43,7 +38,7 @@ function rate(key, limit = 120) {
   if (buckets.size > 10000)
     for (const [k, v] of buckets) if (now - v.start > 60000) buckets.delete(k);
 }
-export const learningAction = onCall(options, async (r) => {
+export const learningAction = onCall(options("actions"), async (r) => {
   const actor = actorOf(r);
   rate(actor.uid);
   if (
@@ -85,7 +80,7 @@ export const learningAction = onCall(options, async (r) => {
     r.data.transactionId,
   );
 });
-export const learningCertificate = onCall(options, async (r) => {
+export const learningCertificate = onCall(options("pdf"), async (r) => {
   const actor = actorOf(r);
   rate(actor.uid, 30);
   if (!validCertificate(r.data?.id))
@@ -150,23 +145,21 @@ export const learningCertificate = onCall(options, async (r) => {
       const bytes = await certificatePdf(
         current ? cert : { ...cert, status: "revoked" },
       );
-      await db
-        .collection("learningTelemetry")
-        .add(
-          (await import("./events.js")).eventRecord(
-            administratorPreview
-              ? "certificate.admin-preview.prepared"
-              : "certificate.download.prepared",
-            actor,
-            c,
-            {
-              "certificate.id": cert.id,
-              "workshop.session.id": cert.sid,
-              "certificate.kind":
-                cert.kind === "award" ? "award" : "participation",
-            },
-          ),
-        );
+      await db.collection("learningTelemetry").add(
+        (await import("./events.js")).eventRecord(
+          administratorPreview
+            ? "certificate.admin-preview.prepared"
+            : "certificate.download.prepared",
+          actor,
+          c,
+          {
+            "certificate.id": cert.id,
+            "workshop.session.id": cert.sid,
+            "certificate.kind":
+              cert.kind === "award" ? "award" : "participation",
+          },
+        ),
+      );
       return {
         base64: bytes.toString("base64"),
         filename: `InspiredLearning-${cert.sid}-${cert.id.slice(0, 8)}.pdf`,
@@ -176,7 +169,7 @@ export const learningCertificate = onCall(options, async (r) => {
     r.data.transactionId,
   );
 });
-export const learningVerify = onCall(options, async (r) => {
+export const learningVerify = onCall(options("verify"), async (r) => {
   rate("verify:" + r.rawRequest.ip, 60);
   return measured(
     "certificate.verify",
@@ -186,38 +179,47 @@ export const learningVerify = onCall(options, async (r) => {
     r.data?.transactionId,
   );
 });
-export const learningTelemetry = onCall(options, async (r) => {
-  const actor = actorOf(r);
-  rate("telemetry:" + actor.uid, 100);
-  const allowed = new Set([
-    "ui.click",
-    "page.view",
-    "auth.signed-in",
-    "auth.signed-out",
-    "certificate.download",
-    "discord.opened",
-    "workshop.viewed",
-    "profile.saved",
-  ]);
-  if (!allowed.has(r.data?.name))
-    throw new HttpsError("invalid-argument", "Unknown telemetry event.");
-  return measured(
-    "browser." + r.data.name,
-    actor,
-    async () => {
-      log("INFO", "Learner interaction", {
-        "event.name": r.data.name,
-        "event.authority": "client-observed",
-        ...(validSid(r.data.sid) ? { "workshop.session.id": r.data.sid } : {}),
-      });
-      return { accepted: true };
-    },
-    r.rawRequest?.headers?.traceparent,
-    r.data.transactionId,
-  );
-});
+export const learningTelemetry = onCall(
+  options("legacyTelemetry"),
+  async (r) => {
+    const actor = actorOf(r);
+    rate("telemetry:" + actor.uid, 100);
+    const allowed = new Set([
+      "ui.click",
+      "page.view",
+      "auth.signed-in",
+      "auth.signed-out",
+      "certificate.download",
+      "discord.opened",
+      "workshop.viewed",
+      "profile.saved",
+    ]);
+    if (!allowed.has(r.data?.name))
+      throw new HttpsError("invalid-argument", "Unknown telemetry event.");
+    return measured(
+      "browser." + r.data.name,
+      actor,
+      async () => {
+        log("INFO", "Learner interaction", {
+          "event.name": r.data.name,
+          "event.authority": "client-observed",
+          ...(validSid(r.data.sid)
+            ? { "workshop.session.id": r.data.sid }
+            : {}),
+        });
+        return { accepted: true };
+      },
+      r.rawRequest?.headers?.traceparent,
+      r.data.transactionId,
+    );
+  },
+);
 export const recordLearningEnrollment = onDocumentCreated(
-  { ...options, document: "sessions/{sid}/students/{uid}", retry: true },
+  {
+    ...options("enrollment"),
+    document: "sessions/{sid}/students/{uid}",
+    retry: true,
+  },
   async (e) => {
     if (!validSid(e.params.sid) || !validUid(e.params.uid)) return;
     const session = await db.doc(`sessions/${e.params.sid}`).get();
@@ -242,7 +244,7 @@ export const recordLearningEnrollment = onDocumentCreated(
   },
 );
 export const cancelLearningEnrollment = onDocumentDeleted(
-  { ...options, document: "sessions/{sid}", retry: true },
+  { ...options("enrollment"), document: "sessions/{sid}", retry: true },
   async (e) => {
     if (!validSid(e.params.sid)) return;
     return measured(
@@ -281,7 +283,7 @@ export const cancelLearningEnrollment = onDocumentDeleted(
 export { deliverLearningEvent, retryLearningEvents } from "./events.js";
 
 export const learningApi = onRequest(
-  options,
+  options("api"),
   apiHandler({
     db,
     auth: getAuth(),

@@ -1,18 +1,11 @@
+import type { LearnerRequest as Request } from "./types";
 import { useRows } from "./hooks";
 import { Message } from "./components";
-interface Request {
-  id: string;
-  kind: string;
-  status: string;
-  reason?: string;
-  resolution?: string;
-  createdAt?: { seconds: number };
-  resolvedAt?: { seconds: number };
-}
 export default function RequestHistory({ uid }: { uid: string }) {
-  const { rows, error } = useRows<Request>(`learningRequests`, [
-    ["uid", "==", uid],
-  ]);
+  const { rows, error, hasMore, loadMore } = useRows<Request>(
+    `learningRequests`,
+    [["uid", "==", uid]],
+  );
   return (
     <section className="panel stack">
       <h2>Your requests</h2>
@@ -59,6 +52,11 @@ export default function RequestHistory({ uid }: { uid: string }) {
               {r.resolution && <p>{r.resolution}</p>}
             </article>
           ))
+      )}
+      {hasMore && (
+        <button className="button secondary" onClick={loadMore}>
+          Load more records
+        </button>
       )}
     </section>
   );

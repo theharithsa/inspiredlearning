@@ -1,18 +1,18 @@
 {
   "name": "inspiredlearning",
   "private": true,
-  "version": "1.0.1",
+  "version": "1.0.2",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint src test scripts",
-    "test": "node --test test/model.test.mjs test/api.test.mjs test/certificate-policy.test.mjs test/telemetry-policy.test.mjs",
+    "test": "node --import ./test/setup-env.mjs --test test/model.test.mjs test/api.test.mjs test/certificate-policy.test.mjs test/telemetry-policy.test.mjs test/config.test.mjs",
     "test:browser": "playwright test",
     "test:rehearsal": "node scripts/rehearsal.mjs",
-    "test:integration": "firebase emulators:exec --config firebase.rehearsal.json --project demo-chaicart --only firestore \"node --test --test-concurrency=1 test/integration.test.mjs test/outbox.test.mjs\"",
-    "test:swagger": "node --test test/swagger.test.mjs",
-    "test:api-auth": "firebase emulators:exec --config firebase.rehearsal.json --project demo-chaicart --only auth,firestore \"node --test test/api-auth.test.mjs\""
+    "test:integration": "firebase emulators:exec --config firebase.rehearsal.json --project demo-chaicart --only firestore \"node --import ./test/setup-env.mjs --test --test-concurrency=1 test/integration.test.mjs test/outbox.test.mjs test/maintenance.test.mjs\"",
+    "test:swagger": "node --import ./test/setup-env.mjs --test test/swagger.test.mjs",
+    "test:api-auth": "firebase emulators:exec --config firebase.rehearsal.json --project demo-chaicart --only auth,firestore \"node --import ./test/setup-env.mjs --test test/api-auth.test.mjs\""
   },
   "dependencies": {
     "@opentelemetry/api": "^1.9.1",
@@ -35,6 +35,7 @@
     "ajv": "^8.20.0",
     "firebase-tools": "15.34.1",
     "oxlint": "^1.81.0",
+    "protobufjs": "^7.6.6",
     "typescript": "~6.0.2",
     "vite": "^8.3.0"
   },

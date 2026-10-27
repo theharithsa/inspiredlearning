@@ -1,5 +1,7 @@
+import { defaults } from "./config.js";
+import { FieldPath } from "firebase-admin/firestore";
 import { trace } from "@opentelemetry/api";
-import { log } from "./monitor.js";
+import { log, dependency } from "./monitor.js";
 import { readAwardFamily, revokeAwardFamily } from "./certificate-policy.js";
 import { recordCreditTransition } from "./credits.js";
 import { eraseLearner, privacyBlocked } from "./erasure.js";
@@ -73,7 +75,7 @@ export async function enroll(db, sid, uid, student, session, c, actor) {
       name: student.name,
       teamId: student.teamId,
       role: student.role,
-      title: session.title || "ChaiCart Cloud Workshop",
+      title: session.title || defaults.defaultWorkshopTitle,
       date: session.workshopDate || null,
       status: "registered",
       registeredAt: student.joinedAt || FieldValue.serverTimestamp(),
@@ -95,12 +97,21 @@ export async function execute(db, actor, data, c) {
     await db.runTransaction(async (tx) => {
       const ref = db.doc(`learningPrivacy/${actor.uid}`),
         p = await tx.get(ref);
+      if (
+        p.data()?.state === "active" &&
+        p.data()?.reactivationScan?.done === false
+      )
+        return;
       if (p.data()?.state !== "erased")
         fail(
           "failed-precondition",
           "Removal must be complete before starting a new learning profile.",
         );
-      tx.set(ref, { state: "active" }, { merge: true });
+      tx.set(
+        ref,
+        { state: "active", reactivationScan: { after: null, done: false } },
+        { merge: true },
+      );
       tx.set(
         learner(db, actor.uid),
         {
@@ -114,24 +125,8 @@ export async function execute(db, actor, data, c) {
         "learner.id": actor.uid,
       });
     });
-    const sessions = await db.collection("sessions").get();
-    for (const session of sessions.docs) {
-      const student = await session.ref
-        .collection("students")
-        .doc(actor.uid)
-        .get();
-      if (student.exists)
-        await enroll(
-          db,
-          session.id,
-          actor.uid,
-          student.data(),
-          session.data(),
-          c,
-          actor,
-        );
-    }
-    return { saved: true };
+    const complete = await recoverReactivation(db, actor.uid, c, actor);
+    return { saved: true, backfillComplete: complete };
   }
   if (["updateLearner", "restoreCompletion"].includes(action))
     return adminAction(db, actor, d, c);
@@ -470,7 +465,7 @@ export async function execute(db, actor, data, c) {
             sid,
             uid: d.uid,
             name: st.data().name,
-            title: session.data().title || "ChaiCart Cloud Workshop",
+            title: session.data().title || defaults.defaultWorkshopTitle,
             date: session.data().workshopDate || null,
             teamId: st.data().teamId,
             role: st.data().role,
@@ -505,17 +500,23 @@ export async function execute(db, actor, data, c) {
         ...(await Promise.all(
           d.uids.slice(i, i + 4).map(async (uid) => {
             try {
-              await execute(
-                db,
-                actor,
-                {
-                  action: "attendance",
-                  sid,
-                  uid,
-                  status: d.status,
-                  reason: d.reason,
-                },
-                c,
+              await dependency(
+                "attendance.learner",
+                { "learner.id": uid },
+                () =>
+                  execute(
+                    db,
+                    actor,
+                    {
+                      action: "attendance",
+                      sid,
+                      uid,
+                      status: d.status,
+                      reason: d.reason,
+                    },
+                    c,
+                  ),
+                0,
               );
               return { uid, status: "recorded" };
             } catch (e) {
@@ -566,7 +567,12 @@ export async function execute(db, actor, data, c) {
         ...(await Promise.all(
           d.uids.slice(i, i + 4).map(async (uid) => {
             try {
-              return await finalize(db, actor, c, sid, uid, reason);
+              return await dependency(
+                "completion.learner",
+                { "learner.id": uid },
+                () => finalize(db, actor, c, sid, uid, reason),
+                0,
+              );
             } catch (e) {
               const expected = e instanceof HttpsError;
               log(expected ? "WARN" : "ERROR", "Learner batch item failed", {
@@ -616,4 +622,53 @@ export async function verification(db, id) {
     (cert.kind === "award" ? cert.parentCertificateId : cert.id) ===
       result.data()?.certificateId;
   return publicCertificate(current ? cert : { ...cert, status: "revoked" });
+}
+
+// Legacy Live-only memberships need compatibility discovery until an authoritative
+// complete membership index has been migrated. Keep this bounded and restartable.
+export async function recoverReactivation(
+  db,
+  uid,
+  c,
+  actor = { uid: "system" },
+  budgetMs = 10000,
+) {
+  const marker = db.doc(`learningPrivacy/${uid}`),
+    deadline = Date.now() + budgetMs;
+  do {
+    const privacy = (await marker.get()).data();
+    if (privacy?.state !== "active" || privacy.reactivationScan?.done !== false)
+      return true;
+    const after = privacy.reactivationScan.after;
+    let query = db.collection("sessions").orderBy(FieldPath.documentId());
+    if (after) query = query.startAfter(after);
+    const page = await query.limit(50).get();
+    for (const session of page.docs) {
+      const student = await session.ref.collection("students").doc(uid).get();
+      if (student.exists)
+        await enroll(
+          db,
+          session.id,
+          uid,
+          student.data(),
+          session.data(),
+          c,
+          actor,
+        );
+    }
+    await db.runTransaction(async (tx) => {
+      const current = (await tx.get(marker)).data();
+      if (
+        current?.state !== "active" ||
+        current.reactivationScan?.after !== after
+      )
+        return;
+      tx.update(marker, {
+        "reactivationScan.after": page.docs.at(-1)?.id || after,
+        "reactivationScan.done": page.size < 50,
+      });
+    });
+    if (page.size < 50) return true;
+  } while (Date.now() < deadline);
+  return false;
 }

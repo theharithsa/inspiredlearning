@@ -1,5 +1,6 @@
+import { downloadPdf, type PdfResponse } from "./api";
 import { useEffect, useRef, useState } from "react";
-import { apiJson } from "./api";
+import { apiFetch } from "./api";
 import { auth } from "./firebase";
 import { call, errorMessage } from "./observability";
 import { Message } from "./components";
@@ -35,20 +36,20 @@ export default function AdminCertificates() {
     setBusy(true);
     setError("");
     try {
-      const token = await actor.getIdToken(),
-        q = new URLSearchParams({ limit: "100" });
+      const q = new URLSearchParams({ limit: "100" });
       if (workshop.trim()) q.set("workshopId", workshop.trim().toUpperCase());
       if (status) q.set("status", status);
       if (kind) q.set("kind", kind);
       if (next && cursor) q.set("cursor", cursor);
-      const res = await fetch(`/api/v1/certificates?${q}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        result = await apiJson<{
-          items: Row[];
-          nextCursor: string | null;
-          rendering: { signatureConfigured: boolean };
-        }>(res, "Could not load certificates. Please try again.");
+      const result = await apiFetch<{
+        items: Row[];
+        nextCursor: string | null;
+        rendering: { signatureConfigured: boolean };
+      }>(
+        `/api/v1/certificates?${q}`,
+        {},
+        "Could not load certificates. Please try again.",
+      );
       if (auth.currentUser?.uid !== actor.uid) return;
       setRows((old) => (next ? [...old, ...result.items] : result.items));
       setCursor(result.nextCursor);
@@ -75,15 +76,10 @@ export default function AdminCertificates() {
     setBusy(true);
     setError("");
     try {
-      const token = await actor.getIdToken();
-      const response = await fetch(
+      const result = await apiFetch<{ failed?: number }>(
         `/api/v1/workshops/${encodeURIComponent(workshop.trim().toUpperCase())}/certificates/reconcile`,
         {
           method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
           body: JSON.stringify({
             reason,
             ...(awardUid.trim() && awardTitle.trim()
@@ -95,10 +91,6 @@ export default function AdminCertificates() {
               : {}),
           }),
         },
-      );
-      const result = await apiJson<{ failed?: number }>(
-        response,
-        "Certificate refresh failed. Please try again.",
       );
       if (result.failed)
         throw new Error(
@@ -116,21 +108,12 @@ export default function AdminCertificates() {
     setBusy(true);
     setError("");
     try {
-      const r = await call<{ base64: string }>("learningCertificate", {
+      const r = await call<PdfResponse>("learningCertificate", {
         id: row.certificateId,
         reason,
       });
       if (auth.currentUser?.uid !== actor) return;
-      const url = URL.createObjectURL(
-        new Blob([Uint8Array.from(atob(r.base64), (c) => c.charCodeAt(0))], {
-          type: "application/pdf",
-        }),
-      );
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `InspiredLearning-${row.kind}-${row.certificateId}.pdf`;
-      a.click();
-      setTimeout(() => URL.revokeObjectURL(url), 30000);
+      downloadPdf(r);
     } catch (e) {
       setError(errorMessage(e));
     } finally {

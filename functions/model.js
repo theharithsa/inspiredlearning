@@ -1,3 +1,4 @@
+import { defaults } from "./config.js";
 import { recipientAwards } from "./certificate-policy.js";
 import { createHash } from "node:crypto";
 export const LEARNING_POINTS = 100;
@@ -53,7 +54,7 @@ export function resultSnapshot(
   return clean({
     sid,
     uid,
-    title: session.title || "ChaiCart Cloud Workshop",
+    title: session.title || defaults.defaultWorkshopTitle,
     date: session.workshopDate || null,
     name: student.name,
     teamId: student.teamId,

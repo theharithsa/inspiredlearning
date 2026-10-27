@@ -1,0 +1,59 @@
+{
+  "enabled": true,
+  "title": "InspiredLearning: Learning removal recovery failure",
+  "description": "Source-owned alert. Diagnose using docs/RUNBOOK.md; never treat no data as healthy.",
+  "source": "InspiredLearning maintenance",
+  "executionSettings": {
+    "actor": null,
+    "queryOffset": 3
+  },
+  "analyzer": {
+    "name": "dt.statistics.ui.anomaly_detection.StaticThresholdAnomalyDetectionAnalyzer",
+    "input": [
+      {
+        "key": "query",
+        "value": "timeseries failures=sum(inspiredlearning.operation.outcomes, default:0), interval:1m, filter:{service.name == \"inspiredlearning-api\" and deployment.environment.name == \"production\" and operation == \"account.removal.retry\" and outcome == \"failure\"}"
+      },
+      {
+        "key": "threshold",
+        "value": "0"
+      },
+      {
+        "key": "alertCondition",
+        "value": "ABOVE"
+      },
+      {
+        "key": "alertOnMissingData",
+        "value": "false"
+      },
+      {
+        "key": "violatingSamples",
+        "value": "1"
+      },
+      {
+        "key": "slidingWindow",
+        "value": "5"
+      },
+      {
+        "key": "dealertingSamples",
+        "value": "5"
+      }
+    ]
+  },
+  "eventTemplate": {
+    "properties": [
+      {
+        "key": "event.type",
+        "value": "CUSTOM_ALERT"
+      },
+      {
+        "key": "event.name",
+        "value": "InspiredLearning: Learning removal recovery failure"
+      },
+      {
+        "key": "event.description",
+        "value": "Inspect reviewed outbox health and recovery diagnostics; do not edit event payloads or erase pending records."
+      }
+    ]
+  }
+}

@@ -66,3 +66,9 @@ Production certificate repair is complete (20 October 2026), following Google fa
 ## Pre-redesign maintenance candidate — 27 October 2026
 
 Issues #1–#33 have source-specific triage comments; main did not already resolve them. Maintenance candidate 1.0.1 is separate from redesign #34 (2.0.0, approved separate admin app at admin.inspi.in). See ISSUE-TRIAGE-2026-10-27.md for source scope, pending policy/infrastructure decisions and verification boundaries. This note is not evidence of production deployment or learner-data repair.
+
+## Remaining maintenance candidate — 27 October 2026
+
+Source candidate 1.0.2 adds compatible REST contract 1.4.0: Google-admin-only metadata health/events and audited idempotent redrive, plus minimal public verification. It adds native/dependency tracing, configurable log sinks, backlog/lag metrics and source-owned SLO/alert/dashboard configuration; public routes avoid Firebase initialization, histories use bounded live windows, helpers/types/components are shared and TypeScript is strict. Per-function profiles preserve existing capacity; authorization mapping and retention are unchanged by explicit owner decision. Paged/resumable privacy discovery retains the legacy O(total sessions) fallback: #17 remains open for an authoritative membership-index migration.
+
+Read MAINTENANCE-POLICY-2026-10-27.md and observability/README.md before assuming infrastructure, TTL, active alerts or deployed behavior. #15 global protection, #14 live CSP validation/enforcement and #9 tenant configuration/verification retain explicit gates. v2.0.0 remains in #34 with admin.inspi.in; no redesign implementation or production migration/deployment is certified by this candidate. Repository-local app skills are indexed in skills/README.md.

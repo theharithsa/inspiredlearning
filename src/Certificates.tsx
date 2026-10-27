@@ -1,54 +1,34 @@
-import { useEffect, useState } from "react";
+import defaults from "../functions/runtime-defaults.json";
+import { useRows } from "./hooks";
+import { downloadPdf, type PdfResponse } from "./api";
+import { useState } from "react";
 import type { User } from "firebase/auth";
-import { collection, onSnapshot, query, where } from "firebase/firestore";
 import { Link } from "react-router-dom";
-import { db, auth } from "./firebase";
+import { auth } from "./firebase";
 import type { Certificate } from "./types";
 import { action, call, errorMessage, interaction } from "./observability";
 import { Empty, Message, Qr } from "./components";
 export default function Certificates({ user }: { user: User }) {
-  const [rows, setRows] = useState<Certificate[] | undefined>(),
-    [error, setError] = useState(""),
+  const {
+    rows,
+    error: readError,
+    hasMore,
+    loadMore,
+  } = useRows<Certificate>("learningCertificates", [["uid", "==", user.uid]]);
+  const [error, setError] = useState(""),
     [busy, setBusy] = useState(""),
     [notice, setNotice] = useState(""),
     [qrId, setQrId] = useState("");
-  useEffect(
-    () =>
-      onSnapshot(
-        query(
-          collection(db, "learningCertificates"),
-          where("uid", "==", user.uid),
-        ),
-        (s) =>
-          setRows(
-            s.docs.map((d) => ({ ...d.data(), id: d.id }) as Certificate),
-          ),
-        () =>
-          setError("Could not load your certificates. Check your connection."),
-      ),
-    [user.uid],
-  );
   async function download(c: Certificate) {
     setBusy(c.id);
     setError("");
     setNotice("");
     try {
-      const result = await call<{ base64: string; filename: string }>(
-        "learningCertificate",
-        { id: c.id },
-      );
+      const result = await call<PdfResponse>("learningCertificate", {
+        id: c.id,
+      });
       if (auth.currentUser?.uid !== user.uid) return;
-      const bytes = Uint8Array.from(atob(result.base64), (c) =>
-        c.charCodeAt(0),
-      );
-      const url = URL.createObjectURL(
-        new Blob([bytes], { type: "application/pdf" }),
-      );
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = result.filename;
-      link.click();
-      setTimeout(() => URL.revokeObjectURL(url), 30000);
+      downloadPdf(result);
       interaction("certificate.download", c.sid);
       setNotice("Your certificate download is ready.");
     } catch (e) {
@@ -58,7 +38,7 @@ export default function Certificates({ user }: { user: User }) {
     }
   }
   const verificationUrl = (c: Certificate) =>
-    `https://inspiredlearning-vh.web.app/#/verify/${encodeURIComponent(c.id)}`;
+    `${defaults.publicBaseUrl}/#/verify/${encodeURIComponent(c.id)}`;
   async function copyLink(c: Certificate) {
     setNotice("");
     setError("");
@@ -102,8 +82,13 @@ export default function Certificates({ user }: { user: User }) {
           is your choice.
         </p>
       </header>
-      {error && <Message error>{error}</Message>}
+      {(error || readError) && <Message error>{error || readError}</Message>}
       {notice && <Message>{notice}</Message>}
+      {hasMore && (
+        <button className="button secondary" onClick={loadMore}>
+          Load more certificates
+        </button>
+      )}
       {!rows ? (
         <p role="status">Loading certificates…</p>
       ) : !rows.length ? (

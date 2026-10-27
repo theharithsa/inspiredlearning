@@ -1,4 +1,7 @@
 import { defineConfig } from "@playwright/test";
+const webPort = Number(process.env.INSPI_REHEARSAL_WEB_PORT || 5182);
+if (!Number.isSafeInteger(webPort) || webPort < 1024 || webPort > 65535)
+  throw new Error("Invalid rehearsal web port");
 export default defineConfig({
   testDir: "test/browser",
   globalSetup: "./test/collector-setup.mjs",
@@ -9,15 +12,15 @@ export default defineConfig({
   expect: { timeout: 20000 },
   reporter: [["list"], ["html", { open: "never" }]],
   use: {
-    baseURL: "http://127.0.0.1:5182",
+    baseURL: `http://127.0.0.1:${webPort}`,
     channel: process.env.CI ? undefined : "chrome",
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
     actionTimeout: 15000,
   },
   webServer: {
-    command: "npm run dev -- --host 127.0.0.1 --port 5182 --strictPort",
-    url: "http://127.0.0.1:5182",
+    command: `npm run dev -- --host 127.0.0.1 --port ${webPort} --strictPort`,
+    url: `http://127.0.0.1:${webPort}`,
     reuseExistingServer: false,
     env: {
       VITE_USE_EMULATORS: "true",

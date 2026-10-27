@@ -1,0 +1,13 @@
+{
+  "region": "asia-south1",
+  "emulatorProject": "demo-chaicart",
+  "ports": {
+    "auth": 9195,
+    "firestore": 8185,
+    "functions": 5001
+  },
+  "publicBaseUrl": "https://inspiredlearning-vh.web.app",
+  "defaultWorkshopTitle": "ChaiCart Cloud Workshop",
+  "communityUrl": "https://discord.gg/yMUe8Vy3U",
+  "rumSrc": "https://js-cdn.dynatrace.com/jstag/18b1df4492a/bf12470wrz/99d1da35524716f0_complete.js"
+}

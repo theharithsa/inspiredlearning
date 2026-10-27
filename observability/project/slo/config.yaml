@@ -1,0 +1,7 @@
+configs:
+  - id: callable-technical-success
+    type: slo-v2
+    config:
+      name: InspiredLearning callable technical success
+      template: success.json
+      skip: false

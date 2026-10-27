@@ -1,26 +1,22 @@
+import TelemetryHealth from "./TelemetryHealth";
 import AdminCertificates from "./AdminCertificates";
 import ApiTokens from "./ApiTokens";
 import StaffRecords from "./StaffRecords";
-import { statusLabel } from "./constants";
+import AttendancePanel from "./AttendancePanel";
+import RosterTable from "./RosterTable";
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { action, errorMessage } from "./observability";
-import type { Roster } from "./types";
+import type { Roster, BatchResult } from "./types";
 import { Message } from "./components";
-export default function Staff({ admin = false }: { admin?: boolean }) {
+export default function Staff({
+  admin = false,
+  globalFacilitator = false,
+}: {
+  admin?: boolean;
+  globalFacilitator?: boolean;
+}) {
   const [params] = useSearchParams();
-  const [globalFacilitator, setGlobalFacilitator] = useState(false);
-  useEffect(() => {
-    let active = true;
-    void action<{ facilitator: boolean }>("access")
-      .then((r) => {
-        if (active) setGlobalFacilitator(r.facilitator);
-      })
-      .catch(() => {});
-    return () => {
-      active = false;
-    };
-  }, []);
   const [sid, setSid] = useState(params.get("session") || ""),
     [roster, setRoster] = useState<Roster | null>(null),
     [selected, setSelected] = useState<string[]>([]),
@@ -62,7 +58,7 @@ export default function Staff({ admin = false }: { admin?: boolean }) {
       if (generation === loadGeneration.current) setBusy(false);
     }
   }
-  async function run(work: () => Promise<any>) {
+  async function run(work: () => Promise<BatchResult>) {
     setBusy(true);
     setError("");
     setMessage("");
@@ -71,11 +67,11 @@ export default function Staff({ admin = false }: { admin?: boolean }) {
       setMessage(result.message || "Confirmed.");
       const r = await action<Roster>("roster", { sid: roster!.sid });
       setRoster(r);
-      if (result.results?.some((r: any) => r.status === "failed"))
+      if (result.results?.some((r) => r.status === "failed"))
         setError(
           result.results
-            .filter((r: any) => r.status === "failed")
-            .map((r: any) => r.message)
+            .filter((r) => r.status === "failed")
+            .map((r) => r.message)
             .join(" "),
         );
     } catch (e) {
@@ -84,10 +80,6 @@ export default function Staff({ admin = false }: { admin?: boolean }) {
       setBusy(false);
     }
   }
-  const eligible =
-    roster?.students
-      .filter((s) => s.attendance === "attended" && selected.includes(s.uid))
-      .map((s) => s.uid) || [];
   return (
     <>
       <header className="page-heading compact">
@@ -103,6 +95,7 @@ export default function Staff({ admin = false }: { admin?: boolean }) {
         <>
           <ApiTokens />
           <AdminCertificates />
+          <TelemetryHealth />
         </>
       )}
       <form
@@ -142,195 +135,23 @@ export default function Staff({ admin = false }: { admin?: boolean }) {
             </div>
             <span>{roster.students.length} participants</span>
           </div>
-          <section className="panel stack">
-            <div className="staff-actions">
-              <button
-                className="button secondary"
-                disabled={busy}
-                onClick={() =>
-                  setSelected(
-                    roster.students
-                      .filter((s) => s.resultStatus !== "removed")
-                      .map((s) => s.uid),
-                  )
-                }
-              >
-                Select all visible
-              </button>
-              <button
-                className="text-button"
-                disabled={busy}
-                onClick={() => setSelected([])}
-              >
-                Clear selection
-              </button>
-              {roster.facilitator && (
-                <button
-                  className="text-button"
-                  disabled={busy}
-                  onClick={() => run(() => action("sync", { sid: roster.sid }))}
-                >
-                  Import existing registrations
-                </button>
-              )}
-            </div>
-            <label>
-              Attendance / correction reason
-              <textarea
-                maxLength={500}
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
-                placeholder="Record how attendance was checked, or explain a correction."
-              />
-            </label>
-            <div className="staff-actions">
-              <button
-                className="button"
-                disabled={busy || !selected.length || !reason.trim()}
-                onClick={() =>
-                  run(() =>
-                    action("attendanceBatch", {
-                      sid: roster.sid,
-                      uids: selected,
-                      status: "attended",
-                      reason,
-                    }),
-                  )
-                }
-              >
-                Confirm attended ({selected.length})
-              </button>
-              <button
-                className="button secondary"
-                disabled={busy || !selected.length || !reason.trim()}
-                onClick={() =>
-                  run(() =>
-                    action("attendanceBatch", {
-                      sid: roster.sid,
-                      uids: selected,
-                      status: "not-attended",
-                      reason,
-                    }),
-                  )
-                }
-              >
-                Mark not attended
-              </button>
-              {roster.facilitator && !roster.complete && (
-                <button
-                  className="button secondary"
-                  disabled={busy}
-                  onClick={() => {
-                    if (
-                      confirm(
-                        "Close the live workshop? Students will stop submitting activities.",
-                      )
-                    )
-                      void run(() => action("close", { sid: roster.sid }));
-                  }}
-                >
-                  Close live workshop
-                </button>
-              )}
-              {roster.facilitator && (
-                <button
-                  className="button"
-                  disabled={
-                    busy ||
-                    !roster.complete ||
-                    !eligible.length ||
-                    !reason.trim()
-                  }
-                  onClick={() =>
-                    run(() =>
-                      action("finalize", {
-                        sid: roster.sid,
-                        uids: eligible,
-                        reason,
-                      }),
-                    )
-                  }
-                >
-                  Publish verified results ({eligible.length})
-                </button>
-              )}
-            </div>
-            <p className="muted">
-              Publishing awards 100 learning points once and issues a
-              certificate. Repeating it is safe. Corrections create a new result
-              version and replace the previous certificate.
-            </p>
-          </section>
-          <div className="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Select</th>
-                  <th>Learner</th>
-                  <th>Team / role</th>
-                  <th>Attendance</th>
-                  <th>Account record</th>
-                  <th>Correction</th>
-                </tr>
-              </thead>
-              <tbody>
-                {roster.students.map((s) => (
-                  <tr key={s.uid}>
-                    <td>
-                      <input
-                        type="checkbox"
-                        aria-label={"Select " + s.name}
-                        checked={selected.includes(s.uid)}
-                        disabled={s.resultStatus === "removed"}
-                        onChange={(e) =>
-                          setSelected(
-                            e.target.checked
-                              ? [...selected, s.uid]
-                              : selected.filter((id) => id !== s.uid),
-                          )
-                        }
-                      />
-                    </td>
-                    <td>{s.name}</td>
-                    <td>
-                      {s.teamId}
-                      <br />
-                      <small>{s.role}</small>
-                    </td>
-                    <td>{s.attendance}</td>
-                    <td>
-                      {statusLabel(s.resultStatus)}
-                      {s.revision > 0 && <small> · v{s.revision}</small>}
-                    </td>
-                    <td>
-                      {roster.facilitator && s.resultStatus === "completed" && (
-                        <button
-                          className="text-button danger"
-                          disabled={busy || !reason.trim()}
-                          onClick={() => {
-                            if (
-                              confirm(
-                                "Revoke this completion, certificate and 100 learning points?",
-                              )
-                            )
-                              void run(() =>
-                                action("revoke", {
-                                  sid: roster.sid,
-                                  uid: s.uid,
-                                  reason,
-                                }),
-                              );
-                          }}
-                        >
-                          Revoke
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <AttendancePanel
+            roster={roster}
+            selected={selected}
+            setSelected={setSelected}
+            reason={reason}
+            setReason={setReason}
+            busy={busy}
+            run={run}
+          />
+          <RosterTable
+            roster={roster}
+            selected={selected}
+            setSelected={setSelected}
+            reason={reason}
+            busy={busy}
+            run={run}
+          />
         </>
       )}
       {globalFacilitator && <StaffRecords />}

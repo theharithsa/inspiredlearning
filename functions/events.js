@@ -1,3 +1,5 @@
+import { observeBacklog } from "./outbox-health.js";
+import { functionProfiles } from "./config.js";
 import { randomUUID } from "node:crypto";
 import { FieldValue } from "firebase-admin/firestore";
 import { onDocumentCreated } from "firebase-functions/v2/firestore";
@@ -6,6 +8,9 @@ import { getFirestore } from "firebase-admin/firestore";
 import { SpanKind } from "@opentelemetry/api";
 import {
   measured,
+  dependency,
+  recordOutboxHealth,
+  recordDeliveryLag,
   token,
   log,
   dynatraceUrl,
@@ -79,15 +84,27 @@ export async function deliver(ref) {
     async () => {
       let status = 0;
       try {
-        const r = await fetch(dynatraceUrl("/api/v2/bizevents/ingest"), {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/cloudevents+json",
-            ...dynatraceHeaders(),
+        const r = await dependency(
+          "http.client.bizevents",
+          { "http.request.method": "POST" },
+          async (span) => {
+            const response = await fetch(
+              dynatraceUrl("/api/v2/bizevents/ingest"),
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/cloudevents+json",
+                  ...dynatraceHeaders(),
+                },
+                body: JSON.stringify(row.payload),
+                signal: AbortSignal.timeout(7000),
+              },
+            );
+            span.setAttribute("http.response.status_code", response.status);
+            if (response.status >= 400) span.setStatus({ code: 2 });
+            return response;
           },
-          body: JSON.stringify(row.payload),
-          signal: AbortSignal.timeout(7000),
-        });
+        );
         status = r.status;
       } catch {}
       const delivered = status === 202;
@@ -96,9 +113,9 @@ export async function deliver(ref) {
         (PERMANENT_FAILURES.has(status) ||
           (row.attempts || 0) + 1 >= MAX_DELIVERY_ATTEMPTS);
       const outcome = delivered ? "delivered" : deadLetter ? "failed" : "retry";
-      await db.runTransaction(async (tx) => {
+      const committed = await db.runTransaction(async (tx) => {
         const current = await tx.get(ref);
-        if (current.data()?.lease !== lease) return;
+        if (current.data()?.lease !== lease) return false;
         tx.update(ref, {
           status: delivered ? "delivered" : deadLetter ? "failed" : "pending",
           lastStatus: status,
@@ -111,7 +128,12 @@ export async function deliver(ref) {
           ...(delivered ? { deliveredAt: FieldValue.serverTimestamp() } : {}),
           ...(deadLetter ? { failedAt: FieldValue.serverTimestamp() } : {}),
         });
+        return true;
       });
+      if (committed && delivered && row.createdAt?.toMillis)
+        recordDeliveryLag(
+          Math.max(0, (Date.now() - row.createdAt.toMillis()) / 1000),
+        );
       log(
         delivered ? "INFO" : deadLetter ? "ERROR" : "WARN",
         "Business event delivery",
@@ -130,18 +152,17 @@ export async function deliver(ref) {
     { kind: SpanKind.CONSUMER, attributes: { "event.type": row.payload.type } },
   );
 }
-const options = {
-  region: "asia-south1",
-  secrets: [token],
-  maxInstances: 2,
-  timeoutSeconds: 120,
-};
+const options = { ...functionProfiles.delivery, secrets: [token] };
 export const deliverLearningEvent = onDocumentCreated(
   { ...options, document: "learningTelemetry/{id}", retry: true },
   (e) => deliver(e.data.ref),
 );
 export const retryLearningEvents = onSchedule(
-  { ...options, schedule: "every 5 minutes" },
+  {
+    ...functionProfiles.recovery,
+    secrets: [token],
+    schedule: "every 5 minutes",
+  },
   async () => {
     const db = getFirestore(),
       started = Date.now();
@@ -154,6 +175,7 @@ export const retryLearningEvents = onSchedule(
       .get();
     const { completeErasure } = await import("./erasure.js");
     for (const row of pending.docs) {
+      if (Date.now() - started > budgetMs) break;
       try {
         await measured(
           "account.removal.retry",
@@ -170,6 +192,40 @@ export const retryLearningEvents = onSchedule(
         });
       }
     }
+    const reactivations = await db
+      .collection("learningPrivacy")
+      .where("reactivationScan.done", "==", false)
+      .limit(10)
+      .get();
+    const { recoverReactivation } = await import("./actions.js");
+    for (const row of reactivations.docs) {
+      if (Date.now() - started > budgetMs) break;
+      try {
+        await measured(
+          "account.reactivation.retry",
+          { uid: "system" },
+          (c) => recoverReactivation(db, row.id, c),
+          undefined,
+          undefined,
+          { kind: SpanKind.CONSUMER },
+        );
+      } catch {
+        log("ERROR", "Reactivation recovery failed", {
+          "learner.id": row.id,
+          "error.type": "internal",
+        });
+      }
+    }
+    const { outboxHealth } = await import("./telemetry-admin.js");
+    await measured(
+      "outbox.health",
+      { uid: "system" },
+      async () =>
+        recordOutboxHealth(await observeBacklog(db, await outboxHealth(db))),
+      undefined,
+      undefined,
+      { kind: SpanKind.INTERNAL },
+    );
     const rows = await db
       .collection("learningTelemetry")
       .where("status", "==", "pending")

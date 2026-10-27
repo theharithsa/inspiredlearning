@@ -61,3 +61,30 @@ export interface Roster {
   region: string | null;
   students: StaffStudent[];
 }
+
+export interface LearnerRequest {
+  id: string;
+  uid: string;
+  email?: string;
+  reason?: string;
+  kind: string;
+  status: string;
+  resolution?: string;
+  resolutionAction?: string;
+  createdAt?: { seconds: number };
+  resolvedAt?: { seconds: number };
+}
+export interface BatchResult {
+  message?: string;
+  results?: { uid: string; status: string; message?: string }[];
+}
+
+export interface StaffWorkflowProps {
+  roster: Roster;
+  selected: string[];
+  setSelected: (uids: string[]) => void;
+  reason: string;
+  setReason: (reason: string) => void;
+  busy: boolean;
+  run: (work: () => Promise<BatchResult>) => Promise<void>;
+}
