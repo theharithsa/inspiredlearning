@@ -29,10 +29,14 @@ test.afterAll(async () => {
 async function login(page, account = email) {
   await page.route("https://**dynatrace.com/**", (r) => r.abort());
   await page.goto("/");
-  return page.evaluate(
+  const uid = await page.evaluate(
     (email) => import("/test/browser-auth.ts").then((m) => m.login(email)),
     account,
   );
+  await expect(
+    page.getByRole("link", { name: "My learning", exact: true }),
+  ).toBeVisible();
+  return uid;
 }
 test("request pages survive live edits and switch cleanly between tabs", async ({
   page,
