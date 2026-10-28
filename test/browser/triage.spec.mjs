@@ -1,3 +1,4 @@
+import { acceptConfirmations } from "./confirm-helpers.mjs";
 import { test, expect } from "@playwright/test";
 import { createRequire } from "node:module";
 const require = createRequire(
@@ -19,14 +20,18 @@ test.afterAll(async () => {
   await deleteApp(app);
 });
 async function login(page, account = email) {
+  if (account === email) await acceptConfirmations(page);
   await page.route("https://**dynatrace.com/**", (r) => r.abort());
-  await page.goto("/");
+  const admin = account === email;
+  await page.goto(admin ? "/admin.html" : "/");
   const uid = await page.evaluate(
     (email) => import("/test/browser-auth.ts").then((m) => m.login(email)),
     account,
   );
   await expect(
-    page.getByRole("link", { name: "My learning", exact: true }),
+    page.getByRole("navigation", {
+      name: admin ? "Administrator navigation" : "Main navigation",
+    }),
   ).toBeVisible();
   return uid;
 }
@@ -53,7 +58,7 @@ test("request pages survive live edits and switch cleanly between tabs", async (
   });
   await batch.commit();
   await login(page);
-  await page.goto("/#/admin");
+  await page.goto("/admin.html#/requests");
   await page.getByRole("button", { name: "Load more requests" }).click();
   await expect(
     page.getByText("Triage request 54", { exact: true }),
@@ -107,8 +112,11 @@ test("correction form clears and erasure cancellation does not submit", async ({
   await page
     .getByLabel("Details", { exact: true })
     .fill("Triage removal request");
-  page.once("dialog", (dialog) => dialog.dismiss());
   await page.getByRole("button", { name: "Send request" }).click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Cancel", exact: true })
+    .click();
   expect(
     (
       await db
@@ -183,7 +191,7 @@ test("verification recovers after an error and register handles non-JSON errors"
       body: "<html>Gateway error</html>",
     }),
   );
-  await page.goto("/#/admin");
+  await page.goto("/admin.html#/certificates");
   await expect(
     page.getByText("Could not load certificates. Please try again.", {
       exact: true,
@@ -300,7 +308,7 @@ test("admin redrive keeps its request key and reason when the response fails", a
     },
   );
   page.on("dialog", (d) => d.accept());
-  await page.goto("/#/admin");
+  await page.goto("/admin.html#/delivery");
   await page
     .getByLabel("Redrive review reason")
     .fill("Reviewed original reason");

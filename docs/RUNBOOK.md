@@ -94,3 +94,12 @@ In the current administrator controls, open **Telemetry delivery health**. Refre
 Do not bulk-reset pending/failed rows, delete events to hide backlog or grant a scoped API credential access to this panel. Firestore outbox retention remains unchanged by owner decision. Configuration and actual validation limits are in [observability/README.md](../observability/README.md). Use TELEMETRY_LOG_SINK=platform only after checking the GCP forwarder; otlp only after verifying OTLP visibility. Both remains the default. Do not promise console fallback for an OTLP export failure after initialization; bounded platform flush warnings are the fallback diagnostic.
 
 Privacy recovery processes paged erasure discovery and unfinished reactivation scans. Existing blocked workshops remain blocked. See the [maintenance policy](MAINTENANCE-POLICY-2026-10-27.md) before replacing legacy membership discovery with an index.
+
+
+## v2 separate administrator workspace (source)
+
+Open https://admin.inspi.in after its separately approved deployment. Sign in using the existing authorized Google account. Learner inspi.in no longer loads global administrator tools; legacy administrator links hand off. Captains continue /#/staff with fixed workshop/region authority. Admin navigation separates workshops, learner records, certificate register, support requests, scoped integrations and event delivery.
+
+Admin sign-in is limited to the current tab/session; refresh retains it, closing clears it, learner persistence stays unchanged. For sensitive changes or non-owner PDF previews, use Verify with Google or accept the action's Google reauthentication popup. Verification lasts five minutes under the existing recent-auth policy; this is not an idle timeout. A cancelled popup/action does not submit the mutation. If the account or role changes, review access and the action again. Never repeat a write after an uncertain response without checking its existing idempotency/result state.
+
+Existing reason requirements, erasure scope, replay guards, immutable certificate versions and score semantics still apply. Use V2-RELEASE-PLAN.md for backend-first rollout, admin-origin checks, learner handoff deployment and independent Hosting rollback. Current source does not establish that admin.inspi.in is deployed.

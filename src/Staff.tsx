@@ -1,7 +1,3 @@
-import TelemetryHealth from "./TelemetryHealth";
-import AdminCertificates from "./AdminCertificates";
-import ApiTokens from "./ApiTokens";
-import StaffRecords from "./StaffRecords";
 import AttendancePanel from "./AttendancePanel";
 import RosterTable from "./RosterTable";
 import { useEffect, useRef, useState } from "react";
@@ -9,13 +5,7 @@ import { useSearchParams } from "react-router-dom";
 import { action, errorMessage } from "./observability";
 import type { Roster, BatchResult } from "./types";
 import { Message } from "./components";
-export default function Staff({
-  admin = false,
-  globalFacilitator = false,
-}: {
-  admin?: boolean;
-  globalFacilitator?: boolean;
-}) {
+export default function Staff() {
   const [params] = useSearchParams();
   const [sid, setSid] = useState(params.get("session") || ""),
     [roster, setRoster] = useState<Roster | null>(null),
@@ -84,20 +74,13 @@ export default function Staff({
     <>
       <header className="page-heading compact">
         <span className="eyebrow">WORKSHOP STAFF</span>
-        <h1>{admin ? "Admin control centre." : "Verify the journey."}</h1>
+        <h1>Workshop participation</h1>
         <p>
           Confirm attendance, publish lasting results and correct issued
           records. Quiz performance does not determine eligibility for a
           participation certificate.
         </p>
       </header>
-      {admin && globalFacilitator && (
-        <>
-          <ApiTokens />
-          <AdminCertificates />
-          <TelemetryHealth />
-        </>
-      )}
       <form
         className="panel inline-form"
         onSubmit={(e) => {
@@ -154,7 +137,6 @@ export default function Staff({
           />
         </>
       )}
-      {globalFacilitator && <StaffRecords />}
     </>
   );
 }

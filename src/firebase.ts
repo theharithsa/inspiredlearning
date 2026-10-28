@@ -1,7 +1,10 @@
+import { isAdminApp } from "./surface";
 import defaults from "../functions/runtime-defaults.json";
 import { initializeApp } from "firebase/app";
 import {
   getAuth,
+  setPersistence,
+  browserSessionPersistence,
   connectAuthEmulator,
   GoogleAuthProvider,
 } from "firebase/auth";
@@ -26,18 +29,25 @@ if (!emulators && required.some((key) => !import.meta.env[key]))
   throw new Error(
     "Firebase configuration is incomplete. Contact the application operator.",
   );
-const app = initializeApp({
-  apiKey: emulators ? "demo-key" : import.meta.env.VITE_FIREBASE_API_KEY,
-  projectId: emulators
-    ? defaults.emulatorProject
-    : import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  authDomain: emulators
-    ? "localhost"
-    : import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
-});
+const app = initializeApp(
+  {
+    apiKey: emulators ? "demo-key" : import.meta.env.VITE_FIREBASE_API_KEY,
+    projectId: emulators
+      ? defaults.emulatorProject
+      : import.meta.env.VITE_FIREBASE_PROJECT_ID,
+    authDomain: emulators
+      ? "localhost"
+      : import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+    appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  },
+  isAdminApp ? "inspiredlearning-admin" : "[DEFAULT]",
+);
 export const auth = getAuth(app),
   google = new GoogleAuthProvider();
+// Approved 28 October 2026: per-tab admin session; learner persistence unchanged.
+export const authReady = isAdminApp
+  ? setPersistence(auth, browserSessionPersistence)
+  : Promise.resolve();
 export const db = initializeFirestore(app, {
   localCache: memoryLocalCache(),
 });

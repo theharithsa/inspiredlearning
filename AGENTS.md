@@ -11,3 +11,6 @@ New domain features are API-first: contract, server policy, validation/errors, b
 Read [skills/README.md](skills/README.md) for module guidance. Tests use demo-chaicart emulators and local telemetry only. Never copy credentials from chat/history or include secrets in VITE_* settings. Do not alter another project's running emulators to free a test port.
 
 Maintenance decisions are in docs/MAINTENANCE-POLICY-2026-10-27.md. v2.0.0 / admin.inspi.in is planned in GitHub #34; no UI restyling, new identity policy, paid infrastructure or production data migration follows automatically from maintenance approval.
+
+
+v2.0.0 implementation is authorized under #34: Material 3 across existing InspiredLearning workflows and a separate admin.inspi.in app, with approved tab/session persistence and recent reauthentication, no mandatory MFA. This supersedes the earlier planning-only UI restriction. Read docs/DESIGN-SYSTEM.md, docs/API-V2-ADMIN-CONTRACT.md and docs/V2-RELEASE-PLAN.md. Membership #17 is design-only until migration is separately accepted. Source PR/merge permission does not authorize admin Hosting/DNS/Auth-domain provisioning, CI credential binding or production deployment. Preserve fixed captain mapping, current limits, outbox retention and documented email attribution.

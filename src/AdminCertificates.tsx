@@ -243,7 +243,12 @@ export default function AdminCertificates() {
         credits.
       </p>
       {error && <Message error>{error}</Message>}
-      <div className="table-wrap">
+      <div
+        className="table-wrap"
+        role="region"
+        aria-label="Scrollable records table"
+        tabIndex={0}
+      >
         <table>
           <thead>
             <tr>

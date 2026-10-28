@@ -1,3 +1,4 @@
+import { acceptConfirmations } from "./confirm-helpers.mjs";
 import { test, expect } from "@playwright/test";
 import { createRequire } from "node:module";
 import fs from "node:fs";
@@ -28,13 +29,21 @@ async function actor(browser, email, path = "/", mobile = false) {
   );
   await context.route("https://**dynatrace.com/**", (r) => r.abort());
   const page = await context.newPage();
+  await acceptConfirmations(page);
   page.on("dialog", (d) => d.accept());
-  await page.goto("/");
+  const admin = email === fac || path.startsWith("/admin");
+  const destination = admin
+    ? "/admin.html#" +
+      (path.startsWith("/staff")
+        ? path.replace("/staff", "/workshops")
+        : path.replace(/^\/admin/, ""))
+    : "/#" + path;
+  await page.goto(admin ? "/admin.html" : "/");
   const uid = await page.evaluate(
     (email) => import("/test/browser-auth.ts").then((m) => m.login(email)),
     email,
   );
-  await page.goto("/#" + path);
+  await page.goto(destination);
   await page.reload();
   return { context, page, uid };
 }
@@ -313,7 +322,7 @@ test("learner profile and correction request reach facilitator review", async ({
   await s.page.getByRole("button", { name: "Send request" }).click();
   await expect(s.page.getByRole("status")).toContainText("Request submitted");
   await s.context.close();
-  const a = await actor(browser, fac, "/staff");
+  const a = await actor(browser, fac, "/admin/requests");
   await expect(
     a.page.getByText("Please review my workshop certificate name.", {
       exact: true,
@@ -404,16 +413,22 @@ test("administrator navigation is role gated and archived certificates can be re
     learner.page.getByRole("link", { name: "Admin controls" }),
   ).toHaveCount(0);
   await learner.page.goto("/#/admin");
-  await expect(learner.page.getByRole("alert")).toContainText(
-    "Administrator access required",
-  );
-  await learner.context.close();
-  const a = await actor(browser, fac, "/admin");
   await expect(
-    a.page.getByRole("heading", { name: "Admin control centre." }),
+    learner.page.getByRole("link", {
+      name: "Open administrator portal",
+      exact: true,
+    }),
   ).toBeVisible();
   await expect(
-    a.page.getByRole("link", { name: "Admin controls" }),
+    learner.page.getByRole("button", { name: "Find record" }),
+  ).toHaveCount(0);
+  await learner.context.close();
+  const a = await actor(browser, fac, "/admin/learners");
+  await expect(
+    a.page.getByRole("heading", { name: "Learner records", exact: true }),
+  ).toBeVisible();
+  await expect(
+    a.page.getByRole("navigation", { name: "Administrator navigation" }),
   ).toBeVisible();
   await a.page
     .getByLabel("Learner email, account reference or certificate ID")
@@ -519,7 +534,7 @@ test("student sees administrator decline and reopened correction request status"
   await s.page.getByRole("button", { name: "Send request" }).click();
   await expect(s.page.getByRole("status")).toContainText("Request submitted");
   await s.context.close();
-  const a = await actor(browser, fac, "/admin");
+  const a = await actor(browser, fac, "/admin/requests");
   await a.page
     .getByLabel("Review / correction note")
     .fill("Please provide the verified spelling.");
@@ -591,7 +606,7 @@ test("approved student removal deletes learning records and certificates while r
   await s.page.getByRole("button", { name: "Send request" }).click();
   await expect(s.page.getByRole("status")).toContainText("Request submitted");
   await s.context.close();
-  const a = await actor(browser, fac, "/admin");
+  const a = await actor(browser, fac, "/admin/requests");
   await a.page
     .getByLabel("Review / correction note")
     .fill("Verified owner and portal-only scope.");
@@ -678,7 +693,7 @@ test("erased certificate is unavailable; explicit reactivation does not restore 
     (await db.collection(`learningLearners/${learnerUid}/workshops`).get())
       .empty,
   ).toBe(true);
-  const a = await actor(browser, fac, "/admin");
+  const a = await actor(browser, fac, "/admin/workshops");
   await a.page.getByLabel("Session code").fill("RETAIN01");
   await a.page.getByRole("button", { name: "Load workshop" }).click();
   await expect(
@@ -711,9 +726,9 @@ test("erased certificate is unavailable; explicit reactivation does not restore 
 test("administrator receives new requests live without reloading the console", async ({
   browser,
 }) => {
-  const a = await actor(browser, fac, "/admin");
+  const a = await actor(browser, fac, "/admin/requests");
   await expect(
-    a.page.getByRole("heading", { name: "Admin control centre." }),
+    a.page.getByRole("heading", { name: "Support requests", exact: true }),
   ).toBeVisible();
   const s = await actor(browser, "other@example.invalid", "/profile");
   await s.page

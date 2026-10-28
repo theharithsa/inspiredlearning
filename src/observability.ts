@@ -1,3 +1,5 @@
+import { cancelConfirmations } from "./ui/Confirm";
+import { isAdminApp } from "./surface";
 import { httpsCallable } from "firebase/functions";
 import type { User } from "firebase/auth";
 import { auth, functions } from "./firebase";
@@ -19,7 +21,12 @@ try {
     "device-" + crypto.randomUUID();
   localStorage.setItem("inspiredlearning-device", device);
 } catch {}
+let previousIdentity: string | null | undefined;
 export function identity(user: User | null) {
+  if (previousIdentity !== user?.uid) {
+    cancelConfirmations();
+    previousIdentity = user?.uid;
+  }
   try {
     window.dtrum?.identifyUser(user?.email || device);
   } catch {}
@@ -41,6 +48,7 @@ export function rum(name: string, fields: Record<string, unknown> = {}) {
       "event.provider": "inspiredlearning-rum",
       "event.authority": "client-observed",
       "event.source": "browser",
+      "app.surface": isAdminApp ? "admin" : "learner",
       "event.id": crypto.randomUUID(),
       "transaction.id": crypto.randomUUID(),
       ...(auth.currentUser?.email
@@ -63,6 +71,25 @@ export async function call<T>(
 ) {
   const transactionId = crypto.randomUUID();
   try {
+    if (
+      isAdminApp &&
+      (endpoint === "learningCertificate" ||
+        (endpoint === "learningAction" &&
+          [
+            "sync",
+            "attendance",
+            "attendanceBatch",
+            "close",
+            "finalize",
+            "revoke",
+            "correctCertificate",
+            "eraseLearner",
+            "updateLearner",
+            "restoreCompletion",
+            "reviewRequest",
+          ].includes(String(payload.action))))
+    )
+      await (await import("./reauth")).ensureRecentAdminAuth();
     const response = await httpsCallable<Record<string, unknown>, T>(
       functions,
       endpoint,

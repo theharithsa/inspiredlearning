@@ -1,3 +1,4 @@
+import { confirmAction } from "./ui/Confirm";
 import type { StaffWorkflowProps } from "./types";
 import { action } from "./observability";
 import { statusLabel } from "./constants";
@@ -10,7 +11,12 @@ export default function RosterTable({
   run,
 }: Omit<StaffWorkflowProps, "setReason">) {
   return (
-    <div className="table-wrap">
+    <div
+      className="table-wrap"
+      role="region"
+      aria-label="Scrollable records table"
+      tabIndex={0}
+    >
       <table>
         <thead>
           <tr>
@@ -56,9 +62,9 @@ export default function RosterTable({
                   <button
                     className="text-button danger"
                     disabled={busy || !reason.trim()}
-                    onClick={() => {
+                    onClick={async () => {
                       if (
-                        confirm(
+                        await confirmAction(
                           "Revoke this completion, certificate and 100 learning points?",
                         )
                       )

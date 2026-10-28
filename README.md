@@ -1,5 +1,7 @@
 # InspiredLearning
 
+Current source: **2.0.0**. Separate learner/admin builds and release gates are described below; deployed versions must be checked against dated release evidence.
+
 A permanent learner account for the ChaiCart workshop, hosted separately in the same Firebase project. Sign in with the **same Google account used in ChaiCart Live**.
 
 - Portal: https://inspiredlearning-vh.web.app
@@ -101,4 +103,11 @@ The portal uses memory-only Firestore caching. If upgrade cleanup is blocked, cl
 
 ## Maintenance 1.0.2 (source candidate)
 
-Google global administrators gain metadata-only telemetry health and reasoned, retry-safe failed-event redrive through REST contract 1.4.0. Public verification/privacy load without Firebase initialization; history listeners have explicit load-more bounds. Runtime defaults and function profiles are centralized without changing capacity or captain authorization. See [maintenance decisions](docs/MAINTENANCE-POLICY-2026-10-27.md), [API extension](docs/API-MAINTENANCE-1.4.md), [agent guidance](skills/README.md) and [observability configuration](observability/README.md). This is distinct from planned Material 3 v2.0.0 (#34), and source changes are not production deployment evidence.
+Google global administrators gain metadata-only telemetry health and reasoned, retry-safe failed-event redrive through REST contract 1.4.0. Public verification/privacy load without Firebase initialization; history listeners have explicit load-more bounds. Runtime defaults and function profiles are centralized without changing capacity or captain authorization. See [maintenance decisions](docs/MAINTENANCE-POLICY-2026-10-27.md), [API extension](docs/API-MAINTENANCE-1.4.md), [agent guidance](skills/README.md) and [observability configuration](observability/README.md). This maintenance baseline precedes Material 3 v2.0.0 (#34), and source changes are not production deployment evidence.
+
+
+## InspiredLearning 2.0 source
+
+Version 2.0.0 introduces a Material 3 learner experience and separate admin.inspi.in application. `npm run build` builds learner/public `dist/` and administrator `dist-admin/`, each with a version/revision/surface/configuration manifest. `npm run dev` serves the learner app and `/admin.html` for local administrator development. Production configuration uses the existing Firebase project and shared Google identities. No mandatory MFA; administrator sign-in lasts for the current tab/session and sensitive operations require recent Google authentication.
+
+REST remains `/api/v1`, OpenAPI 1.5.0 (44 operations), with a new administrator capability bootstrap. Existing student history, credits, certificates, privacy and workshop-captain permissions remain authoritative. ChaiCart Live stays a separate workshop app. See [design system](docs/DESIGN-SYSTEM.md), [admin contract](docs/API-V2-ADMIN-CONTRACT.md), [release plan](docs/V2-RELEASE-PLAN.md), [CI observability](docs/CI-OBSERVABILITY.md) and [agent skills](skills/README.md). Source version is not deployed version.

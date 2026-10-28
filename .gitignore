@@ -15,3 +15,7 @@ test-results/
 node_modules
 
 /.firebase-rehearsal-*.json
+
+dist-admin/
+
+ci-results/

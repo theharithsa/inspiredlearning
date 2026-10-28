@@ -1,13 +1,13 @@
 {
   "name": "inspiredlearning-functions",
-  "version": "1.0.2",
+  "version": "2.0.0",
   "private": true,
   "type": "module",
   "engines": {
     "node": "22"
   },
   "scripts": {
-    "test": "node --import ../test/setup-env.mjs --test ../test/model.test.mjs ../test/api.test.mjs ../test/certificate-policy.test.mjs ../test/telemetry-policy.test.mjs"
+    "test": "node --import ../test/setup-env.mjs --test ../test/model.test.mjs ../test/api.test.mjs ../test/certificate-policy.test.mjs ../test/telemetry-policy.test.mjs ../test/admin-session.test.mjs"
   },
   "dependencies": {
     "@opentelemetry/api": "^1.9.1",

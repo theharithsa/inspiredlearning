@@ -26,7 +26,7 @@ test("administrator can create a scoped credential, copy it once, use it and rev
   });
   await context.route("https://**dynatrace.com/**", (route) => route.abort());
   const page = await context.newPage();
-  await page.goto("/");
+  await page.goto("/admin.html#/integrations");
   const uid = await page.evaluate(
     (email) => import("/test/browser-auth.ts").then((m) => m.login(email)),
     email,
@@ -34,7 +34,7 @@ test("administrator can create a scoped credential, copy it once, use it and rev
   await db
     .doc(`learningLearners/${uid}`)
     .set({ name: "Token administrator", email });
-  await page.goto("/#/admin");
+  await page.goto("/admin.html#/integrations");
   await page.reload();
   await expect(
     page.getByRole("heading", { name: "API tokens", exact: true }),
@@ -96,9 +96,12 @@ test("administrator can create a scoped credential, copy it once, use it and rev
   await expect(
     page.getByRole("button", { name: "Copy new token" }),
   ).toHaveCount(0);
-  page.once("dialog", (dialog) => dialog.dismiss());
   await page
     .getByRole("button", { name: "Revoke Browser scoped token", exact: true })
+    .click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Cancel", exact: true })
     .click();
   expect(
     await page.evaluate(
@@ -111,9 +114,12 @@ test("administrator can create a scoped credential, copy it once, use it and rev
       secret,
     ),
   ).toBe(200);
-  page.once("dialog", (dialog) => dialog.accept());
   await page
     .getByRole("button", { name: "Revoke Browser scoped token", exact: true })
+    .click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Continue", exact: true })
     .click();
   await expect(
     page.getByText("Token revoked. New requests will be rejected."),

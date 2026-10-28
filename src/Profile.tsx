@@ -1,3 +1,4 @@
+import { confirmAction } from "./ui/Confirm";
 import RequestHistory from "./RequestHistory";
 import { useState } from "react";
 import type { User } from "firebase/auth";
@@ -44,7 +45,7 @@ export default function Profile({
       <div className="split">
         <form
           className="panel stack"
-          onSubmit={(e) => {
+          onSubmit={async (e) => {
             e.preventDefault();
             void submit(
               () =>
@@ -81,13 +82,13 @@ export default function Profile({
         </form>
         <form
           className="panel stack"
-          onSubmit={(e) => {
+          onSubmit={async (e) => {
             e.preventDefault();
             if (
               kind === "erasure" &&
-              !window.confirm(
+              !(await confirmAction(
                 "Submit a request to remove your InspiredLearning history and certificates? A facilitator must review it before removal. Your shared Google sign-in and ChaiCart Live records stay available.",
-              )
+              ))
             )
               return;
             void submit(async () => {

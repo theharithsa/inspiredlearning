@@ -1,3 +1,5 @@
+import Brand from "./ui/Brand";
+import Theme from "./ui/Theme";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { apiJson } from "./api";
@@ -51,9 +53,10 @@ export default function Verify() {
   const result = state?.id === id ? state?.data : null;
   return (
     <main className="public-page">
-      <Link className="brand" to="/">
-        ✳ InspiredLearning
-      </Link>
+      <header className="public-header">
+        <Brand />
+        <Theme />
+      </header>
       <section className="panel verification">
         <span className="eyebrow">CERTIFICATE VERIFICATION</span>
         <h1>

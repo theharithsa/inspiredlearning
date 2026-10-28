@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "InspiredLearning API",
-    "version": "1.4.0",
+    "version": "1.5.0",
     "description": "Shared verified Google identity and existing owner/facilitator permissions. Resource catalogs and all writes require a current global facilitator. Explicit token permissions apply on every request. Credits use latest published workshop results, preserve three separate measures and unknown null values. College affiliations are explicit, never inferred. Writes require a UUID Idempotency-Key and review reason; updates also require current expectedVersion. MCP remains read-only. Unified student credits award final team score plus individual score per completed workshop, intentionally counting individual credits twice. Legacy learning points remain compatibility data and are excluded from the unified total."
   },
   "servers": [
@@ -6412,6 +6412,70 @@
             }
           }
         ]
+      }
+    },
+    "/admin/access": {
+      "get": {
+        "operationId": "getAdminAccess",
+        "tags": [
+          "Admin telemetry"
+        ],
+        "summary": "Verify current Google global administrator access without loading learner records.",
+        "description": "Scoped API tokens, captains and learners are denied. No filters. Ordinary bootstrap does not require a recent-auth popup; sensitive writes enforce verified auth_time separately.",
+        "responses": {
+          "200": {
+            "description": "Current administrator capability summary.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "administrator",
+                    "capabilities",
+                    "recentAuthMaxAgeSeconds"
+                  ],
+                  "properties": {
+                    "administrator": {
+                      "const": true
+                    },
+                    "capabilities": {
+                      "type": "array",
+                      "items": {
+                        "enum": [
+                          "workshops",
+                          "learners",
+                          "certificates",
+                          "requests",
+                          "integrations",
+                          "delivery"
+                        ]
+                      }
+                    },
+                    "recentAuthMaxAgeSeconds": {
+                      "const": 300
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Unknown filters"
+          },
+          "401": {
+            "description": "Missing or invalid identity"
+          },
+          "403": {
+            "description": "Current Google administrator required"
+          },
+          "429": {
+            "description": "Throttled"
+          },
+          "500": {
+            "description": "Safe internal failure"
+          }
+        }
       }
     }
   },

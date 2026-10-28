@@ -1016,6 +1016,7 @@ test("HTTP API and Swagger serve authenticated reads without disclosing private 
             uid,
             email,
             email_verified: true,
+            auth_time:Math.floor(Date.now()/1000),
             firebase: { sign_in_provider: "google.com" },
           };
         },
@@ -2040,7 +2041,7 @@ test('certificate repair HTTP route accepts authenticated admins and rejects uns
   const {apiHandler}=await import('../functions/api-http.js');
   const express=require('express'),serverApp=express();
   serverApp.use(express.json());
-  serverApp.use(apiHandler({db,auth:{verifyIdToken:async()=>({uid:fac.uid,email:fac.email,email_verified:true,firebase:{sign_in_provider:'google.com'}})},rate(){},measured:async(_name,_actor,fn)=>fn(c),audit:async()=>{}}));
+  serverApp.use(apiHandler({db,auth:{verifyIdToken:async()=>({uid:fac.uid,email:fac.email,email_verified:true,auth_time:Math.floor(Date.now()/1000),firebase:{sign_in_provider:'google.com'}})},rate(){},measured:async(_name,_actor,fn)=>fn(c),audit:async()=>{}}));
   const server=serverApp.listen(0,'127.0.0.1');await new Promise(r=>server.once('listening',r));
   const url=`http://127.0.0.1:${server.address().port}/api/v1/workshops/FAMILY001/certificates/reconcile`;
   try {
