@@ -1,0 +1,69 @@
+{
+  "appVersion": "2.0.0",
+  "apiContract": "1.5.0",
+  "mcpVersion": "1.0.1",
+  "runtimeBaseRevision": "4bb4849ced7482790f46d29f9596d5014e61a8b6",
+  "dependencyPatch": "root fast-uri and MCP compatible lockfile patches after base revision",
+  "sourceManifestSha256": "f3257ea2f1f77d7a4d7855497b10c4bf4d6f0a1293ba193e76cd7d7a19dea011",
+  "sourceFileCount": 142,
+  "browser": {
+    "engine": "Chromium",
+    "channel": "chrome",
+    "version": "156.0.8078.48"
+  },
+  "review": "all included PNGs visually inspected; no raster edits; viewport captures avoid full-page sticky-content stitching",
+  "assets": [
+    {
+      "file": "learner-light.png",
+      "width": 1440,
+      "height": 1000,
+      "sha256": "57536dc16723a0cb69506fc9ea2323f72fdccba1e9b9c02c667490520e524810",
+      "theme": "light",
+      "capture": "viewport",
+      "data": "synthetic demo-chaicart only",
+      "capturedAtUtc": "2026-10-28T17:22:01.034642+00:00"
+    },
+    {
+      "file": "learner-dark-mobile.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "645abad015cc772f2e132004de0e5d6fd4d6903c0dd76e7a3e46e5724d5aa9a8",
+      "theme": "dark",
+      "capture": "viewport",
+      "data": "synthetic demo-chaicart only",
+      "capturedAtUtc": "2026-10-28T17:22:01.169052+00:00"
+    },
+    {
+      "file": "admin-overview-light.png",
+      "width": 1440,
+      "height": 1000,
+      "sha256": "715770523623c32b3821c277e48c590cd02959ff899cca8fed5792a09050d746",
+      "theme": "light",
+      "capture": "viewport",
+      "data": "synthetic demo-chaicart only",
+      "capturedAtUtc": "2026-10-28T17:22:01.768027+00:00"
+    },
+    {
+      "file": "admin-certificates-mobile.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "e4fd57d2ddaa4bdc49a583bcae8042d495e4291bf253b254524cecab9e5ae576",
+      "theme": "light",
+      "capture": "viewport",
+      "data": "synthetic demo-chaicart only",
+      "capturedAtUtc": "2026-10-28T17:22:02.685229+00:00"
+    },
+    {
+      "file": "public-mobile.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "79d16835ff1dcb9771af2373e34d6eb17ebcc02cef5e5b7d9b624b6a80265ca7",
+      "theme": "light",
+      "capture": "viewport",
+      "data": "synthetic demo-chaicart only",
+      "capturedAtUtc": "2026-10-28T17:22:03.135017+00:00"
+    }
+  ],
+  "recordedAtUtc": "2026-10-28T17:28:16.225932+00:00",
+  "limitations": "Physical Safari, live Google OAuth and production/tenant verification not performed."
+}

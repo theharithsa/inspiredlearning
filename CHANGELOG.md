@@ -6,6 +6,7 @@
 - Separate administrator app/build/bootstrap at admin.inspi.in with per-tab session persistence, current server role checks and recent Google reauthentication for sensitive operations.
 - Compatible API 1.5.0 adds administrator capability bootstrap; shared learner/captain, certificate, credit and privacy policies are preserved.
 - Versioned artifact manifests, read-only release verifier, delivery observability reporters and repository agent guidance; membership migration remains a documented acceptance gate.
+- MCP 1.0.1 patches compatible dependency advisories without changing its GET-only contract; remaining Firebase CLI development-only advisories are tracked in #57.
 - Production rollout, tenant verification and secure CI activation require their separate release evidence.
 
 

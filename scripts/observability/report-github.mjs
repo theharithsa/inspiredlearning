@@ -43,7 +43,7 @@ async function github(path) {
 let identity, rows, pipeline;
 if (process.env.GITHUB_EVENT_NAME === "workflow_run") {
   const source = await github(
-    `/repos/${repository}/actions/runs/${Number(event.workflow_run?.id)}`,
+    `/repos/${repository}/actions/runs/${Number(event.workflow_run?.id)}/attempts/${Number(event.workflow_run?.run_attempt)}`,
   );
   identity = runIdentity(source, repository);
   if (

@@ -1,3 +1,4 @@
+import packageJson from "./package.json" with { type: "json" };
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { tools, apiClient } from "./tools.js";
@@ -8,7 +9,7 @@ const read = apiClient(
 );
 const server = new McpServer({
   name: "inspiredlearning-read",
-  version: "1.0.0",
+  version: packageJson.version,
 });
 for (const [name, tool] of Object.entries(tools)) {
   server.registerTool(
