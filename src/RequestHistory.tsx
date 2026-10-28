@@ -1,3 +1,5 @@
+import Loading from "./ui/Loading";
+import Button from "./ui/Button";
 import type { LearnerRequest as Request } from "./types";
 import { useRows } from "./hooks";
 import { Message } from "./components";
@@ -11,7 +13,7 @@ export default function RequestHistory({ uid }: { uid: string }) {
       <h2>Your requests</h2>
       {error && <Message error>{error}</Message>}
       {rows === undefined ? (
-        <p role="status">Loading your requests…</p>
+        <Loading>Loading your requests…</Loading>
       ) : !rows.length ? (
         <p>No account requests yet.</p>
       ) : (
@@ -54,9 +56,9 @@ export default function RequestHistory({ uid }: { uid: string }) {
           ))
       )}
       {hasMore && (
-        <button className="button secondary" onClick={loadMore}>
+        <Button className="button secondary" onClick={loadMore}>
           Load more records
-        </button>
+        </Button>
       )}
     </section>
   );

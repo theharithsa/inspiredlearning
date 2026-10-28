@@ -1,3 +1,4 @@
+import Loading from "./ui/Loading";
 import { auth } from "./firebase";
 import { useRecord } from "./hooks";
 import { workshopCredits } from "./credits";
@@ -16,8 +17,7 @@ export default function WorkshopDetail() {
       : null;
   const w = useRecord<Workshop>(path);
   useEffect(() => interaction("workshop.viewed", sid), [sid]);
-  if (path && w === undefined)
-    return <p role="status">Loading your workshop…</p>;
+  if (path && w === undefined) return <Loading>Loading your workshop…</Loading>;
   if (!w)
     return (
       <Empty title="Workshop not found">

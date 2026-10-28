@@ -74,3 +74,8 @@ The scheduler records pending/failed gauges, exact oldest age only when its boun
 The separate admin app installs the approved RUM tag and existing documented identity attribution; app.surface distinguishes learner/admin observations. Browser page views, confirmation cancellation and reauthentication observations do not assert committed business outcomes. Existing canonical server audits/outbox events remain authoritative. Rejected recent-auth checks must not emit successful mutation events. Session/account changes clear pending confirmations; administrator bootstrap is an audited read without learner writes.
 
 The independent inspiredlearning-delivery service exports source-validated GitHub lifecycle/run/job/step facts and trusted-main structured test summaries. See CI-OBSERVABILITY.md for trust boundaries, secret activation and evidence limits. Its local three-signal collector test is not tenant visibility or native RUM-to-trace proof. No deployment marker is inferred from build, merge or release publication. #9 tenant SLO/alert installation and #14 live CSP verification remain separate unfinished acceptance work.
+
+
+## App 2.1.0 appearance
+
+Browser session metadata now includes `app.version` from the frontend package and `app.surface`. The click observer recognizes Material shadow-control hosts through the composed event path and records only existing safe `ui.click` action metadata. It does not collect typed field values, font URLs or preference payloads. Appearance is a local browser preference; it does not emit canonical server business outcomes or write Firestore. Functions remains 2.0.0 and API remains 1.5.0. Local collector acceptance and source tests do not establish production RUM or Dynatrace tenant visibility.

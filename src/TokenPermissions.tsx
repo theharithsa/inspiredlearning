@@ -1,3 +1,4 @@
+import Checkbox from "./ui/Checkbox";
 export default function TokenPermissions({
   permissions,
   scopes,
@@ -15,8 +16,9 @@ export default function TokenPermissions({
       <div className="token-permissions">
         {permissions.map((p) => (
           <label key={p.scope} className="token-permission">
-            <input
+            <Checkbox
               type="checkbox"
+              disabled={disabled}
               checked={scopes.includes(p.scope)}
               onChange={(e) => onChange(p.scope, e.target.checked)}
             />

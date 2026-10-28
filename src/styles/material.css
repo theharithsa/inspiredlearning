@@ -1,0 +1,629 @@
+/* Component-level styling only. Interactive fields/buttons/menus are Material Web,
+   while adaptive app chrome, cards and tables use the same M3 system roles. */
+:root {
+  --app-font-family: "Roboto", system-ui, sans-serif;
+  --md-ref-typeface-brand: var(--app-font-family);
+  --md-ref-typeface-plain: var(--app-font-family);
+  --md-sys-typescale-display-large-font: var(--app-font-family);
+  --md-sys-typescale-body-large-font: var(--app-font-family);
+  --md-sys-typescale-label-large-font: var(--app-font-family);
+  --md-outlined-text-field-container-shape: 4px;
+  --md-outlined-select-text-field-container-shape: 4px;
+  --md-menu-container-color: var(--md-sys-color-surface-container);
+  --md-menu-container-shape: 4px;
+  --md-dialog-container-color: var(--md-sys-color-surface-container-high);
+  --md-elevation-level-1:
+    0 1px 2px color-mix(in srgb, var(--md-sys-color-shadow) 20%, transparent),
+    0 1px 3px 1px
+      color-mix(in srgb, var(--md-sys-color-shadow) 10%, transparent);
+  --md-elevation-level-2:
+    0 1px 2px color-mix(in srgb, var(--md-sys-color-shadow) 20%, transparent),
+    0 2px 6px 2px
+      color-mix(in srgb, var(--md-sys-color-shadow) 10%, transparent);
+  --md-elevation-level-3:
+    0 4px 8px 3px
+      color-mix(in srgb, var(--md-sys-color-shadow) 15%, transparent),
+    0 1px 3px color-mix(in srgb, var(--md-sys-color-shadow) 30%, transparent);
+}
+html {
+  font-family: var(--app-font-family);
+  font-synthesis: none;
+}
+button,
+input,
+textarea,
+select,
+code,
+pre,
+kbd,
+samp {
+  font-family: inherit;
+}
+.md-field {
+  width: 100%;
+  min-width: 0;
+  flex: 1;
+  --md-outlined-text-field-input-text-font: var(--app-font-family);
+  --md-outlined-select-text-field-input-text-font: var(--app-font-family);
+}
+md-outlined-select::part(menu) {
+  max-block-size: min(400px, calc(100dvh - 64px));
+}
+.md-button {
+  --md-filled-button-container-height: 48px;
+  --md-outlined-button-container-height: 48px;
+  --md-text-button-container-height: 48px;
+  --md-filled-tonal-button-container-height: 48px;
+  vertical-align: middle;
+  flex-shrink: 0;
+  max-width: 100%;
+}
+.md-button.large {
+  --md-filled-button-container-height: 56px;
+}
+.md-button.danger {
+  --md-text-button-label-text-color: var(--md-sys-color-error);
+  --md-text-button-icon-color: var(--md-sys-color-error);
+  --md-outlined-button-label-text-color: var(--md-sys-color-error);
+  --md-filled-button-container-color: var(--md-sys-color-error);
+  --md-filled-button-label-text-color: var(--md-sys-color-on-error);
+}
+.md-button .icon {
+  width: 18px;
+  height: 18px;
+}
+md-icon-button .icon {
+  width: 24px;
+  height: 24px;
+}
+.md-button .button-progress {
+  width: 18px;
+  height: 18px;
+  --md-circular-progress-size: 18px;
+}
+.md-checkbox {
+  margin: 4px;
+  flex: none;
+}
+fieldset:disabled {
+  color: var(--md-sys-color-on-surface);
+}
+.token-permission {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  border-radius: 8px;
+  padding: 4px;
+}
+.token-permission:hover {
+  background: color-mix(
+    in srgb,
+    var(--md-sys-color-on-surface) 8%,
+    transparent
+  );
+}
+.account-menu {
+  display: inline-flex;
+  position: relative;
+  flex: none;
+}
+.account-menu md-menu {
+  min-width: 248px;
+  max-width: calc(100vw - 32px);
+  z-index: 40;
+}
+.menu-account {
+  padding: 16px 20px;
+  font-size: var(--md-sys-typescale-body-medium);
+  color: var(--muted);
+  overflow-wrap: anywhere;
+  max-width: 280px;
+}
+.md-divider {
+  height: 1px;
+  border: 0;
+  background: var(--md-sys-color-outline-variant);
+  margin: 8px 0;
+}
+.md-tabs {
+  width: 100%;
+  --md-primary-tab-container-color: var(--md-sys-color-surface);
+}
+.md-loading {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 24px 0;
+  color: var(--muted);
+  font-size: var(--md-sys-typescale-body-medium);
+}
+.md-loading md-circular-progress {
+  width: 32px;
+  height: 32px;
+  --md-circular-progress-size: 32px;
+  flex: none;
+}
+.md-disclosure {
+  margin-block: 8px;
+}
+.md-disclosure-content {
+  padding: 20px;
+  background: var(--md-sys-color-surface-container-low);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 8px;
+}
+.rotate-90,
+.rotate-180 {
+  display: inline-flex;
+}
+.rotate-90 {
+  transform: rotate(90deg);
+}
+.rotate-180 {
+  transform: rotate(180deg);
+}
+.panel,
+.task-card,
+.workshop-card,
+.certificate-card,
+.table-wrap {
+  border-radius: var(--md-sys-shape-medium);
+}
+.panel,
+.task-card {
+  background: var(--md-sys-color-surface-container-lowest);
+}
+.workshop-card:hover,
+.task-card:hover {
+  box-shadow: var(--md-elevation-level-1);
+  background: var(--md-sys-color-surface-container-low);
+}
+.stats > div {
+  border-radius: 16px;
+}
+.stats > div:first-child {
+  background: var(--md-sys-color-primary-container);
+  color: var(--md-sys-color-on-primary-container);
+}
+.notice {
+  border-radius: 12px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.notice .icon {
+  width: 20px;
+  height: 20px;
+  margin-top: 1px;
+}
+.badge {
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 8px;
+  font-size: var(--md-sys-typescale-body-small);
+  line-height: 16px;
+}
+.badge.success {
+  background: var(--md-sys-color-secondary-container);
+  color: var(--md-sys-color-on-secondary-container);
+}
+.eyebrow {
+  font-weight: 500;
+  letter-spacing: 0.6px;
+}
+.material-dialog {
+  background: var(--md-sys-color-surface-container-high);
+  color: var(--md-sys-color-on-surface);
+  border: 0;
+  border-radius: 28px;
+  box-shadow: var(--md-elevation-level-3);
+  padding: 24px;
+  max-height: calc(100dvh - 48px);
+  max-width: calc(100vw - 48px);
+}
+.material-dialog::backdrop {
+  background: color-mix(in srgb, var(--md-sys-color-scrim) 32%, transparent);
+}
+.material-dialog h2 {
+  font-size: var(--md-sys-typescale-headline-small);
+  line-height: 32px;
+  font-weight: 400;
+}
+.dialog-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+.dialog-heading h2 {
+  margin: 0;
+}
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 24px;
+  padding-top: 16px;
+  flex-wrap: wrap;
+}
+.settings-dialog {
+  width: min(860px, calc(100vw - 48px));
+}
+.settings-intro {
+  max-width: 70ch;
+  color: var(--muted);
+  font-size: var(--md-sys-typescale-body-medium);
+}
+.settings-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: 28px;
+  margin-top: 24px;
+  align-items: start;
+}
+.settings-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  min-width: 0;
+}
+.settings-controls section > h3 {
+  font-size: var(--md-sys-typescale-title-large);
+  font-weight: 400;
+  margin-bottom: 8px;
+}
+.settings-controls section > p {
+  font-size: var(--md-sys-typescale-body-medium);
+  margin-bottom: 20px;
+}
+.palette-group {
+  border: 0;
+  padding: 0;
+  margin: 20px 0 0;
+}
+.palette-group legend {
+  padding: 0;
+  margin-bottom: 12px;
+  font-size: var(--md-sys-typescale-body-medium);
+}
+.palette-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.palette-choice {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  min-height: 84px;
+  cursor: pointer;
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: 12px;
+  padding: 8px;
+  font-size: var(--md-sys-typescale-body-small);
+  font-weight: 400;
+}
+.palette-choice:hover {
+  background: color-mix(
+    in srgb,
+    var(--md-sys-color-on-surface) 8%,
+    transparent
+  );
+}
+.palette-choice.selected {
+  border-color: var(--md-sys-color-primary);
+  background: var(--md-sys-color-secondary-container);
+  color: var(--md-sys-color-on-secondary-container);
+}
+.palette-choice > span {
+  min-width: 0;
+}
+.palette-swatches {
+  display: flex;
+  margin-bottom: 4px;
+}
+.palette-swatches i {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid var(--md-sys-color-surface);
+  margin-right: -3px;
+}
+.settings-sample {
+  background: var(--md-sys-color-surface-container-lowest);
+  border-radius: 16px;
+  padding: 24px;
+  min-width: 0;
+  position: sticky;
+  top: 0;
+}
+.settings-sample h3 {
+  font-size: var(--md-sys-typescale-headline-medium);
+  line-height: 36px;
+  font-weight: 400;
+}
+.settings-sample p {
+  font-size: var(--md-sys-typescale-body-large);
+}
+.settings-sample p.small {
+  font-size: var(--md-sys-typescale-body-small);
+  line-height: 18px;
+  margin-top: 24px;
+}
+.sample-numbers {
+  font-variant-numeric: tabular-nums;
+}
+.sample-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 24px;
+}
+.font-status {
+  font-size: var(--md-sys-typescale-body-small);
+  color: var(--muted);
+  margin: 8px 0 0;
+  min-height: 18px;
+}
+.date-field {
+  display: flex;
+  position: relative;
+  align-items: center;
+  min-width: 0;
+}
+.date-field > .md-field {
+  --md-outlined-text-field-trailing-space: 56px;
+}
+.date-field > md-icon-button {
+  position: absolute;
+  right: 4px;
+  top: 4px;
+}
+.date-dialog {
+  width: 360px;
+}
+.calendar-selection {
+  font-size: var(--md-sys-typescale-headline-small);
+  line-height: 32px;
+  color: var(--md-sys-color-on-surface);
+  margin: 16px 0;
+}
+.calendar-month {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.calendar-month h3 {
+  font-size: var(--md-sys-typescale-body-large);
+  margin: 0;
+  font-weight: 500;
+}
+.calendar-grid,
+.calendar-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0;
+  text-align: center;
+}
+.calendar-weekdays span {
+  font-size: var(--md-sys-typescale-body-small);
+  padding-block: 12px;
+  color: var(--muted);
+}
+.calendar-day {
+  --md-text-button-container-height: 40px;
+  --md-text-button-container-shape: 50%;
+  --md-text-button-leading-space: 0;
+  --md-text-button-trailing-space: 0;
+  min-width: 0;
+  width: 100%;
+  height: 44px;
+}
+.calendar-day.selected {
+  --md-text-button-container-color: var(--md-sys-color-primary);
+  --md-text-button-label-text-color: var(--md-sys-color-on-primary);
+  --md-text-button-state-layer-color: var(--md-sys-color-on-primary);
+  background: var(--md-sys-color-primary);
+  border-radius: 50%;
+}
+@media (max-width: 839px) {
+  .account-menu {
+    display: inline-flex;
+  }
+  .workspace-top {
+    gap: 8px;
+  }
+  .workspace-top .account-chip {
+    margin-left: auto;
+  }
+  .inline-form > .md-field,
+  .inline-form > .date-field {
+    width: 100%;
+  }
+  .material-dialog {
+    max-width: calc(100vw - 32px);
+    max-height: calc(100dvh - 32px);
+  }
+  .settings-dialog {
+    width: calc(100vw - 32px);
+  }
+  .settings-layout {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  .settings-sample {
+    position: static;
+  }
+  .settings-sample h3 {
+    font-size: var(--md-sys-typescale-headline-small);
+  }
+  .settings-controls {
+    gap: 24px;
+  }
+  .settings-dialog .dialog-actions {
+    position: sticky;
+    bottom: -24px;
+    background: var(--md-sys-color-surface-container-high);
+    padding-bottom: 16px;
+    z-index: 1;
+  }
+  .staff-actions > .md-button {
+    flex: 1 1 auto;
+  }
+  .sidebar-footer .settings-trigger {
+    justify-self: start;
+  }
+}
+@media (max-width: 359px) {
+  .palette-grid {
+    grid-template-columns: 1fr;
+  }
+  .palette-choice {
+    min-height: 64px;
+  }
+  .date-dialog {
+    padding: 16px;
+  }
+  .calendar-day {
+    height: 40px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  md-filled-button,
+  md-outlined-button,
+  md-text-button,
+  md-filled-tonal-button,
+  md-icon-button,
+  md-outlined-select,
+  md-outlined-text-field,
+  md-menu,
+  md-tabs {
+    --md-ripple-hover-duration: 0ms;
+    --md-ripple-pressed-duration: 0ms;
+  }
+}
+@media (forced-colors: active) {
+  .palette-choice.selected {
+    outline: 2px solid Highlight;
+  }
+  .settings-sample,
+  .panel,
+  .task-card,
+  .workshop-card {
+    border: 1px solid CanvasText;
+  }
+}
+@media (min-width: 1200px) {
+  .app-shell {
+    grid-template-columns: 320px minmax(0, 1fr);
+  }
+  .sidebar .brand {
+    font-size: var(--md-sys-typescale-title-large);
+  }
+  .sidebar .brand > span:last-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+@media (min-width: 840px) and (max-width: 1199px) {
+  .sidebar-footer .md-button {
+    --md-text-button-label-text-size: 0px;
+  }
+  .sidebar-footer .md-button {
+    --md-text-button-leading-space: 12px;
+    --md-text-button-trailing-space: 12px;
+    min-width: 64px;
+  }
+  .sidebar-footer {
+    padding: 0;
+  }
+  .sidebar-footer .md-button::part(icon) {
+    width: 24px;
+    height: 24px;
+  }
+}
+@media (max-width: 839px) {
+  .public-header-actions {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 8px 16px;
+  }
+}
+h1 {
+  font-weight: 400;
+  line-height: var(--md-sys-typescale-display-medium-line-height);
+}
+h2 {
+  font-weight: 400;
+  line-height: var(--md-sys-typescale-headline-small-line-height);
+}
+h3 {
+  line-height: var(--md-sys-typescale-title-large-line-height);
+}
+p {
+  line-height: 1.5;
+}
+small,
+.small,
+footer {
+  line-height: var(--md-sys-typescale-body-small-line-height);
+}
+.landing-hero h1 {
+  line-height: var(--md-sys-typescale-display-large-line-height);
+  font-weight: 400;
+}
+.task-card h2 {
+  font-weight: 400;
+  line-height: var(--md-sys-typescale-title-large-line-height);
+}
+.sidebar nav a.active {
+  font-weight: 500;
+}
+@media (max-width: 839px) {
+  h1 {
+    font-size: var(--md-sys-typescale-headline-large);
+    line-height: var(--md-sys-typescale-headline-large-line-height);
+  }
+  .landing-hero h1 {
+    line-height: var(--md-sys-typescale-display-small-line-height);
+  }
+  .sidebar nav a {
+    line-height: var(--md-sys-typescale-label-small-line-height);
+  }
+}
+
+/* Slotted labels inherit from the host, not the shadow button. Mirror its role. */
+md-filled-button {
+  color: var(
+    --md-filled-button-label-text-color,
+    var(--md-sys-color-on-primary)
+  );
+}
+md-filled-tonal-button {
+  color: var(
+    --md-filled-tonal-button-label-text-color,
+    var(--md-sys-color-on-secondary-container)
+  );
+}
+md-outlined-button {
+  color: var(
+    --md-outlined-button-label-text-color,
+    var(--md-sys-color-primary)
+  );
+}
+md-text-button {
+  color: var(--md-text-button-label-text-color, var(--md-sys-color-primary));
+}
+md-filled-button[disabled],
+md-filled-tonal-button[disabled],
+md-outlined-button[disabled],
+md-text-button[disabled] {
+  color: color-mix(in srgb, var(--md-sys-color-on-surface) 38%, transparent);
+}

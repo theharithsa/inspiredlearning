@@ -1,3 +1,4 @@
+import { choose } from "./material-helpers.mjs";
 import { acceptConfirmations } from "./confirm-helpers.mjs";
 import { test, expect } from "@playwright/test";
 import { createRequire } from "node:module";
@@ -91,9 +92,7 @@ test("administrator sees certificate types, status history and authorized PDF pr
   const download = page.waitForEvent("download");
   await register.getByRole("button", { name: "Preview PDF" }).first().click();
   expect((await download).suggestedFilename()).toMatch(/InspiredLearning/);
-  await register
-    .getByLabel("Certificate type", { exact: true })
-    .selectOption("award");
+  await choose(register, "Certificate type", "award");
   await register
     .getByRole("button", { name: "Load certificates", exact: true })
     .click();

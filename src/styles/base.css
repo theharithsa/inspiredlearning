@@ -2,7 +2,7 @@
   box-sizing: border-box;
 }
 html {
-  font-family: Roboto, Arial, sans-serif;
+  font-family: var(--app-font-family);
   background: var(--md-sys-color-surface);
   color: var(--ink);
   font-synthesis: none;
@@ -58,18 +58,18 @@ h3 {
   overflow-wrap: anywhere;
 }
 h1 {
-  font-size: clamp(32px, 3.7vw, 45px);
+  font-size: var(--md-sys-typescale-display-medium);
   line-height: 1.2;
   letter-spacing: -0.4px;
   margin-bottom: 16px;
 }
 h2 {
-  font-size: 24px;
+  font-size: var(--md-sys-typescale-headline-small);
   line-height: 1.3;
   letter-spacing: 0;
 }
 h3 {
-  font-size: 20px;
+  font-size: var(--md-sys-typescale-title-large);
   line-height: 1.4;
 }
 p {
@@ -81,15 +81,15 @@ em {
 }
 small,
 .small {
-  font-size: 12px;
+  font-size: var(--md-sys-typescale-body-small);
   line-height: 1.5;
 }
 .muted {
   color: var(--muted);
 }
 .eyebrow {
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--md-sys-typescale-body-small);
+  font-weight: 500;
   letter-spacing: 1.2px;
   display: block;
   margin-bottom: 12px;
@@ -99,8 +99,8 @@ small,
   display: inline-flex;
   align-items: center;
   gap: 12px;
-  font-size: 21px;
-  font-weight: 600;
+  font-size: var(--md-sys-typescale-title-large);
+  font-weight: 500;
   text-decoration: none;
   letter-spacing: -0.4px;
   color: var(--ink);
@@ -123,7 +123,7 @@ small,
   flex: none;
   vertical-align: middle;
 }
-.button {
+a.button {
   display: inline-flex;
   justify-content: center;
   align-items: center;
@@ -134,21 +134,21 @@ small,
   border: 1px solid transparent;
   border-radius: var(--md-sys-shape-full);
   text-decoration: none;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--md-sys-typescale-body-medium);
+  font-weight: 500;
   letter-spacing: 0.1px;
   min-height: 48px;
   line-height: 1.4;
 }
-.button:hover:not(:disabled) {
-  box-shadow: 0 2px 5px #0002;
+a.button:hover:not(:disabled) {
+  box-shadow: var(--md-elevation-level-1);
   background: color-mix(
     in srgb,
     var(--md-sys-color-primary) 90%,
     var(--md-sys-color-on-primary)
   );
 }
-.button:active:not(:disabled) {
+a.button:active:not(:disabled) {
   box-shadow: none;
   background: color-mix(
     in srgb,
@@ -156,25 +156,25 @@ small,
     var(--md-sys-color-on-primary)
   );
 }
-.button.large {
+a.button.large {
   padding: 16px 28px;
   min-height: 56px;
 }
-.button.secondary {
+a.button.secondary {
   background: transparent;
   color: var(--md-sys-color-primary);
   border-color: var(--md-sys-color-outline);
 }
-.button.secondary:hover:not(:disabled) {
+a.button.secondary:hover:not(:disabled) {
   background: color-mix(in srgb, var(--md-sys-color-primary) 8%, transparent);
   box-shadow: none;
 }
-.button.tonal,
-.button.light {
+a.button.tonal,
+a.button.light {
   background: var(--md-sys-color-secondary-container);
   color: var(--md-sys-color-on-secondary-container);
 }
-.text-button {
+a.text-button {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -184,12 +184,12 @@ small,
   border-radius: 24px;
   background: transparent;
   color: var(--md-sys-color-primary);
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--md-sys-typescale-body-medium);
+  font-weight: 500;
   text-align: left;
   text-decoration: none;
 }
-.text-button:hover:not(:disabled) {
+a.text-button:hover:not(:disabled) {
   background: color-mix(in srgb, var(--md-sys-color-primary) 8%, transparent);
 }
 .danger {
@@ -202,7 +202,7 @@ small,
 h1:focus {
   outline: none;
 }
-.icon-button {
+a.icon-button {
   display: inline-grid;
   place-items: center;
   width: 48px;
@@ -212,7 +212,7 @@ h1:focus {
   color: var(--muted);
   background: transparent;
 }
-.icon-button:hover {
+a.icon-button:hover {
   background: var(--md-sys-color-surface-container-highest);
 }
 .skip-link {
@@ -232,7 +232,7 @@ h1:focus {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 12px;
+  font-size: var(--md-sys-typescale-body-small);
   color: var(--muted);
 }
 .theme-control select {
@@ -240,14 +240,18 @@ h1:focus {
   min-height: 40px;
   max-width: 130px;
   border-radius: 24px;
-  font-size: 12px;
+  font-size: var(--md-sys-typescale-body-small);
 }
 footer {
-  font-size: 12px;
+  font-size: var(--md-sys-typescale-body-small);
   color: var(--muted);
   padding: 24px 0;
   margin-top: 24px;
   border-top: 1px solid var(--line);
 }
 
-.theme-changing *, .theme-changing *::before, .theme-changing *::after{transition:none!important}
+.theme-changing *,
+.theme-changing *::before,
+.theme-changing *::after {
+  transition: none !important;
+}

@@ -1,3 +1,4 @@
+import { choose } from "./material-helpers.mjs";
 import { acceptConfirmations } from "./confirm-helpers.mjs";
 import { test, expect } from "@playwright/test";
 import { createRequire } from "node:module";
@@ -72,9 +73,7 @@ test("request pages survive live edits and switch cleanly between tabs", async (
   await expect(
     page.getByText("Triage request 54", { exact: true }),
   ).toBeVisible();
-  await page
-    .getByRole("button", { name: "Request history", exact: true })
-    .click();
+  await page.getByRole("tab", { name: "Request history", exact: true }).click();
   await expect(
     page.getByText("Triage reviewed request", { exact: true }),
   ).toBeVisible();
@@ -108,7 +107,7 @@ test("correction form clears and erasure cancellation does not submit", async ({
   await expect(
     page.getByRole("button", { name: "Send request" }),
   ).toBeDisabled();
-  await page.getByLabel("Request type").selectOption("erasure");
+  await choose(page, "Request type", "erasure");
   await page
     .getByLabel("Details", { exact: true })
     .fill("Triage removal request");

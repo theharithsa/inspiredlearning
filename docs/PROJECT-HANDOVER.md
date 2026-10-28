@@ -1,6 +1,6 @@
 # Private project handover
 
-Current source work: **v2.0.0 / API 1.5.0**, tracked by #34. Read the final v2 section and V2-RELEASE-PLAN.md before using older single-portal instructions. No v2 production deployment is implied.
+Current source work: **app v2.1.0 / Functions 2.0.0 / API 1.5.0 / MCP 1.0.1**, tracked by #58 and #34. Read the final v2 section and V2-RELEASE-PLAN.md before using older single-portal instructions. No v2 production deployment is implied.
 
 Workspace: InspiredLearning alongside `chaicart-live` and `workshop-reference`. Private repository: https://github.com/theharithsa/inspiredlearning. Firebase project: chaicloud-workshop; Hosting site: inspiredlearning-vh; Functions codebase: inspiredlearning; region: asia-south1. Domain inspi.in is managed in GoDaddy.
 
@@ -89,3 +89,10 @@ Read DESIGN-SYSTEM.md, API-V2-ADMIN-CONTRACT.md, V2-MEMBERSHIP-INDEX-DESIGN.md, 
 No v2 deployment or admin Hosting/DNS/Auth-domain provisioning is authorized by source implementation. Build identity marks demo/unconfigured/dirty source as nonrelease; verify clean production manifests against the merged revision. Ordered rollout and rollback are in V2-RELEASE-PLAN.md.
 
 MCP dependency security follow-up in v2 source: the local GET-only adapter is independently versioned 1.0.1 with compatible patched dependencies and no new tools/authority. Root app, Functions and MCP production audits are clean; five moderate development-only Firebase CLI chain entries are tracked in #57. Do not force a breaking CLI downgrade to make the audit count zero.
+
+
+## Material 3 correction — 29 October 2026
+
+The user rejected the v2.0 preview as incomplete and requested every control follow Material 3 plus at least ten site-wide fonts. #58 implements actual Material Web controls, official Material Symbols, approved violet default, six palettes and fourteen bundled OFL font families. Settings preferences are local per browser/origin, with loading/fallback status and reset. Published PDFs, auth/session/reauthentication policy, APIs, results and credits are unchanged. Read MATERIAL3-COVERAGE.md and the revised DESIGN-SYSTEM.md. App 2.1.0 is independent of Functions 2.0.0/API 1.5.0/MCP 1.0.1.
+
+This is source/local-preview work. No production deployment, admin Hosting/DNS/Auth domain provisioning, retention change or paid infrastructure is authorized by this design correction. Preview authentication helpers and chooser pages remain outside tracked production source. Final test/review evidence is in MATERIAL3-2.1-VERIFICATION.md.

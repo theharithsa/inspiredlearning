@@ -4,7 +4,7 @@ export async function acceptConfirmations(page) {
   await page.addInitScript(() => {
     new MutationObserver(() => {
       const button = document.querySelector(
-        "dialog[open] button[data-confirm]",
+        "dialog[open] md-filled-button[data-confirm]",
       );
       if (button && !button.dataset.testScheduled) {
         button.dataset.testScheduled = "true";

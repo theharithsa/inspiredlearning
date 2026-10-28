@@ -1,3 +1,5 @@
+import Field from "./ui/Field";
+import Button from "./ui/Button";
 import { confirmAction } from "./ui/Confirm";
 import type { StaffWorkflowProps } from "./types";
 import { action } from "./observability";
@@ -16,9 +18,10 @@ export default function AttendancePanel({
   return (
     <section className="panel stack">
       <div className="staff-actions">
-        <button
+        <Button
           className="button secondary"
           disabled={busy}
+          busy={!!busy}
           onClick={() =>
             setSelected(
               roster.students
@@ -28,37 +31,39 @@ export default function AttendancePanel({
           }
         >
           Select all visible
-        </button>
-        <button
+        </Button>
+        <Button
           className="text-button"
           disabled={busy}
+          busy={!!busy}
           onClick={() => setSelected([])}
         >
           Clear selection
-        </button>
+        </Button>
         {roster.facilitator && (
-          <button
+          <Button
             className="text-button"
             disabled={busy}
+            busy={!!busy}
             onClick={() => run(() => action("sync", { sid: roster.sid }))}
           >
             Import existing registrations
-          </button>
+          </Button>
         )}
       </div>
-      <label>
-        Attendance / correction reason
-        <textarea
-          maxLength={500}
-          value={reason}
-          onChange={(e) => setReason(e.target.value)}
-          placeholder="Record how attendance was checked, or explain a correction."
-        />
-      </label>
+      <Field
+        multiline
+        label="Attendance / correction reason"
+        maxLength={500}
+        value={reason}
+        onChange={(e) => setReason(e.target.value)}
+        placeholder="Record how attendance was checked, or explain a correction."
+      />
       <div className="staff-actions">
-        <button
+        <Button
           className="button"
           disabled={busy || !selected.length || !reason.trim()}
+          busy={!!busy}
           onClick={() =>
             run(() =>
               action("attendanceBatch", {
@@ -71,10 +76,11 @@ export default function AttendancePanel({
           }
         >
           Confirm attended ({selected.length})
-        </button>
-        <button
+        </Button>
+        <Button
           className="button secondary"
           disabled={busy || !selected.length || !reason.trim()}
+          busy={!!busy}
           onClick={() =>
             run(() =>
               action("attendanceBatch", {
@@ -87,11 +93,12 @@ export default function AttendancePanel({
           }
         >
           Mark not attended
-        </button>
+        </Button>
         {roster.facilitator && !roster.complete && (
-          <button
+          <Button
             className="button secondary"
             disabled={busy}
+            busy={!!busy}
             onClick={async () => {
               if (
                 await confirmAction(
@@ -102,14 +109,15 @@ export default function AttendancePanel({
             }}
           >
             Close live workshop
-          </button>
+          </Button>
         )}
         {roster.facilitator && (
-          <button
+          <Button
             className="button"
             disabled={
               busy || !roster.complete || !eligible.length || !reason.trim()
             }
+            busy={!!busy}
             onClick={() =>
               run(() =>
                 action("finalize", {
@@ -121,7 +129,7 @@ export default function AttendancePanel({
             }
           >
             Publish verified results ({eligible.length})
-          </button>
+          </Button>
         )}
       </div>
       <p className="muted">

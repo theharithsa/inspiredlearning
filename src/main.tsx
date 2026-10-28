@@ -1,3 +1,5 @@
+import Loading from "./ui/Loading";
+import SettingsHost from "./ui/Settings";
 import ConfirmHost from "./ui/Confirm";
 /* eslint-disable react/only-export-components -- Application bootstrap has no reusable exports. */
 import { applyTheme } from "./ui/Theme";
@@ -23,10 +25,11 @@ const Privacy = lazy(() => import("./Privacy"));
 createRoot(document.getElementById("root")!).render(
   <ErrorBoundary>
     <ConfirmHost />
+    <SettingsHost />
     <Suspense
       fallback={
         <main className="public-page">
-          <p role="status">Connecting to InspiredLearning…</p>
+          <Loading>Connecting to InspiredLearning…</Loading>
         </main>
       }
     >

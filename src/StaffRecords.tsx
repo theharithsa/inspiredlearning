@@ -1,3 +1,5 @@
+import Field from "./ui/Field";
+import Button from "./ui/Button";
 import { confirmAction } from "./ui/Confirm";
 import { downloadPdf, type PdfResponse } from "./api";
 import CertificateCorrection from "./CertificateCorrection";
@@ -92,42 +94,38 @@ export default function StaffRecords({
           void load();
         }}
       >
-        <label>
-          Learner email, account reference or certificate ID
-          <input
-            value={reference}
-            required
-            onChange={(e) => setReference(e.target.value)}
-          />
-        </label>
-        <button className="button secondary" disabled={busy}>
-          Find record
-        </button>
-      </form>
-      <label>
-        Review / correction note
-        <textarea
-          value={reason}
-          maxLength={500}
-          onChange={(e) => setReason(e.target.value)}
+        <Field
+          label="Learner email, account reference or certificate ID"
+          value={reference}
+          required
+          onChange={(e) => setReference(e.target.value)}
         />
-      </label>
+        <Button className="button secondary" disabled={busy} busy={!!busy}>
+          Find record
+        </Button>
+      </form>
+      <Field
+        multiline
+        label="Review / correction note"
+        value={reason}
+        maxLength={500}
+        onChange={(e) => setReason(e.target.value)}
+      />
       {lookup && (
         <div>
           <h3>
             {lookup.name} · {lookup.email}
           </h3>
-          <label>
-            Learner display name
-            <input
-              value={name}
-              maxLength={80}
-              onChange={(e) => setName(e.target.value)}
-            />
-          </label>
-          <button
+          <Field
+            label="Learner display name"
+            value={name}
+            maxLength={80}
+            onChange={(e) => setName(e.target.value)}
+          />
+          <Button
             className="button secondary"
             disabled={busy || lookup.removed || !name.trim() || !reason.trim()}
+            busy={!!busy}
             onClick={() =>
               run(() =>
                 action("updateLearner", { uid: lookup.uid, name, reason }),
@@ -135,7 +133,7 @@ export default function StaffRecords({
             }
           >
             Correct learner display name
-          </button>
+          </Button>
           <p className="small muted">
             Google email and account identity cannot be changed here.
             Certificate names use their separate versioned correction control.
@@ -147,9 +145,10 @@ export default function StaffRecords({
                 {w.sid} · {w.name} · {statusLabel(w.status)} · v{w.revision}
               </p>
               {w.status === "revoked" && (
-                <button
+                <Button
                   className="button secondary"
                   disabled={busy || !reason.trim()}
+                  busy={!!busy}
                   onClick={async () => {
                     if (
                       await confirmAction(
@@ -166,23 +165,24 @@ export default function StaffRecords({
                   }}
                 >
                   Reinstate completion and certificate
-                </button>
+                </Button>
               )}
               {w.status === "completed" && (
                 <div className="staff-actions">
                   {w.certificateId && (
-                    <button
+                    <Button
                       className="button secondary"
                       disabled={busy || !reason.trim()}
+                      busy={!!busy}
                       onClick={() => void preview(w.certificateId!)}
                     >
                       Preview certificate PDF
-                    </button>
+                    </Button>
                   )}
                   <CertificateCorrection
                     key={w.sid + ":" + w.revision}
                     workshop={w}
-                    busy={busy}
+                    busy={!!busy}
                     reason={reason}
                     onSave={(data) =>
                       run(() =>
@@ -195,9 +195,10 @@ export default function StaffRecords({
                       )
                     }
                   />
-                  <button
+                  <Button
                     className="text-button danger"
                     disabled={busy || !reason.trim()}
+                    busy={!!busy}
                     onClick={async () => {
                       if (
                         await confirmAction(
@@ -214,7 +215,7 @@ export default function StaffRecords({
                     }}
                   >
                     Revoke archived completion
-                  </button>
+                  </Button>
                 </div>
               )}
             </div>

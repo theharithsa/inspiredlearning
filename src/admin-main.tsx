@@ -1,3 +1,5 @@
+import Loading from "./ui/Loading";
+import SettingsHost from "./ui/Settings";
 import ConfirmHost from "./ui/Confirm";
 /* eslint-disable react/only-export-components -- Application entrypoint. */
 import { lazy, Suspense } from "react";
@@ -20,10 +22,11 @@ const AdminApp = lazy(async () => {
 createRoot(document.getElementById("root")!).render(
   <ErrorBoundary>
     <ConfirmHost />
+    <SettingsHost />
     <Suspense
       fallback={
         <main className="admin-login">
-          <p role="status">Opening InspiredLearning Admin…</p>
+          <Loading>Opening InspiredLearning Admin…</Loading>
         </main>
       }
     >

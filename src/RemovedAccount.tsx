@@ -1,3 +1,6 @@
+import Brand from "./ui/Brand";
+import Theme from "./ui/Theme";
+import Button from "./ui/Button";
 import { confirmAction } from "./ui/Confirm";
 import { useState } from "react";
 import { signOut, type User } from "firebase/auth";
@@ -16,6 +19,10 @@ export default function RemovedAccount({
     [error, setError] = useState("");
   return (
     <main className="public-page stack">
+      <header className="public-header">
+        <Brand />
+        <Theme />
+      </header>
       <h1>
         {state === "erasing"
           ? "Removing your learning records."
@@ -35,9 +42,10 @@ export default function RemovedAccount({
             You can start a new learning profile for future workshops. This does
             not restore erased history or certificates.
           </p>
-          <button
+          <Button
             className="button"
             disabled={busy}
+            busy={!!busy}
             onClick={async () => {
               if (
                 !(await confirmAction(
@@ -56,13 +64,13 @@ export default function RemovedAccount({
             }}
           >
             Start a new learning profile
-          </button>
+          </Button>
         </>
       )}
       <CommunityCard />
-      <button className="text-button" onClick={() => void signOut(auth)}>
+      <Button className="text-button" onClick={() => void signOut(auth)}>
         Sign out
-      </button>
+      </Button>
     </main>
   );
 }

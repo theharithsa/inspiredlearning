@@ -25,7 +25,7 @@
   color: var(--muted);
 }
 .empty h2 {
-  font-size: 24px;
+  font-size: var(--md-sys-typescale-headline-small);
 }
 .empty-mark {
   display: inline-grid;
@@ -35,7 +35,7 @@
   background: var(--md-sys-color-secondary-container);
   color: var(--md-sys-color-on-secondary-container);
   border-radius: 20px;
-  font-size: 32px;
+  font-size: var(--md-sys-typescale-headline-large);
   margin-bottom: 24px;
 }
 .stack {
@@ -48,7 +48,7 @@
   margin-bottom: 0;
 }
 label {
-  font-size: 14px;
+  font-size: var(--md-sys-typescale-body-medium);
   font-weight: 500;
   display: flex;
   flex-direction: column;
@@ -65,7 +65,7 @@ select {
   width: 100%;
   min-width: 0;
   min-height: 56px;
-  font-size: 16px;
+  font-size: var(--md-sys-typescale-body-large);
 }
 input:hover,
 textarea:hover,
@@ -102,7 +102,7 @@ fieldset {
 }
 legend {
   padding: 0 8px;
-  font-size: 14px;
+  font-size: var(--md-sys-typescale-body-medium);
   font-weight: 500;
 }
 .notice {
@@ -111,7 +111,7 @@ legend {
   padding: 16px 20px;
   border-radius: 16px;
   overflow-wrap: anywhere;
-  font-size: 14px;
+  font-size: var(--md-sys-typescale-body-medium);
   line-height: 1.5;
 }
 .notice.error {
@@ -143,7 +143,7 @@ legend {
 table {
   border-collapse: collapse;
   width: 100%;
-  font-size: 14px;
+  font-size: var(--md-sys-typescale-body-medium);
 }
 th,
 td {
@@ -153,9 +153,9 @@ td {
   vertical-align: middle;
 }
 th {
-  font-size: 12px;
+  font-size: var(--md-sys-typescale-body-small);
   letter-spacing: 0.3px;
-  font-weight: 600;
+  font-weight: 500;
   background: var(--md-sys-color-surface-container-low);
   white-space: nowrap;
 }
@@ -174,7 +174,7 @@ td small {
   gap: 16px;
   border-bottom: 1px solid var(--line);
   padding: 16px 0;
-  font-size: 14px;
+  font-size: var(--md-sys-typescale-body-medium);
 }
 .result-row > span {
   min-width: 0;
@@ -192,7 +192,7 @@ td small {
   display: flex;
   justify-content: space-between;
   gap: 12px;
-  font-size: 14px;
+  font-size: var(--md-sys-typescale-body-medium);
   padding: 16px;
   background: var(--md-sys-color-surface-container-low);
   border-radius: 12px;
@@ -225,7 +225,7 @@ td small {
   border-radius: 20px;
   background: var(--md-sys-color-primary-container);
   color: var(--md-sys-color-on-primary-container);
-  font-size: 36px;
+  font-size: var(--md-sys-typescale-display-small);
 }
 .verification {
   max-width: 720px;
@@ -233,14 +233,14 @@ td small {
   padding: 40px;
 }
 .verification h1 {
-  font-size: 32px;
+  font-size: var(--md-sys-typescale-headline-large);
 }
 .back {
   display: inline-flex;
   align-items: center;
   min-height: 48px;
   margin-top: 16px;
-  font-size: 14px;
+  font-size: var(--md-sys-typescale-body-medium);
 }
 .token-permissions {
   display: grid;
@@ -270,7 +270,7 @@ td small {
 }
 .workshop-card:hover {
   background: var(--md-sys-color-surface-container-low);
-  box-shadow: 0 2px 6px #0001;
+  box-shadow: var(--md-elevation-level-1);
 }
 .card-top,
 .card-bottom {
@@ -278,18 +278,18 @@ td small {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  font-size: 12px;
+  font-size: var(--md-sys-typescale-body-small);
 }
 .card-top {
   margin-bottom: 24px;
   color: var(--muted);
 }
 .workshop-card h3 {
-  font-size: 22px;
+  font-size: var(--md-sys-typescale-title-large);
   font-weight: 500;
 }
 .workshop-card p {
-  font-size: 14px;
+  font-size: var(--md-sys-typescale-body-medium);
   color: var(--muted);
 }
 .card-bottom {
@@ -299,7 +299,7 @@ td small {
 }
 .badge {
   display: inline-block;
-  font-size: 12px;
+  font-size: var(--md-sys-typescale-body-small);
   font-weight: 500;
   line-height: 1.4;
   padding: 6px 12px;
@@ -324,7 +324,7 @@ td small {
   margin: 24px 0;
 }
 .reauth-banner p {
-  font-size: 14px;
+  font-size: var(--md-sys-typescale-body-medium);
   margin: 0;
 }
 .design-divider {
@@ -344,18 +344,18 @@ td small {
   border-radius: 28px;
   background: var(--md-sys-color-surface-container-high);
   color: var(--ink);
-  box-shadow: 0 12px 40px #0004;
+  box-shadow: var(--md-elevation-level-3);
   overflow: auto;
 }
 .material-dialog::backdrop {
-  background: #0008;
+  background: color-mix(in srgb, var(--md-sys-color-scrim) 32%, transparent);
 }
 .material-dialog h2 {
-  font-size: 24px;
+  font-size: var(--md-sys-typescale-headline-small);
   font-weight: 400;
 }
 .material-dialog p {
-  font-size: 14px;
+  font-size: var(--md-sys-typescale-body-medium);
   color: var(--muted);
 }
 .dialog-actions {

@@ -111,3 +111,10 @@ Google global administrators gain metadata-only telemetry health and reasoned, r
 Version 2.0.0 introduces a Material 3 learner experience and separate admin.inspi.in application. `npm run build` builds learner/public `dist/` and administrator `dist-admin/`, each with a version/revision/surface/configuration manifest. `npm run dev` serves the learner app and `/admin.html` for local administrator development. Production configuration uses the existing Firebase project and shared Google identities. No mandatory MFA; administrator sign-in lasts for the current tab/session and sensitive operations require recent Google authentication.
 
 REST remains `/api/v1`, OpenAPI 1.5.0 (44 operations), with a new administrator capability bootstrap. Existing student history, credits, certificates, privacy and workshop-captain permissions remain authoritative. ChaiCart Live stays a separate workshop app. See [design system](docs/DESIGN-SYSTEM.md), [admin contract](docs/API-V2-ADMIN-CONTRACT.md), [release plan](docs/V2-RELEASE-PLAN.md), [CI observability](docs/CI-OBSERVABILITY.md) and [agent skills](skills/README.md). Source version is not deployed version.
+
+
+### Material 3 appearance — app 2.1.0
+
+Open **Settings** from the sidebar, public header or account menu. Choose light/dark/device mode, one of six palettes (violet default) and fourteen fonts across sans serif, serif and monospace, including Google Sans and Lato. Preferences apply across the current portal and persist in this browser; the separate admin origin has independent preferences. Reset appearance restores device mode, violet and Roboto. Fonts are bundled locally with licenses; unavailable scripts use device fallbacks. Certificate PDFs retain their published typography.
+
+The correction replaces native controls and their dropdown popups with Material Web adapters. See [coverage](docs/MATERIAL3-COVERAGE.md), [design system](docs/DESIGN-SYSTEM.md) and [verification](docs/MATERIAL3-2.1-VERIFICATION.md). App 2.1.0 does not imply a Functions/API contract bump or a deployed release.

@@ -1,6 +1,10 @@
+import Tabs from "./ui/Tabs";
+import Loading from "./ui/Loading";
+import Button from "./ui/Button";
+import Field from "./ui/Field";
 import { confirmAction } from "./ui/Confirm";
 import type { LearnerRequest as Request } from "./types";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useId } from "react";
 import {
   collection,
   documentId,
@@ -24,6 +28,7 @@ export default function RequestsPanel({
   refresh: number;
   onDone: () => void;
 }) {
+  const panelId = useId();
   const [history, setHistory] = useState(false),
     [rows, setRows] = useState<Request[]>([]),
     [cursor, setCursor] = useState<string | null>(null),
@@ -102,155 +107,153 @@ export default function RequestsPanel({
   return (
     <section className="stack">
       <h3>Student requests</h3>
-      <div className="staff-actions">
-        <button
-          className="button secondary"
-          aria-pressed={!history}
-          onClick={async () => {
-            setHistory(false);
-            setPageSize(50);
-            setRemoval(null);
-            setError("");
-            setNotice("");
-          }}
-        >
-          Pending requests
-        </button>
-        <button
-          className="button secondary"
-          aria-pressed={history}
-          onClick={async () => {
-            setHistory(true);
-            setPageSize(50);
-            setRemoval(null);
-            setError("");
-            setNotice("");
-          }}
-        >
-          Request history
-        </button>
-      </div>
-      {error && <Message error>{error}</Message>}
-      {notice && <Message>{notice}</Message>}
-      {loading ? (
-        <p role="status">Loading requests…</p>
-      ) : !rows.length ? (
-        <p className="muted">
-          {history ? "No reviewed requests." : "No pending requests."}
-        </p>
-      ) : (
-        rows.map((r) => (
-          <article className="panel" key={r.id}>
-            <strong>
-              {r.email || "Learner " + r.uid} · {r.kind}
-            </strong>
-            <p>{r.reason || r.resolution}</p>
-            <p className="small">
-              Status: {r.status} · Account reference: {r.uid}
-            </p>
-            {r.reason && r.resolution && <p>{r.resolution}</p>}
-            <div className="staff-actions">
-              <button
-                className="text-button"
-                disabled={busy}
-                onClick={() => onOpen(r.uid)}
-              >
-                Open learner records
-              </button>
-              {r.status === "open" ? (
-                <>
-                  {r.kind === "erasure" ? (
-                    <button
-                      className="button secondary"
-                      disabled={busy || !reason.trim()}
-                      onClick={async () => {
-                        setRemoval(r);
-                        setConfirmUid("");
-                      }}
-                    >
-                      Approve removal
-                    </button>
-                  ) : (
-                    <button
-                      className="button secondary"
-                      disabled={busy || !reason.trim()}
-                      onClick={async () => {
-                        if (
-                          await confirmAction(
-                            "Have you applied the verified correction? Resolve this request and share your review note with the learner?",
+      <Tabs
+        labels={["Pending requests", "Request history"]}
+        panelId={panelId}
+        value={history ? 1 : 0}
+        onChange={(index) => {
+          setHistory(index === 1);
+          setPageSize(50);
+          setRemoval(null);
+          setError("");
+          setNotice("");
+        }}
+      />
+      <div
+        role="tabpanel"
+        id={panelId}
+        aria-labelledby={panelId + "-tab-" + (history ? 1 : 0)}
+        className="stack"
+      >
+        {error && <Message error>{error}</Message>}
+        {notice && <Message>{notice}</Message>}
+        {loading ? (
+          <Loading>Loading requests…</Loading>
+        ) : !rows.length ? (
+          <p className="muted">
+            {history ? "No reviewed requests." : "No pending requests."}
+          </p>
+        ) : (
+          rows.map((r) => (
+            <article className="panel" key={r.id}>
+              <strong>
+                {r.email || "Learner " + r.uid} · {r.kind}
+              </strong>
+              <p>{r.reason || r.resolution}</p>
+              <p className="small">
+                Status: {r.status} · Account reference: {r.uid}
+              </p>
+              {r.reason && r.resolution && <p>{r.resolution}</p>}
+              <div className="staff-actions">
+                <Button
+                  className="text-button"
+                  disabled={busy}
+                  busy={!!busy}
+                  onClick={() => onOpen(r.uid)}
+                >
+                  Open learner records
+                </Button>
+                {r.status === "open" ? (
+                  <>
+                    {r.kind === "erasure" ? (
+                      <Button
+                        className="button secondary"
+                        disabled={busy || !reason.trim()}
+                        busy={!!busy}
+                        onClick={async () => {
+                          setRemoval(r);
+                          setConfirmUid("");
+                        }}
+                      >
+                        Approve removal
+                      </Button>
+                    ) : (
+                      <Button
+                        className="button secondary"
+                        disabled={busy || !reason.trim()}
+                        busy={!!busy}
+                        onClick={async () => {
+                          if (
+                            await confirmAction(
+                              "Have you applied the verified correction? Resolve this request and share your review note with the learner?",
+                            )
                           )
+                            void run(() =>
+                              action("reviewRequest", {
+                                requestId: r.id,
+                                reason,
+                                decision: "resolved",
+                              }),
+                            );
+                        }}
+                      >
+                        Resolve correction
+                      </Button>
+                    )}
+                    <Button
+                      className="text-button danger"
+                      disabled={busy || !reason.trim()}
+                      busy={!!busy}
+                      onClick={() =>
+                        run(() =>
+                          action("reviewRequest", {
+                            requestId: r.id,
+                            reason,
+                            decision: "rejected",
+                          }),
                         )
-                          void run(() =>
-                            action("reviewRequest", {
-                              requestId: r.id,
-                              reason,
-                              decision: "resolved",
-                            }),
-                          );
-                      }}
+                      }
                     >
-                      Resolve correction
-                    </button>
-                  )}
-                  <button
-                    className="text-button danger"
+                      Decline request
+                    </Button>
+                  </>
+                ) : r.status === "processing" && r.kind === "erasure" ? (
+                  <Button
+                    className="button secondary"
                     disabled={busy || !reason.trim()}
+                    busy={!!busy}
+                    onClick={async () => {
+                      setRemoval(r);
+                      setConfirmUid("");
+                    }}
+                  >
+                    Retry removal
+                  </Button>
+                ) : r.status !== "processing" &&
+                  r.status !== "superseded" &&
+                  r.resolutionAction !== "erased" ? (
+                  <Button
+                    className="button secondary"
+                    disabled={busy || !reason.trim()}
+                    busy={!!busy}
                     onClick={() =>
                       run(() =>
                         action("reviewRequest", {
                           requestId: r.id,
                           reason,
-                          decision: "rejected",
+                          decision: "reopen",
                         }),
                       )
                     }
                   >
-                    Decline request
-                  </button>
-                </>
-              ) : r.status === "processing" && r.kind === "erasure" ? (
-                <button
-                  className="button secondary"
-                  disabled={busy || !reason.trim()}
-                  onClick={async () => {
-                    setRemoval(r);
-                    setConfirmUid("");
-                  }}
-                >
-                  Retry removal
-                </button>
-              ) : r.status !== "processing" &&
-                r.status !== "superseded" &&
-                r.resolutionAction !== "erased" ? (
-                <button
-                  className="button secondary"
-                  disabled={busy || !reason.trim()}
-                  onClick={() =>
-                    run(() =>
-                      action("reviewRequest", {
-                        requestId: r.id,
-                        reason,
-                        decision: "reopen",
-                      }),
-                    )
-                  }
-                >
-                  Reopen request
-                </button>
-              ) : null}
-            </div>
-          </article>
-        ))
-      )}
-      {cursor && (
-        <button
-          className="button secondary"
-          disabled={busy || loading}
-          onClick={() => setPageSize((size) => size + 50)}
-        >
-          Load more requests
-        </button>
-      )}
+                    Reopen request
+                  </Button>
+                ) : null}
+              </div>
+            </article>
+          ))
+        )}
+        {cursor && (
+          <Button
+            className="button secondary"
+            disabled={busy || loading}
+            busy={!!busy}
+            onClick={() => setPageSize((size) => size + 50)}
+          >
+            Load more requests
+          </Button>
+        )}
+      </div>
       {removal && (
         <form
           ref={removalForm}
@@ -279,29 +282,29 @@ export default function RequestsPanel({
             existing monitoring data has separate retention controls. Downloaded
             certificate copies cannot be recalled.
           </p>
-          <label>
-            Type the learner account reference to confirm
-            <input
-              value={confirmUid}
-              onChange={(e) => setConfirmUid(e.target.value)}
-            />
-          </label>
+          <Field
+            label="Type the learner account reference to confirm"
+            value={confirmUid}
+            onChange={(e) => setConfirmUid(e.target.value)}
+          />
           <p className="small">{removal.uid}</p>
           <div className="staff-actions">
-            <button
+            <Button
               className="button danger"
               disabled={busy || confirmUid !== removal.uid || !reason.trim()}
+              busy={!!busy}
             >
               Permanently remove learning records
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
               className="button secondary"
               disabled={busy}
+              busy={!!busy}
               onClick={() => setRemoval(null)}
             >
               Cancel removal
-            </button>
+            </Button>
           </div>
         </form>
       )}

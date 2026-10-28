@@ -1,3 +1,4 @@
+import Button from "./ui/Button";
 import type { Token, Listing } from "./ApiTokens";
 export default function ApiTokenList({
   tokens,
@@ -63,13 +64,14 @@ export default function ApiTokenList({
                   <td>{t.status}</td>
                   <td>
                     {t.status === "active" && (
-                      <button
+                      <Button
                         className="text-button danger"
                         disabled={busy}
+                        busy={!!busy}
                         onClick={() => void revoke(t.id)}
                       >
                         Revoke {t.name}
-                      </button>
+                      </Button>
                     )}
                   </td>
                 </tr>
@@ -79,13 +81,14 @@ export default function ApiTokenList({
         </div>
       )}
       {cursor && (
-        <button
+        <Button
           className="button secondary"
           disabled={busy}
+          busy={!!busy}
           onClick={() => void load(cursor)}
         >
           Load more tokens
-        </button>
+        </Button>
       )}
     </>
   );

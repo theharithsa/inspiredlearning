@@ -1,3 +1,5 @@
+import Loading from "./ui/Loading";
+import Button from "./ui/Button";
 import defaults from "../functions/runtime-defaults.json";
 import { useRows } from "./hooks";
 import { downloadPdf, type PdfResponse } from "./api";
@@ -85,12 +87,12 @@ export default function Certificates({ user }: { user: User }) {
       {(error || readError) && <Message error>{error || readError}</Message>}
       {notice && <Message>{notice}</Message>}
       {hasMore && (
-        <button className="button secondary" onClick={loadMore}>
+        <Button className="button secondary" onClick={loadMore}>
           Load more certificates
-        </button>
+        </Button>
       )}
       {!rows ? (
-        <p role="status">Loading certificates…</p>
+        <Loading>Loading certificates…</Loading>
       ) : !rows.length ? (
         <Empty title="Your certificate belongs here">
           After your facilitator verifies completion, your downloadable
@@ -123,38 +125,40 @@ export default function Certificates({ user }: { user: User }) {
               </small>
               {c.status === "issued" && (
                 <>
-                  <button
+                  <Button
                     className="button"
                     disabled={busy === c.id}
+                    busy={!!busy}
                     onClick={() => download(c)}
                   >
                     {busy === c.id ? "Working…" : "Download PDF"}
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     className="text-button"
                     disabled={busy === c.id}
+                    busy={!!busy}
                     onClick={() => visibility(c)}
                   >
                     {c.public
                       ? "Turn off public verification"
                       : "Enable public verification"}
-                  </button>
+                  </Button>
                   {c.public && (
                     <>
                       <Link to={"/verify/" + c.id}>Open verification page</Link>
-                      <button
+                      <Button
                         className="text-button"
                         onClick={() => void copyLink(c)}
                       >
                         Copy verification link
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         className="text-button"
                         aria-expanded={qrId === c.id}
                         onClick={() => setQrId(qrId === c.id ? "" : c.id)}
                       >
                         Show QR code
-                      </button>
+                      </Button>
                       {qrId === c.id && (
                         <Qr
                           url={verificationUrl(c)}
