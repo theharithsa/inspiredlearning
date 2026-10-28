@@ -1,5 +1,7 @@
 # InspiredLearning
 
+Current source: **2.0.0**. Separate learner/admin builds and release gates are described below; deployed versions must be checked against dated release evidence.
+
 A permanent learner account for the ChaiCart workshop, hosted separately in the same Firebase project. Sign in with the **same Google account used in ChaiCart Live**.
 
 - Portal: https://inspiredlearning-vh.web.app

@@ -331,7 +331,6 @@ export default function AdminApp() {
   }, [user]);
   useEffect(() => {
     let active = true;
-    setAccess(null);
     if (!user || !googleUser(user)) return;
     void apiFetch<Access>("/api/v1/admin/access")
       .then((r) => {

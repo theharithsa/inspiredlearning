@@ -347,6 +347,7 @@
   color: var(--md-sys-color-primary);
 }
 .account-chip {
+  max-width: min(50%, 320px);
   display: flex;
   align-items: center;
   gap: 12px;
@@ -364,7 +365,10 @@
   flex: none;
 }
 .account-chip small {
-  overflow-wrap: anywhere;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .nav-label {
   min-width: 0;

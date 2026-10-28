@@ -115,6 +115,9 @@ test("Material themes, compact navigation and actual surfaces remain usable acro
   const dir = "test-results/v2-design";
   fs.mkdirSync(dir, { recursive: true });
   await login(page, "v2-design-learner@example.invalid", false);
+  await expect(
+    page.getByText("Across your Inspi activities", { exact: true }),
+  ).toBeVisible();
   for (const width of [320, 390, 768, 840, 1200, 1600]) {
     await page.setViewportSize({ width, height: 900 });
     await noOverflow(page);
@@ -123,7 +126,7 @@ test("Material themes, compact navigation and actual surfaces remain usable acro
     ).toBeVisible();
   }
   await page.setViewportSize({ width: 1440, height: 1000 });
-  await page.screenshot({ path: dir + "/learner-light.png", fullPage: true });
+  await page.screenshot({ path: dir + "/learner-light.png", fullPage: false });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.getByLabel("Account and more options").click();
   await page
@@ -135,7 +138,7 @@ test("Material themes, compact navigation and actual surfaces remain usable acro
   await noOverflow(page);
   await page.screenshot({
     path: dir + "/learner-dark-mobile.png",
-    fullPage: true,
+    fullPage: false,
     animations: "disabled",
   });
   await page.goto("/admin.html");
@@ -155,9 +158,12 @@ test("Material themes, compact navigation and actual surfaces remain usable acro
     .getByLabel("Appearance")
     .filter({ visible: true })
     .selectOption("light");
+  await page.evaluate(() => document.fonts.ready);
+  await expect(page.locator(".app-shell")).toHaveCount(1);
+  await expect(page.locator("html")).not.toHaveClass(/theme-changing/);
   await page.screenshot({
     path: dir + "/admin-overview-light.png",
-    fullPage: true,
+    fullPage: false,
     animations: "disabled",
   });
   await page.goto("/admin.html#/certificates");
@@ -166,14 +172,14 @@ test("Material themes, compact navigation and actual surfaces remain usable acro
   ).toBeVisible();
   await page.screenshot({
     path: dir + "/admin-certificates-light.png",
-    fullPage: true,
+    fullPage: false,
     animations: "disabled",
   });
   await page.setViewportSize({ width: 390, height: 844 });
   await noOverflow(page);
   await page.screenshot({
     path: dir + "/admin-certificates-mobile.png",
-    fullPage: true,
+    fullPage: false,
     animations: "disabled",
   });
   await page.goto("/");
@@ -184,7 +190,7 @@ test("Material themes, compact navigation and actual surfaces remain usable acro
     page.getByRole("button", { name: "Continue with Google →" }),
   ).toBeVisible();
   await noOverflow(page);
-  await page.screenshot({ path: dir + "/public-mobile.png", fullPage: true });
+  await page.screenshot({ path: dir + "/public-mobile.png", fullPage: false });
 });
 test("Material confirmation supports Escape, traps focus and restores its opener", async ({
   page,
@@ -308,6 +314,9 @@ test("large text, long names, short windows and reduced motion keep navigation u
   page,
 }) => {
   const uid = await login(page, "v2-layout@example.invalid", false);
+  await expect
+    .poll(async () => (await db.doc("learningLearners/" + uid).get()).exists)
+    .toBe(true);
   await db
     .doc("learningLearners/" + uid)
     .update({ name: "ಲಿಯಾನಾ学习" + "LongUnbrokenName".repeat(18) });

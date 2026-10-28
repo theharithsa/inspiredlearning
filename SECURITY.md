@@ -1,0 +1,13 @@
+# InspiredLearning security boundaries
+
+Use existing shared Firebase Google identities and UIDs. Never migrate accounts or grant a role to make a test pass. Role checks are server-owned and current: a learner-route/admin build flag is not authority. REST and authenticated callables explicitly verify token revocation/disabled state; transport UID must match verified Google claims.
+
+V2 has separate learner/public and admin builds/origins. The named admin Firebase instance uses approved per-tab session persistence; refresh retains sign-in and closing clears it under Firebase session semantics. Browser restore behavior requires real-browser verification; this is not an idle timeout or a new cookie-session service. Mandatory MFA is not required at this stage. Sensitive global-admin mutations and non-owner PDF previews require verified auth_time within 300 seconds (existing 60-second future tolerance), plus current domain authority. Captains retain fixed workshop-region policy. API-token automation retains explicit scope/resource/expiry/current-authority checks; Google-only routes reject it.
+
+Credentials are delivered once, hashed server-side and never stored by the browser or copied from chat/history. Existing Firebase Secret Manager owns runtime ingest credentials. CI credential binding is separate and disabled until securely configured. The privileged delivery observer checks out trusted default-branch source, never a PR head or executable artifact; PR checks receive no ingest secret. See docs/CI-OBSERVABILITY.md.
+
+Removal covers InspiredLearning learner history/certificates and its documented credit/roster records. Preserve shared Auth/Live records, minimal privacy markers, replay tombstones, archived workshop reservations and resumable recovery. Published scores, stored credits, live activity and report composites are different records; UI changes do not authorize recalculation or reissuance.
+
+Keep private APIs no-store, redact tokens/review text/PDF bytes from diagnostics and preserve documented email attribution only within existing observability policy. Hosting has defense headers and report-only CSP in source; #14 still requires live compatibility verification. Current per-instance throttles/capacity remain; #15 stronger global protection is not claimed or provisioned.
+
+Report suspected vulnerabilities privately to the repository owner. Reproduce with synthetic emulator identities and no production data mutation. Deployments, new Hosting/DNS/Auth domains, shared rules/indexes, paid infrastructure and data migrations require their own scoped authorization. Source checks are not production OAuth, physical-browser, tenant or security certification. Read docs/V2-RELEASE-PLAN.md before release.

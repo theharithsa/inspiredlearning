@@ -6,6 +6,7 @@ html {
   background: var(--md-sys-color-surface);
   color: var(--ink);
   font-synthesis: none;
+  overflow-wrap: anywhere;
   text-size-adjust: 100%;
 }
 body {

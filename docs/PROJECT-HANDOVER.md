@@ -1,5 +1,7 @@
 # Private project handover
 
+Current source work: **v2.0.0 / API 1.5.0**, tracked by #34. Read the final v2 section and V2-RELEASE-PLAN.md before using older single-portal instructions. No v2 production deployment is implied.
+
 Workspace: InspiredLearning alongside `chaicart-live` and `workshop-reference`. Private repository: https://github.com/theharithsa/inspiredlearning. Firebase project: chaicloud-workshop; Hosting site: inspiredlearning-vh; Functions codebase: inspiredlearning; region: asia-south1. Domain inspi.in is managed in GoDaddy.
 
 Do not migrate Authentication or duplicate accounts: the portal uses Live Google UIDs. Do not infer completion from Live's old certificate announcement. Staff verifies attendance and publishes immutable results; The canonical student total is the sum of latest completed workshop awards (final team score + individual score, intentionally repeating individual credits as an attendance benefit) and signed non-workshop entries. Legacy fixed 100 learning points are compatibility data and excluded from the total. Shared security rules/indexes are deployed only by chaicart-live. Preserve the session deletion guard and archived session-code reservation.

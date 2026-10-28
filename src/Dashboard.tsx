@@ -19,6 +19,7 @@ export default function Dashboard({
     { pageSize: 501 },
   );
   const uid = auth.currentUser?.uid;
+  const hasProfile = !!profile;
   const [state, setState] = useState<{
     uid: string | undefined;
     workshops: typeof workshops;
@@ -35,7 +36,7 @@ export default function Dashboard({
   useEffect(() => {
     let active = true;
     const user = auth.currentUser;
-    if (!user) return;
+    if (!user || !hasProfile) return;
     void apiFetch<{ totalCredits: number | null; unknownAwards: number }>(
       "/api/v1/me/scores",
     )
@@ -50,7 +51,7 @@ export default function Dashboard({
     return () => {
       active = false;
     };
-  }, [uid, workshops, entries]);
+  }, [uid, workshops, entries, hasProfile]);
   const complete = workshops?.filter((w) => w.status === "completed") || [];
   return (
     <>
@@ -69,7 +70,7 @@ export default function Dashboard({
       <div className="stats">
         <div>
           <span>Completed workshops</span>
-          <strong>{complete.length}</strong>
+          <strong>{workshops === undefined ? "—" : complete.length}</strong>
         </div>
         <div>
           <span>Total Inspi credits</span>
@@ -85,13 +86,21 @@ export default function Dashboard({
           </small>
         </div>
         <div>
-          <span>Available certificates</span>
-          <strong>{complete.filter((w) => w.certificateId).length}</strong>
+          <span>Certified workshops</span>
+          <strong>
+            {workshops === undefined
+              ? "—"
+              : complete.filter((w) => w.certificateId).length}
+          </strong>
         </div>
       </div>
       <div className="section-heading">
         <h2>Your workshops</h2>
-        <span>{workshops?.length || 0} participation records</span>
+        <span>
+          {workshops === undefined
+            ? "Loading participation records…"
+            : `${workshops.length} participation records`}
+        </span>
       </div>
       {workshops === undefined ? (
         <p role="status">Loading your learning history…</p>
@@ -104,8 +113,8 @@ export default function Dashboard({
       ) : (
         <Empty title="Your next chapter starts here">
           Join a supported workshop with this Google account. Your participation
-          will appear here; verified completion unlocks your certificate and
-          learning points.
+          will appear here; verified completion adds your issued certificate and
+          published results.
         </Empty>
       )}
       <div className="split">
@@ -120,8 +129,8 @@ export default function Dashboard({
                 : `${complete.length} workshops completed. Keep building on what you learned.`}
           </p>
           <p className="muted">
-            Learning points recognise verified participation. They are separate
-            from the credits earned in workshop games.
+            Your total uses published workshop awards and recorded credit
+            adjustments. Live activity scores and report scores may differ.
           </p>
         </section>
         <CommunityCard />

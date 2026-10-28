@@ -1,5 +1,7 @@
 # Resource API v1
 
+Current source contract: **1.5.0, 44 operations**. Earlier contract sections retain historical context. Production parity requires separate release verification.
+
 The initial slice is implemented in `functions/api.js` with a Firebase HTTPS transport (`learningApi`). Hosting routes `/api/**` before the SPA. `/api/docs` serves locally packaged Swagger UI; `/api/openapi.json` is the versioned OpenAPI 3.1 contract. Production deployment was explicitly authorized and completed on 11 October 2026; see RELEASE-CHECKS.md.
 
 Supply `Authorization: Bearer <credential>` using an admin-created scoped InspiredLearning API token or a short-lived Firebase ID token from the existing shared Google sign-in. Revocation is checked. Anonymous, unverified and other provider tokens are rejected. No new accounts, rules or indexes are introduced. Explicitly scoped POST/PUT corrections are available; unsupported writes return 405. The Google-admin credential-management resource separately supports creation and revocation. Authenticated reads are rate limited per actor and IP, measured with traceparent and X-Request-Id, and return no-store responses. Global facilitator reads of other learners and exact email lookups require durable audit events; audit failure fails the request. Request IDs are returned in X-Request-Id. Tokens and query bodies are not logged.

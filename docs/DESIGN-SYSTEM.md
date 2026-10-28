@@ -24,7 +24,7 @@ Themes: system by default with an explicit light/dark/system selector; store onl
 | Admin | Workshops, learners, requests | Attendance/close/publication, reasoned changes, removed records, bounded request pages, erasure/recovery |
 | Admin | Certificates, integrations, delivery | Versioned register/preview/reconcile, one-time credentials/revoke, failed-event metadata/redrive |
 
-Each screen must retain semantic labels, focus/error feedback and real loading/empty/permission states. Navigation titles and focus move on route change; dialogs trap focus, support Escape and restore the opener. Native destructive confirmations remain reasoned/typed where already required until their accessible dialog replacement is verified. Native form controls remain labeled and keyboard-operable.
+Each screen must retain semantic labels, focus/error feedback and real loading/empty/permission states. Navigation titles and focus move on route change; dialogs trap focus, support Escape and restore the opener. Material confirmations preserve existing reasoned/typed erasure safeguards. Native form controls remain labeled and keyboard-operable.
 
 ## Verification
 
