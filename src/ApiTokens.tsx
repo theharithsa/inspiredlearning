@@ -1,3 +1,4 @@
+import { confirmAction } from "./ui/Confirm";
 import ApiTokenList from "./ApiTokenList";
 import TokenPermissions from "./TokenPermissions";
 import { apiFetch } from "./api";
@@ -108,9 +109,9 @@ export default function ApiTokens() {
   }
   async function revoke(id: string) {
     if (
-      !window.confirm(
+      !(await confirmAction(
         "Revoke this API token? Integrations using it will lose access immediately.",
-      )
+      ))
     )
       return;
     setNotice("");
@@ -170,7 +171,7 @@ export default function ApiTokens() {
             </button>
             <button
               className="button secondary"
-              onClick={() => {
+              onClick={async () => {
                 setSecret(null);
                 setNotice("Token dismissed. Only its saved metadata remains.");
               }}

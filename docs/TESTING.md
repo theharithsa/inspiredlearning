@@ -22,3 +22,12 @@ Current executable commands, not historical case counts, are authoritative. `tes
 To avoid services from unrelated projects, use `INSPI_REHEARSAL_FUNCTIONS_PORT=5003 INSPI_REHEARSAL_WEB_PORT=5184 npm run test:rehearsal`. Default ports remain unchanged in checked-in configuration. The rehearsal creates its own ignored temporary Firebase config and removes it on completion. Never terminate unrelated emulators to free a port. Local PDF-only timing is `node scripts/benchmark-pdf.mjs`; it is not a deployed load/capacity test.
 
 No tests use production participant records. Decoded local telemetry, actual HTTP ingest acceptance and searchable Dynatrace records are separate evidence. Final results and remaining gates are recorded with the maintenance PR.
+
+
+## v2 checks
+
+Run npm run lint, npm test, npm run build; sequential emulator suites npm run test:integration, npm run test:api-auth, npm run test:swagger, npm --prefix mcp test and npm run test:rehearsal. Java 21 is required. If another project's local functions/web ports are in use, set INSPI_REHEARSAL_FUNCTIONS_PORT and INSPI_REHEARSAL_WEB_PORT; do not stop its services. Rehearsal is synthetic demo-chaicart only.
+
+The browser suite covers separate admin bootstrap/session/learner isolation, denied/revoked access, account-change cancellation, responsive light/dark layouts, contrast, dialog keyboard behavior and existing publication/certificate/privacy/token/delivery journeys. Synthetic screenshots are generated under test-results/v2-design. This Chromium rehearsal does not prove physical Safari, real Google popup behavior, production DNS/TLS or Dynatrace tenant visibility.
+
+Set TEST_REPORT_DIR=ci-results/structured for bounded structured Node/Playwright summaries. Keep this directory outside Playwright test-results, which is cleared when browser tests start. Missing/partial reports never count as success. GitHub artifacts are evidence only; privileged workflow observers do not execute or ingest PR artifacts.

@@ -394,3 +394,54 @@ test("platform and OTLP log sinks can avoid duplication without changing the def
   assert.ok(printed.some((x) => x.includes("maintenance-default-both")));
   assert.ok(exportedLogs.includes("maintenance-default-both"));
 });
+
+test("administrator bootstrap uses current role and rejects stale HTTP mutations before writes", async () => {
+  const express = require("express"),
+    web = express();
+  const { apiHandler } = await import("../functions/api-http.js");
+  let stale = false;
+  web.use(express.json());
+  web.use(
+    apiHandler({
+      db,
+      auth: {
+        verifyIdToken: async () => ({
+          uid: actor.uid,
+          email: actor.email,
+          email_verified: true,
+          auth_time: Math.floor(Date.now() / 1000) - (stale ? 301 : 0),
+          firebase: { sign_in_provider: "google.com" },
+        }),
+      },
+      rate() {},
+      measured,
+      audit,
+    }),
+  );
+  const listener = web.listen(0, "127.0.0.1");
+  await new Promise((r) => listener.once("listening", r));
+  const root = `http://127.0.0.1:${listener.address().port}/api/v1`,
+    headers = {
+      Authorization: "Bearer fixture",
+      "Content-Type": "application/json",
+    };
+  try {
+    let r = await fetch(root + "/admin/access", { headers });
+    assert.equal(r.status, 200);
+    assert.equal((await r.json()).administrator, true);
+    stale = true;
+    r = await fetch(root + "/admin/telemetry/events/fixture/redrive", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ reason: "Synthetic", expectedAttempts: 20 }),
+    });
+    assert.equal(r.status, 409);
+    assert.match((await r.json()).error.message, /Google again/);
+    await db.doc("admins/" + actor.email).delete();
+    r = await fetch(root + "/admin/access", { headers });
+    assert.equal(r.status, 403);
+  } finally {
+    await db.doc("admins/" + actor.email).set({ role: "facilitator" });
+    await new Promise((r) => listener.close(r));
+  }
+});

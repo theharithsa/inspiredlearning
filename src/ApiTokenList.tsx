@@ -20,7 +20,12 @@ export default function ApiTokenList({
       <h3>Your tokens</h3>
       {!tokens.length && !busy && <p>No API tokens created yet.</p>}
       {tokens.length > 0 && (
-        <div className="table-wrap">
+        <div
+          className="table-wrap"
+          role="region"
+          aria-label="Scrollable records table"
+          tabIndex={0}
+        >
           <table>
             <thead>
               <tr>

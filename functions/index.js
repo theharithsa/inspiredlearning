@@ -1,8 +1,9 @@
+import { checkCallableStepUp, requireRecentAuth } from "./admin-session.js";
 import { functionProfiles } from "./config.js";
 import { SpanKind } from "@opentelemetry/api";
 import { getAuth } from "firebase-admin/auth";
 import { apiHandler } from "./api-http.js";
-import { googleActor } from "./api.js";
+import { callableActor } from "./callable-auth.js";
 import { eventRecord } from "./events.js";
 import { initializeApp } from "firebase-admin/app";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
@@ -12,16 +13,14 @@ import {
   onDocumentDeleted,
 } from "firebase-functions/v2/firestore";
 import { execute, enroll, verification } from "./actions.js";
-import { measured, token, log } from "./monitor.js";
+import { measured, token, log, instrumentAuth } from "./monitor.js";
 import { validCertificate, validSid, validUid } from "./model.js";
 import { certificatePdf } from "./pdf.js";
 import { queue } from "./events.js";
 initializeApp();
 const db = getFirestore();
 const options = (name) => ({ ...functionProfiles[name], secrets: [token] });
-const actorOf = (r) => {
-  return googleActor(r.auth?.uid, r.auth?.token);
-};
+const actorOf = (r) => callableActor(r, instrumentAuth(getAuth()));
 const buckets = new Map();
 function rate(key, limit = 120) {
   const now = Date.now();
@@ -39,7 +38,7 @@ function rate(key, limit = 120) {
     for (const [k, v] of buckets) if (now - v.start > 60000) buckets.delete(k);
 }
 export const learningAction = onCall(options("actions"), async (r) => {
-  const actor = actorOf(r);
+  const actor = await actorOf(r);
   rate(actor.uid);
   if (
     !r.data ||
@@ -75,13 +74,16 @@ export const learningAction = onCall(options("actions"), async (r) => {
   return measured(
     "learning." + r.data.action,
     actor,
-    (c) => execute(db, actor, r.data, c),
+    async (c) => {
+      await checkCallableStepUp(db, actor, r.data.action);
+      return execute(db, actor, r.data, c);
+    },
     r.rawRequest?.headers?.traceparent,
     r.data.transactionId,
   );
 });
 export const learningCertificate = onCall(options("pdf"), async (r) => {
-  const actor = actorOf(r);
+  const actor = await actorOf(r);
   rate(actor.uid, 30);
   if (!validCertificate(r.data?.id))
     throw new HttpsError("invalid-argument", "Choose a valid certificate.");
@@ -103,6 +105,7 @@ export const learningCertificate = onCall(options("pdf"), async (r) => {
         administratorPreview =
           administrator.exists &&
           (administrator.data().role || "facilitator") === "facilitator";
+        if (administratorPreview) requireRecentAuth(actor.authTime);
         if (!administratorPreview)
           throw new HttpsError(
             "permission-denied",
@@ -182,7 +185,7 @@ export const learningVerify = onCall(options("verify"), async (r) => {
 export const learningTelemetry = onCall(
   options("legacyTelemetry"),
   async (r) => {
-    const actor = actorOf(r);
+    const actor = await actorOf(r);
     rate("telemetry:" + actor.uid, 100);
     const allowed = new Set([
       "ui.click",

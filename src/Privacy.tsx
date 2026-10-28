@@ -1,3 +1,5 @@
+import Brand from "./ui/Brand";
+import Theme from "./ui/Theme";
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
 export default function Privacy() {
@@ -7,9 +9,10 @@ export default function Privacy() {
   }, []);
   return (
     <main id="main-content" tabIndex={-1} className="public-page">
-      <Link className="brand" to="/">
-        ✳ InspiredLearning
-      </Link>
+      <header className="public-header">
+        <Brand />
+        <Theme />
+      </header>
       <section className="panel stack">
         <h1 tabIndex={-1}>Your learning record, your privacy.</h1>
         <p>

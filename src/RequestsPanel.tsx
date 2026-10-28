@@ -1,3 +1,4 @@
+import { confirmAction } from "./ui/Confirm";
 import type { LearnerRequest as Request } from "./types";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -105,7 +106,7 @@ export default function RequestsPanel({
         <button
           className="button secondary"
           aria-pressed={!history}
-          onClick={() => {
+          onClick={async () => {
             setHistory(false);
             setPageSize(50);
             setRemoval(null);
@@ -118,7 +119,7 @@ export default function RequestsPanel({
         <button
           className="button secondary"
           aria-pressed={history}
-          onClick={() => {
+          onClick={async () => {
             setHistory(true);
             setPageSize(50);
             setRemoval(null);
@@ -162,7 +163,7 @@ export default function RequestsPanel({
                     <button
                       className="button secondary"
                       disabled={busy || !reason.trim()}
-                      onClick={() => {
+                      onClick={async () => {
                         setRemoval(r);
                         setConfirmUid("");
                       }}
@@ -173,9 +174,9 @@ export default function RequestsPanel({
                     <button
                       className="button secondary"
                       disabled={busy || !reason.trim()}
-                      onClick={() => {
+                      onClick={async () => {
                         if (
-                          confirm(
+                          await confirmAction(
                             "Have you applied the verified correction? Resolve this request and share your review note with the learner?",
                           )
                         )
@@ -211,7 +212,7 @@ export default function RequestsPanel({
                 <button
                   className="button secondary"
                   disabled={busy || !reason.trim()}
-                  onClick={() => {
+                  onClick={async () => {
                     setRemoval(r);
                     setConfirmUid("");
                   }}

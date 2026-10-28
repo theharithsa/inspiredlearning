@@ -1,3 +1,4 @@
+import { confirmAction } from "./ui/Confirm";
 import { useState } from "react";
 import { signOut, type User } from "firebase/auth";
 import { auth } from "./firebase";
@@ -39,9 +40,9 @@ export default function RemovedAccount({
             disabled={busy}
             onClick={async () => {
               if (
-                !confirm(
+                !(await confirmAction(
                   "Start a new learning profile with your Google account? Erased historical workshops will stay removed.",
-                )
+                ))
               )
                 return;
               setBusy(true);

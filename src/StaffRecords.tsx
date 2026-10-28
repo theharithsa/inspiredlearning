@@ -1,3 +1,4 @@
+import { confirmAction } from "./ui/Confirm";
 import { downloadPdf, type PdfResponse } from "./api";
 import CertificateCorrection from "./CertificateCorrection";
 import RequestsPanel from "./RequestsPanel";
@@ -21,7 +22,11 @@ interface Lookup {
     certificateId: string | null;
   }[];
 }
-export default function StaffRecords() {
+export default function StaffRecords({
+  showRequests = true,
+}: {
+  showRequests?: boolean;
+}) {
   const [requestVersion, setRequestVersion] = useState(0),
     [reference, setReference] = useState(""),
     [lookup, setLookup] = useState<Lookup | null>(null),
@@ -145,9 +150,9 @@ export default function StaffRecords() {
                 <button
                   className="button secondary"
                   disabled={busy || !reason.trim()}
-                  onClick={() => {
+                  onClick={async () => {
                     if (
-                      confirm(
+                      await confirmAction(
                         "Reinstate verified completion, issue a replacement private certificate and restore the original 100 learning points once?",
                       )
                     )
@@ -193,9 +198,9 @@ export default function StaffRecords() {
                   <button
                     className="text-button danger"
                     disabled={busy || !reason.trim()}
-                    onClick={() => {
+                    onClick={async () => {
                       if (
-                        confirm(
+                        await confirmAction(
                           "Revoke completion, its certificate and 100 learning points?",
                         )
                       )
@@ -216,18 +221,20 @@ export default function StaffRecords() {
           ))}
         </div>
       )}
-      <RequestsPanel
-        refresh={requestVersion}
-        reason={reason}
-        onDone={() => {
-          setRequestVersion((v) => v + 1);
-          if (lookup) void load(lookup.uid);
-        }}
-        onOpen={(uid) => {
-          setReference(uid);
-          void load(uid);
-        }}
-      />
+      {showRequests && (
+        <RequestsPanel
+          refresh={requestVersion}
+          reason={reason}
+          onDone={() => {
+            setRequestVersion((v) => v + 1);
+            if (lookup) void load(lookup.uid);
+          }}
+          onOpen={(uid) => {
+            setReference(uid);
+            void load(uid);
+          }}
+        />
+      )}
       <p className="muted">
         Corrections and revocation work even after a live session is deleted.
         Approved removal deletes InspiredLearning records through a recoverable

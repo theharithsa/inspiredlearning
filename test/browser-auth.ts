@@ -5,7 +5,7 @@ import {
   signInAnonymously,
   signOut,
 } from "firebase/auth";
-import { auth } from "../src/firebase";
+import { auth, authReady } from "../src/firebase";
 if (
   !import.meta.env.DEV ||
   import.meta.env.VITE_USE_EMULATORS !== "true" ||
@@ -13,6 +13,7 @@ if (
 )
   throw new Error("Browser rehearsal requires local Firebase emulators.");
 export async function login(email: string) {
+  await authReady;
   const claims = {
     iss: "https://accounts.google.com",
     aud: "demo-client",
@@ -34,6 +35,7 @@ export async function login(email: string) {
   ).user.uid;
 }
 export async function anonymous() {
+  await authReady;
   return (await signInAnonymously(auth)).user.uid;
 }
 export async function logout() {

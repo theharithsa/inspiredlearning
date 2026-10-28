@@ -1,3 +1,4 @@
+import { acceptConfirmations } from "./confirm-helpers.mjs";
 import { test, expect } from "@playwright/test";
 import { createRequire } from "node:module";
 import { randomUUID } from "node:crypto";
@@ -24,8 +25,9 @@ test.afterAll(async () => {
 test("administrator sees certificate types, status history and authorized PDF previews", async ({
   page,
 }) => {
+  await acceptConfirmations(page);
   await page.route("https://**dynatrace.com/**", (r) => r.abort());
-  await page.goto("/");
+  await page.goto("/admin.html#/certificates");
   const uid = await page.evaluate(
     (email) => import("/test/browser-auth.ts").then((m) => m.login(email)),
     email,
@@ -68,7 +70,7 @@ test("administrator sees certificate types, status history and authorized PDF pr
     { ...base, id: revoked, kind: "participation", status: "revoked" },
   ])
     await db.doc(`learningCertificates/${cert.id}`).set(cert);
-  await page.goto("/#/admin");
+  await page.goto("/admin.html#/certificates");
   await page.reload();
   await expect(
     page.getByRole("heading", { name: "Issued certificates and history" }),

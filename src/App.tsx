@@ -1,3 +1,7 @@
+import Brand from "./ui/Brand";
+import Icon, { type IconName } from "./ui/Icon";
+import Theme from "./ui/Theme";
+import { adminUrl } from "./surface";
 import { DISCORD } from "./constants";
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { Routes, Route, NavLink, Link, useLocation } from "react-router-dom";
@@ -54,24 +58,26 @@ function Landing() {
   return (
     <main id="main-content" tabIndex={-1} className="landing">
       <header className="public-header">
-        <Link className="brand" to="/">
-          ✳ InspiredLearning
-        </Link>
-        <Link to="/community">Our community</Link>
+        <Brand />
+        <div className="public-header-actions">
+          <Theme />
+          <Link to="/community">Our community</Link>
+          <a className="text-button" href={adminUrl()}>
+            Administrator sign-in
+          </a>
+        </div>
       </header>
       <div className="landing-hero">
         <section>
-          <span className="eyebrow">
-            LEARNING DOESN’T END WITH THE WORKSHOP
-          </span>
+          <span className="eyebrow">YOUR LEARNING, CONNECTED</span>
           <h1>
-            What you learn
+            Make your learning
             <br />
-            stays with you.
+            <em>count for more.</em>
           </h1>
           <p className="lead">
-            Keep your verified workshops, celebrate your progress and find your
-            people. One account for the learning you build on.
+            Bring your verified participation, earned credits and certificates
+            together. A lasting record of the learning you build on.
           </p>
           <button
             className="button large"
@@ -104,10 +110,10 @@ function Landing() {
         <div
           className="journey-illustration"
           role="img"
-          aria-label="Participate, reflect, and keep learning"
+          aria-label="Participate, earn recognition, and keep learning"
         >
           <div className="orbit" aria-hidden="true">
-            ✳
+            <Icon name="learning" />
           </div>
           <div className="journey-step">
             <span>01</span>
@@ -128,6 +134,7 @@ function Landing() {
       </div>
       <div className="landing-features">
         <article>
+          <Icon name="workshops" />
           <h2>Your learning record</h2>
           <p>
             A lasting home for your workshops, individual results and team
@@ -135,6 +142,7 @@ function Landing() {
           </p>
         </article>
         <article>
+          <Icon name="certificate" />
           <h2>Recognition you can keep</h2>
           <p>
             Download certificates after facilitator verification. You control
@@ -142,6 +150,7 @@ function Landing() {
           </p>
         </article>
         <article>
+          <Icon name="community" />
           <h2>A community beyond class</h2>
           <p>
             Ask questions and share what you build with learners and captains on
@@ -238,23 +247,40 @@ function LearnerLayout({ user }: { user: User }) {
   return (
     <div className="app-shell">
       <aside className="sidebar">
-        <Link className="brand" to="/">
-          ✳ InspiredLearning
-        </Link>
+        <Brand />
         <p className="sidebar-caption">A place for your progress.</p>
         <nav aria-label="Main navigation">
-          <NavLink to="/" end>
-            My learning
-          </NavLink>
-          <NavLink to="/workshops">My workshops</NavLink>
-          <NavLink to="/certificates">Certificates</NavLink>
-          <NavLink to="/community">Community</NavLink>
-          <NavLink to="/profile">Profile</NavLink>
-          {administrator && <NavLink to="/admin">Admin controls</NavLink>}
+          {(
+            [
+              ["/", "home", "My learning"],
+              ["/workshops", "workshops", "My workshops"],
+              ["/certificates", "certificate", "Certificates"],
+              ["/community", "community", "Community"],
+              ["/profile", "person", "Profile"],
+            ] as [string, IconName, string][]
+          ).map(([path, icon, label]) => (
+            <NavLink key={path} to={path} end={path === "/"}>
+              <Icon name={icon} />
+              <span className="nav-label">{label}</span>
+            </NavLink>
+          ))}
         </nav>
         <div className="sidebar-footer">
-          <Link to="/staff">Workshop staff</Link>
-          <Link to="/privacy">Privacy</Link>
+          <Link to="/staff">
+            <Icon name="admin" />
+            <span>Workshop staff</span>
+          </Link>
+          <Link to="/privacy">
+            <Icon name="help" />
+            <span>Privacy</span>
+          </Link>
+          {administrator && (
+            <a href={adminUrl()}>
+              <Icon name="admin" />
+              <span>Administrator portal</span>
+            </a>
+          )}
+          <Theme />
           <small>{user.email}</small>
           <button
             className="text-button"
@@ -269,7 +295,36 @@ function LearnerLayout({ user }: { user: User }) {
       </aside>
       <main id="main-content" tabIndex={-1} className="workspace">
         <div className="workspace-top">
-          <span className="status-dot" /> Your learning, connected.
+          <div className="top-title">
+            <Icon name="learning" />
+            <span>Your learning</span>
+          </div>
+          <div className="account-chip">
+            <span className="avatar" aria-hidden="true">
+              {(profile?.name || user.displayName || "L")
+                .slice(0, 1)
+                .toUpperCase()}
+            </span>
+            <small>{profile?.name || user.displayName || "Learner"}</small>
+          </div>
+          <details className="mobile-menu">
+            <summary aria-label="Account and more options">
+              <Icon name="more" />
+            </summary>
+            <div className="mobile-menu-content">
+              <small>{user.email}</small>
+              <Link to="/staff">Workshop staff</Link>
+              <Link to="/privacy">Privacy</Link>
+              {administrator && <a href={adminUrl()}>Administrator portal</a>}
+              <Theme />
+              <button
+                className="text-button"
+                onClick={() => void signOut(auth)}
+              >
+                Sign out
+              </button>
+            </div>
+          </details>
         </div>
         {error && <Message error>{error}</Message>}
         {hasMore && (
@@ -298,10 +353,7 @@ function LearnerLayout({ user }: { user: User }) {
             path="/workshops"
             element={<Workshops workshops={workshops} />}
           />
-          <Route
-            path="/workshops/:sid"
-            element={<WorkshopDetail />}
-          />
+          <Route path="/workshops/:sid" element={<WorkshopDetail />} />
           <Route path="/certificates" element={<Certificates user={user} />} />
           <Route path="/community" element={<Community />} />
           <Route
@@ -316,7 +368,24 @@ function LearnerLayout({ user }: { user: User }) {
           />
           <Route
             path="/staff"
-            element={<Staff globalFacilitator={administrator === true} />}
+            element={
+              administrator === null ? (
+                <p role="status">Checking staff access…</p>
+              ) : administrator ? (
+                <div className="panel stack">
+                  <h1>Administrator portal</h1>
+                  <p>
+                    Open the dedicated administrator app to manage learning
+                    records.
+                  </p>
+                  <a className="button" href={adminUrl()}>
+                    Open administrator portal
+                  </a>
+                </div>
+              ) : (
+                <Staff />
+              )
+            }
           />
           <Route
             path="/admin"
@@ -324,7 +393,12 @@ function LearnerLayout({ user }: { user: User }) {
               administrator === null ? (
                 <p role="status">Checking administrator access…</p>
               ) : administrator ? (
-                <Staff admin globalFacilitator />
+                <div className="panel stack">
+                  <h1>Administrator portal</h1>
+                  <a className="button" href={adminUrl()}>
+                    Open administrator portal
+                  </a>
+                </div>
               ) : (
                 <Message error>Administrator access required.</Message>
               )
@@ -390,9 +464,7 @@ function Application() {
                       tabIndex={-1}
                       className="public-page"
                     >
-                      <Link className="brand" to="/">
-                        ✳ InspiredLearning
-                      </Link>
+                      <Brand />
                       <Community />
                     </main>
                   }

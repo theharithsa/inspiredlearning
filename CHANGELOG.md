@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.0.0 — source release
+
+- Material 3 semantic themes, adaptive navigation, accessible controls and confirmation dialogs across learner and existing administration workflows.
+- Separate administrator app/build/bootstrap at admin.inspi.in with per-tab session persistence, current server role checks and recent Google reauthentication for sensitive operations.
+- Compatible API 1.5.0 adds administrator capability bootstrap; shared learner/captain, certificate, credit and privacy policies are preserved.
+- Versioned artifact manifests, read-only release verifier, delivery observability reporters and repository agent guidance; membership migration remains a documented acceptance gate.
+- Production rollout, tenant verification and secure CI activation require their separate release evidence.
+
+
 ## 1.0.1 — maintenance candidate
 
 - Fix telemetry context, caller rejection classification, route/resource metadata, bounded flush and outbox retry/recovery behavior.

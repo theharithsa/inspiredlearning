@@ -1,3 +1,4 @@
+import { requireRecentAuth } from "./admin-session.js";
 import { randomBytes, createHash, timingSafeEqual } from "node:crypto";
 import { Timestamp, FieldPath } from "firebase-admin/firestore";
 import { HttpsError } from "firebase-functions/v2/https";
@@ -116,12 +117,7 @@ export async function manageTokens(
   if (Object.keys(query).length)
     fail("invalid-argument", "Token changes have no query parameters.");
   if (method === "POST" && !tokenId) {
-    const age = Date.now() / 1000 - options.authTime;
-    if (!Number.isFinite(age) || age < -60 || age > 300)
-      fail(
-        "failed-precondition",
-        "Sign in again with Google before creating a token.",
-      );
+    requireRecentAuth(options.authTime);
     if (!uuid(options.idempotencyKey))
       fail("invalid-argument", "A UUID Idempotency-Key header is required.");
     const input = tokenInput(body),

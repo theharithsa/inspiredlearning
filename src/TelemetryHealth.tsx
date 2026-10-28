@@ -1,3 +1,4 @@
+import { confirmAction } from "./ui/Confirm";
 import { useEffect, useRef, useState } from "react";
 import { apiFetch } from "./api";
 import { Message } from "./components";
@@ -68,9 +69,9 @@ export default function TelemetryHealth() {
   async function redrive(row: EventRow) {
     if (
       !reason.trim() ||
-      !window.confirm(
+      !(await confirmAction(
         "Queue this failed event for another delivery attempt? The original event ID and payload will stay unchanged.",
-      )
+      ))
     )
       return;
     const current = ++generation.current;

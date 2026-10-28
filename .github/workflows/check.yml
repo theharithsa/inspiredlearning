@@ -8,6 +8,8 @@ permissions:
 concurrency:
   group: checks-${{ github.ref }}
   cancel-in-progress: true
+env:
+  TEST_REPORT_DIR: ci-results/structured
 jobs:
   verify:
     runs-on: ubuntu-latest
@@ -33,11 +35,23 @@ jobs:
           VITE_FIREBASE_AUTH_DOMAIN: localhost
       - run: npm run test:integration
       - run: npx playwright install --with-deps chromium
-      - run: npm run test:swagger && npm --prefix mcp test
+      - run: npm run test:swagger && node scripts/test-node.mjs mcp mcp/test/*.test.mjs
       - run: npm run test:api-auth
       - run: npm run test:rehearsal
         env:
           CI: "1"
+      - name: Report trusted-main test outcomes
+        if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.DYNATRACE_CI_ENABLED == 'true'
+        run: node scripts/observability/report-tests.mjs
+        env:
+          DYNATRACE_CI_TOKEN: ${{ secrets.DYNATRACE_CI_TOKEN }}
+          DYNATRACE_ENDPOINT: https://indiacs.live.dynatrace.com
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        if: always()
+        with:
+          name: structured-tests
+          path: ci-results/structured
+          retention-days: 14
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         if: failure()
         with:

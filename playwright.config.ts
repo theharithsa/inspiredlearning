@@ -10,7 +10,11 @@ export default defineConfig({
   maxFailures: 1,
   timeout: 120000,
   expect: { timeout: 20000 },
-  reporter: [["list"], ["html", { open: "never" }]],
+  reporter: [
+    ["list"],
+    ["html", { open: "never" }],
+    ["./scripts/observability/playwright-reporter.mjs"],
+  ],
   use: {
     baseURL: `http://127.0.0.1:${webPort}`,
     channel: process.env.CI ? undefined : "chrome",

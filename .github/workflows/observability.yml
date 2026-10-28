@@ -1,0 +1,38 @@
+name: Delivery observability
+on:
+  workflow_run:
+    workflows: [Checks]
+    types: [completed]
+  issues:
+    types: [opened, closed, reopened]
+  pull_request_target:
+    types: [opened, closed, reopened, ready_for_review]
+  release:
+    types: [published]
+permissions:
+  contents: read
+  actions: read
+  issues: read
+  pull-requests: read
+jobs:
+  report:
+    # Explicit secure binding required; skipped is not a verified ingest result.
+    if: vars.DYNATRACE_CI_ENABLED == 'true' && (github.event_name != 'workflow_run' || github.event.workflow_run.head_repository.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: 24
+      - name: Install trusted reporter dependencies
+        run: npm ci --prefix functions --ignore-scripts
+      - name: Report source-confirmed lifecycle and execution facts
+        run: node scripts/observability/report-github.mjs
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          DYNATRACE_CI_TOKEN: ${{ secrets.DYNATRACE_CI_TOKEN }}
+          DYNATRACE_ENDPOINT: https://indiacs.live.dynatrace.com

@@ -1,3 +1,4 @@
+import { adminAccess, requireAdminStepUp } from "./admin-session.js";
 import { telemetryAdmin } from "./telemetry-admin.js";
 import { verification } from "./actions.js";
 import { reconcileCertificates } from "./certificate-repair.js";
@@ -161,6 +162,16 @@ export function apiHandler({ db, auth, rate, measured, audit }) {
             : "api.read",
         actor,
         async (c) => {
+          if (req.path === "/api/v1/admin/access")
+            return adminAccess(db, actor, req.query, (op, fields) =>
+              audit(actor, c, op, fields),
+            );
+          if (
+            req.method !== "GET" &&
+            !actor.apiTokenId &&
+            (management || repair || telemetry || writeRoute)
+          )
+            await requireAdminStepUp(db, actor);
           if (telemetry)
             return telemetryAdmin(
               db,

@@ -22,7 +22,7 @@ export function googleActor(uid, t) {
     t.firebase?.sign_in_provider !== "google.com"
   )
     fail("unauthenticated", "Sign in with Google.");
-  return { uid, email: t.email, name: t.name };
+  return { uid, email: t.email, name: t.name, authTime: t.auth_time };
 }
 export function pageOptions(query, scope, allowed = []) {
   if (

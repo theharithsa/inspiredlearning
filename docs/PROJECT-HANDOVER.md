@@ -74,3 +74,14 @@ Source candidate 1.0.2 adds compatible REST contract 1.4.0: Google-admin-only me
 Read MAINTENANCE-POLICY-2026-10-27.md and observability/README.md before assuming infrastructure, TTL, active alerts or deployed behavior. #15 global protection, #14 live CSP validation/enforcement and #9 tenant configuration/verification retain explicit gates. v2.0.0 remains in #34 with admin.inspi.in; no redesign implementation or production migration/deployment is certified by this candidate. Repository-local app skills are indexed in skills/README.md.
 
 Maintenance PR and current local evidence: [#55](https://github.com/theharithsa/inspiredlearning/pull/55), [1.0.2 verification](MAINTENANCE-1.0.2-VERIFICATION.md). Source closure and remaining release/migration gates are listed separately there. Production remains at its previously deployed revision until an explicitly scoped release.
+
+
+## v2.0.0 source implementation — 28 October 2026
+
+This section supersedes earlier single-portal route instructions for v2 source only. Production remains separately verified in RELEASE-CHECKS.md. GitHub #34 tracks the Material 3 redesign; #17 retains the membership migration acceptance gate. Learner/public builds go to dist; the separate administrator build goes to dist-admin for admin.inspi.in. Administrator startup performs only Google/admin capability bootstrap, with no learner profile creation or history subscription. Legacy learner admin routes hand off to that origin. Captains retain learner /staff and their fixed region mapping.
+
+The owner approved per-tab Firebase session persistence for the separately named admin app; refresh retains sign-in and closing the tab clears it. Learner persistence and shared UIDs are unchanged. No mandatory MFA. Sensitive Google-admin writes and non-owner PDF previews enforce the existing 300-second recent-auth window on the server; the frontend offers Google reauthentication. Scoped automation keeps its existing explicit permissions. Compatible OpenAPI 1.5.0 adds GET /api/v1/admin/access; app/functions version is 2.0.0 and MCP remains independently versioned.
+
+Read DESIGN-SYSTEM.md, API-V2-ADMIN-CONTRACT.md, V2-MEMBERSHIP-INDEX-DESIGN.md, V2-RELEASE-PLAN.md and CI-OBSERVABILITY.md before further work. No learner/certificate repair, membership backfill, shared rule/index change, capacity increase, outbox retention change or paid protection is included. Repository guidance covers the new surfaces. The CI observer is source-configured but disabled until secure credential binding; local collector acceptance is not tenant proof.
+
+No v2 deployment or admin Hosting/DNS/Auth-domain provisioning is authorized by source implementation. Build identity marks demo/unconfigured/dirty source as nonrelease; verify clean production manifests against the merged revision. Ordered rollout and rollback are in V2-RELEASE-PLAN.md.

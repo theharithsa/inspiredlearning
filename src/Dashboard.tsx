@@ -57,9 +57,9 @@ export default function Dashboard({
       <header className="page-heading">
         <span className="eyebrow">YOUR LEARNING JOURNEY</span>
         <h1>
-          Keep your curiosity.
+          Your learning,
           <br />
-          <em>Build on your progress.</em>
+          <em>in one place.</em>
         </h1>
         <p>
           {profile?.name ? "Welcome back, " + profile.name + ". " : ""}Your
@@ -103,7 +103,7 @@ export default function Dashboard({
         </div>
       ) : (
         <Empty title="Your next chapter starts here">
-          Join a ChaiCart workshop with this Google account. Your participation
+          Join a supported workshop with this Google account. Your participation
           will appear here; verified completion unlocks your certificate and
           learning points.
         </Empty>

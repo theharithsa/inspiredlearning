@@ -34,6 +34,15 @@ export async function apiFetch<T>(
   const { auth } = await import("./firebase");
   const user = auth.currentUser;
   if (!user) throw new Error("Sign in with Google.");
+  const { isAdminApp } = await import("./surface");
+  if (
+    isAdminApp &&
+    options.method &&
+    !["GET", "HEAD"].includes(options.method.toUpperCase())
+  )
+    await (await import("./reauth")).ensureRecentAdminAuth();
+  if (auth.currentUser?.uid !== user.uid)
+    throw new Error("Your signed-in account changed. Review the action again.");
   const token = await user.getIdToken();
   if (auth.currentUser?.uid !== user.uid)
     throw new Error("Your signed-in account changed.");

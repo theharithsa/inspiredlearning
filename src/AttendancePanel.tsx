@@ -1,3 +1,4 @@
+import { confirmAction } from "./ui/Confirm";
 import type { StaffWorkflowProps } from "./types";
 import { action } from "./observability";
 export default function AttendancePanel({
@@ -91,9 +92,9 @@ export default function AttendancePanel({
           <button
             className="button secondary"
             disabled={busy}
-            onClick={() => {
+            onClick={async () => {
               if (
-                confirm(
+                await confirmAction(
                   "Close the live workshop? Students will stop submitting activities.",
                 )
               )
