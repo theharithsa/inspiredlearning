@@ -1,3 +1,4 @@
+import packageJson from "../package.json" with { type: "json" };
 import { cancelConfirmations } from "./ui/Confirm";
 import { isAdminApp } from "./surface";
 import { httpsCallable } from "firebase/functions";
@@ -49,6 +50,7 @@ export function rum(name: string, fields: Record<string, unknown> = {}) {
       "event.authority": "client-observed",
       "event.source": "browser",
       "app.surface": isAdminApp ? "admin" : "learner",
+      "app.version": packageJson.version,
       "event.id": crypto.randomUUID(),
       "transaction.id": crypto.randomUUID(),
       ...(auth.currentUser?.email
@@ -116,9 +118,15 @@ export const action = <T = { message?: string }>(
 ) => call<T>("learningAction", { action, ...data });
 export function installClicks() {
   document.addEventListener("click", (event) => {
-    const target = (event.target as Element)?.closest?.(
-      'button,a,input[type="checkbox"]',
-    ) as HTMLElement | null;
+    const path = event
+      .composedPath()
+      .filter((node): node is HTMLElement => node instanceof HTMLElement);
+    const target =
+      path.find((node) =>
+        node.matches(
+          "a,md-filled-button,md-filled-tonal-button,md-outlined-button,md-text-button,md-icon-button,md-checkbox,md-radio,md-menu-item,md-select-option",
+        ),
+      ) || path.find((node) => node.matches('button,input[type="checkbox"]'));
     if (!target || target.hasAttribute("disabled")) return;
     const name = target.dataset.event || "ui.click";
     interaction(safeNames.has(name) ? name : "ui.click");

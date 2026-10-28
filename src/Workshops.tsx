@@ -1,3 +1,4 @@
+import Loading from "./ui/Loading";
 import type { Workshop } from "./types";
 import { Empty, WorkshopCard } from "./components";
 export default function Workshops({
@@ -19,7 +20,7 @@ export default function Workshops({
         </p>
       </header>
       {workshops === undefined ? (
-        <p role="status">Loading your workshops…</p>
+        <Loading>Loading your workshops…</Loading>
       ) : workshops.length ? (
         <div className="cards">
           {workshops.map((w) => (

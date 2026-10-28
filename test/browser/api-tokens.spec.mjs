@@ -40,18 +40,24 @@ test("administrator can create a scoped credential, copy it once, use it and rev
     page.getByRole("heading", { name: "API tokens", exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByLabel("Create and update colleges", { exact: true }),
+    page.getByRole("checkbox", {
+      name: "Create and update colleges",
+      exact: true,
+    }),
   ).not.toBeChecked();
   await expect(
-    page.getByLabel("Correct learner names", { exact: true }),
+    page.getByRole("checkbox", { name: "Correct learner names", exact: true }),
   ).not.toBeChecked();
   await expect(
-    page.getByLabel("Award, deduct and correct student credits", {
+    page.getByRole("checkbox", {
+      name: "Award, deduct and correct student credits",
       exact: true,
     }),
   ).not.toBeChecked();
   await page.getByLabel("Token name").fill("Browser scoped token");
-  await page.getByLabel("Learner profiles", { exact: true }).check();
+  await page
+    .getByRole("checkbox", { name: "Learner profiles", exact: true })
+    .check();
   await page.getByLabel("Learner IDs (optional)").fill(uid);
   const popupPromise = page.waitForEvent("popup");
   await page

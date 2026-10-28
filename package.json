@@ -1,13 +1,13 @@
 {
   "name": "inspiredlearning",
   "private": true,
-  "version": "2.0.0",
+  "version": "2.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build && vite build --mode admin",
     "lint": "oxlint src test scripts",
-    "test": "node scripts/test-node.mjs unit test/model.test.mjs test/api.test.mjs test/certificate-policy.test.mjs test/telemetry-policy.test.mjs test/config.test.mjs test/admin-session.test.mjs test/delivery-observability.test.mjs test/delivery-export.test.mjs",
+    "test": "node scripts/test-node.mjs unit test/model.test.mjs test/api.test.mjs test/certificate-policy.test.mjs test/telemetry-policy.test.mjs test/config.test.mjs test/admin-session.test.mjs test/delivery-observability.test.mjs test/delivery-export.test.mjs test/appearance.test.mjs",
     "test:browser": "playwright test",
     "test:rehearsal": "node scripts/rehearsal.mjs",
     "test:integration": "firebase emulators:exec --config firebase.rehearsal.json --project demo-chaicart --only firestore \"node scripts/test-node.mjs integration --test-concurrency=1 test/integration.test.mjs test/outbox.test.mjs test/maintenance.test.mjs\"",
@@ -15,6 +15,7 @@
     "test:api-auth": "firebase emulators:exec --config firebase.rehearsal.json --project demo-chaicart --only auth,firestore \"node scripts/test-node.mjs auth test/api-auth.test.mjs\""
   },
   "dependencies": {
+    "@material/web": "2.5.0",
     "@opentelemetry/api": "^1.9.1",
     "@opentelemetry/resources": "^2.11.0",
     "@opentelemetry/sdk-trace-web": "^2.11.0",
@@ -25,7 +26,9 @@
     "react-router-dom": "^7.18.4"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
     "@firebase/rules-unit-testing": "^5.0.2",
+    "@material/material-color-utilities": "^0.4.0",
     "@playwright/test": "^1.63.0",
     "@types/node": "^24.13.3",
     "@types/qrcode": "^1.5.6",

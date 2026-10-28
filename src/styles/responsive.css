@@ -27,7 +27,7 @@
   .sidebar nav a {
     flex-direction: column;
     gap: 4px;
-    font-size: 11px;
+    font-size: var(--md-sys-typescale-label-small);
     padding: 12px 4px;
     border-radius: 20px;
     min-height: 72px;
@@ -43,12 +43,12 @@
   }
   .sidebar-footer .text-button {
     padding: 8px;
-    font-size: 12px;
+    font-size: var(--md-sys-typescale-body-small);
   }
   .theme-control select {
     max-width: 80px;
     padding: 8px;
-    font-size: 11px;
+    font-size: var(--md-sys-typescale-label-small);
   }
   .workspace {
     padding-inline: 28px;
@@ -95,7 +95,7 @@
     flex-direction: column;
     gap: 4px;
     border-radius: 16px;
-    font-size: 11px;
+    font-size: var(--md-sys-typescale-label-small);
     text-align: center;
     justify-content: center;
   }
@@ -123,7 +123,7 @@
     flex-wrap: wrap;
   }
   .workspace-top .top-title {
-    font-size: 14px;
+    font-size: var(--md-sys-typescale-body-medium);
   }
   .workspace-top > .theme-control {
     display: none;
@@ -161,7 +161,7 @@
     background: var(--md-sys-color-surface-container-high);
     border: 1px solid var(--line);
     border-radius: 16px;
-    box-shadow: 0 6px 20px #0003;
+    box-shadow: var(--md-elevation-level-2);
   }
   .mobile-menu-content > a {
     display: flex;
@@ -182,7 +182,7 @@
     padding-top: 28px;
   }
   .page-heading.compact h1 {
-    font-size: 28px;
+    font-size: var(--md-sys-typescale-headline-medium);
   }
   .landing {
     padding-inline: 24px;
@@ -200,7 +200,7 @@
     display: none;
   }
   .public-header > .brand {
-    font-size: 18px;
+    font-size: var(--md-sys-typescale-body-large);
   }
   .landing-hero {
     grid-template-columns: 1fr;
@@ -208,7 +208,7 @@
     padding: 32px 0;
   }
   .landing h1 {
-    font-size: clamp(36px, 8vw, 52px);
+    font-size: var(--md-sys-typescale-display-small);
   }
   .journey-illustration {
     border-radius: 28px;
@@ -236,11 +236,11 @@
   }
   .stats span,
   .stats small {
-    font-size: 11px;
+    font-size: var(--md-sys-typescale-label-small);
     overflow-wrap: anywhere;
   }
   .stats strong {
-    font-size: 32px;
+    font-size: var(--md-sys-typescale-headline-large);
   }
   .panel,
   .community-card {
@@ -248,7 +248,7 @@
     border-radius: 20px;
   }
   .community-card h2 {
-    font-size: 24px;
+    font-size: var(--md-sys-typescale-headline-small);
   }
   .inline-form {
     align-items: stretch;
@@ -262,7 +262,7 @@
     grid-template-columns: 1fr;
   }
   .brand {
-    font-size: 18px;
+    font-size: var(--md-sys-typescale-body-large);
   }
   .public-page {
     padding: 24px 16px;
@@ -275,13 +275,13 @@
     flex-wrap: wrap;
   }
   .section-heading h2 {
-    font-size: 22px;
+    font-size: var(--md-sys-typescale-title-large);
   }
   .admin-login-card {
     padding: 28px;
   }
   .admin-shell .sidebar nav a {
-    font-size: 10px;
+    font-size: var(--md-sys-typescale-label-small);
   }
   .admin-shell .sidebar nav a .icon {
     padding-inline: 10px;
@@ -294,7 +294,7 @@
     display: none;
   }
   .theme-control select {
-    font-size: 14px;
+    font-size: var(--md-sys-typescale-body-medium);
   }
   .task-card {
     padding: 24px;
@@ -311,13 +311,13 @@
     flex-wrap: wrap;
   }
   .stats strong {
-    font-size: 28px;
+    font-size: var(--md-sys-typescale-headline-medium);
   }
   .public-header {
     flex-direction: column;
   }
   .sidebar nav a {
-    font-size: 10px;
+    font-size: var(--md-sys-typescale-label-small);
   }
   .sidebar nav a .icon {
     padding-inline: 10px;

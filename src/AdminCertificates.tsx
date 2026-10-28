@@ -1,3 +1,7 @@
+import Disclosure from "./ui/Disclosure";
+import Field from "./ui/Field";
+import Select from "./ui/Select";
+import Button from "./ui/Button";
 import { downloadPdf, type PdfResponse } from "./api";
 import { useEffect, useRef, useState } from "react";
 import { apiFetch } from "./api";
@@ -138,54 +142,48 @@ export default function AdminCertificates() {
           void load();
         }}
       >
-        <label>
-          Workshop code
-          <input
-            disabled={busy}
-            value={workshop}
-            onChange={(e) => {
-              setWorkshop(e.target.value);
-              setCursor(null);
-            }}
-            placeholder="All workshops"
-            maxLength={16}
-          />
-        </label>
-        <label>
-          Status
-          <select
-            aria-label="Certificate status"
-            disabled={busy}
-            value={status}
-            onChange={(e) => {
-              setStatus(e.target.value);
-              setCursor(null);
-            }}
-          >
-            <option value="">All statuses</option>
-            <option value="issued">Issued</option>
-            <option value="revoked">Revoked / replaced</option>
-          </select>
-        </label>
-        <label>
-          Certificate type
-          <select
-            aria-label="Certificate type"
-            disabled={busy}
-            value={kind}
-            onChange={(e) => {
-              setKind(e.target.value);
-              setCursor(null);
-            }}
-          >
-            <option value="">All types</option>
-            <option value="participation">Participation</option>
-            <option value="award">Award</option>
-          </select>
-        </label>
-        <button className="button" disabled={busy}>
+        <Field
+          label="Workshop code"
+          disabled={busy}
+          value={workshop}
+          onChange={(e) => {
+            setWorkshop(e.target.value);
+            setCursor(null);
+          }}
+          placeholder="All workshops"
+          maxLength={16}
+        />
+        <Select
+          label="Status"
+          aria-label="Certificate status"
+          disabled={busy}
+          value={status}
+          onChange={(e) => {
+            setStatus(e.target.value);
+            setCursor(null);
+          }}
+        >
+          <option value="">All statuses</option>
+          <option value="issued">Issued</option>
+          <option value="revoked">Revoked / replaced</option>
+        </Select>
+        <Select
+          label="Certificate type"
+          aria-label="Certificate type"
+          disabled={busy}
+          value={kind}
+          onChange={(e) => {
+            setKind(e.target.value);
+            setCursor(null);
+          }}
+        >
+          <option value="">All types</option>
+          <option value="participation">Participation</option>
+          <option value="award">Award</option>
+        </Select>
+        <Button className="button" disabled={busy} busy={!!busy}>
           Load certificates
-        </button>
+        </Button>
       </form>
       {rendering && !rendering.signatureConfigured && (
         <Message error>
@@ -194,38 +192,31 @@ export default function AdminCertificates() {
           remain unsigned until the approved asset is deployed.
         </Message>
       )}
-      <label>
-        Preview reason
-        <input
-          value={reason}
-          onChange={(e) => setReason(e.target.value)}
-          maxLength={500}
-        />
-      </label>
-      <details>
-        <summary>Record a confirmed individual award</summary>
+      <Field
+        label="Preview reason"
+        value={reason}
+        onChange={(e) => setReason(e.target.value)}
+        maxLength={500}
+      />
+      <Disclosure label="Record a confirmed individual award">
         <p>
           Use the student account reference from the learner lookup below. Only
           record awards you have confirmed.
         </p>
-        <label>
-          Award recipient account reference
-          <input
-            value={awardUid}
-            onChange={(e) => setAwardUid(e.target.value)}
-            maxLength={128}
-          />
-        </label>
-        <label>
-          Award title
-          <input
-            value={awardTitle}
-            onChange={(e) => setAwardTitle(e.target.value)}
-            maxLength={100}
-          />
-        </label>
-      </details>
-      <button
+        <Field
+          label="Award recipient account reference"
+          value={awardUid}
+          onChange={(e) => setAwardUid(e.target.value)}
+          maxLength={128}
+        />
+        <Field
+          label="Award title"
+          value={awardTitle}
+          onChange={(e) => setAwardTitle(e.target.value)}
+          maxLength={100}
+        />
+      </Disclosure>
+      <Button
         className="button secondary"
         disabled={
           busy ||
@@ -233,10 +224,11 @@ export default function AdminCertificates() {
           !reason.trim() ||
           Boolean(awardUid.trim()) !== Boolean(awardTitle.trim())
         }
+        busy={!!busy}
         onClick={() => void reconcile()}
       >
         Refresh recorded award certificates
-      </button>
+      </Button>
       <p className="muted small">
         Select a workshop and add a review reason. Refresh issues certificates
         for recorded awards and retires superseded versions; it does not change
@@ -282,13 +274,14 @@ export default function AdminCertificates() {
                   <small>{r.certificateId}</small>
                   <br />
                   {
-                    <button
+                    <Button
                       className="text-button"
                       disabled={busy || !reason.trim()}
+                      busy={!!busy}
                       onClick={() => void preview(r)}
                     >
                       Preview PDF
-                    </button>
+                    </Button>
                   }
                 </td>
               </tr>
@@ -301,13 +294,14 @@ export default function AdminCertificates() {
         history.
       </p>
       {cursor && (
-        <button
+        <Button
           className="button secondary"
           disabled={busy}
+          busy={!!busy}
           onClick={() => void load(true)}
         >
           Load more
-        </button>
+        </Button>
       )}
     </section>
   );

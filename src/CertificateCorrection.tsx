@@ -1,3 +1,6 @@
+import Field from "./ui/Field";
+import DateField from "./ui/DateField";
+import Button from "./ui/Button";
 import { useState } from "react";
 export default function CertificateCorrection({
   workshop,
@@ -20,42 +23,36 @@ export default function CertificateCorrection({
   return (
     <div className="stack">
       <h4>Correct certificate details</h4>
-      <label>
-        Verified certificate name
-        <input
-          value={name}
-          maxLength={80}
-          onChange={(e) => setName(e.target.value)}
-        />
-      </label>
-      <label>
-        Verified workshop title
-        <input
-          value={title}
-          maxLength={140}
-          onChange={(e) => setTitle(e.target.value)}
-        />
-      </label>
-      <label>
-        Verified workshop date
-        <input
-          type="date"
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
-        />
-      </label>
+      <Field
+        label="Verified certificate name"
+        value={name}
+        maxLength={80}
+        onChange={(e) => setName(e.target.value)}
+      />
+      <Field
+        label="Verified workshop title"
+        value={title}
+        maxLength={140}
+        onChange={(e) => setTitle(e.target.value)}
+      />
+      <DateField
+        label="Verified workshop date"
+        value={date}
+        onChange={(e) => setDate(e.target.value)}
+      />
       <p className="small muted">
         This creates a replacement private certificate, invalidates the previous
         copy and preserves learning points. Leave the date blank only when it is
         unknown.
       </p>
-      <button
+      <Button
         className="button secondary"
         disabled={busy || !name.trim() || !title.trim() || !reason.trim()}
+        busy={!!busy}
         onClick={() => void onSave({ name, title, date: date || null })}
       >
         Replace certificate with corrected details
-      </button>
+      </Button>
     </div>
   );
 }

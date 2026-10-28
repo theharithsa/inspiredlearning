@@ -1,3 +1,6 @@
+import Field from "./ui/Field";
+import Button from "./ui/Button";
+import Select from "./ui/Select";
 import { confirmAction } from "./ui/Confirm";
 import RequestHistory from "./RequestHistory";
 import { useState } from "react";
@@ -58,27 +61,22 @@ export default function Profile({
         >
           <h2>Profile</h2>
           <p className="small muted">Account reference: {user.uid}</p>
-          <label>
-            Display name
-            <input
-              value={name}
-              maxLength={80}
-              required
-              onChange={(e) => setName(e.target.value)}
-            />
-          </label>
-          <label>
-            Google account
-            <input value={user.email || ""} readOnly />
-          </label>
+          <Field
+            label="Display name"
+            value={name}
+            maxLength={80}
+            required
+            onChange={(e) => setName(e.target.value)}
+          />
+          <Field label="Google account" value={user.email || ""} readOnly />
           <p className="muted">
             Your verified records and issued certificates keep the name recorded
             by workshop staff. A display-name edit does not change an issued
             certificate.
           </p>
-          <button className="button" disabled={busy}>
+          <Button className="button" disabled={busy} busy={!!busy}>
             Save profile
-          </button>
+          </Button>
         </form>
         <form
           className="panel stack"
@@ -102,28 +100,29 @@ export default function Profile({
             You can also request removal of your learning records. We retain
             issued records until the request is reviewed.
           </p>
-          <label>
-            Request type
-            <select value={kind} onChange={(e) => setKind(e.target.value)}>
-              <option value="correction">Correct a record</option>
-              <option value="erasure">Remove my learning records</option>
-            </select>
-          </label>
-          <label>
-            Details
-            <textarea
-              value={reason}
-              required
-              maxLength={500}
-              onChange={(e) => setReason(e.target.value)}
-            />
-          </label>
-          <button
+          <Select
+            label="Request type"
+            value={kind}
+            onChange={(e) => setKind(e.target.value)}
+          >
+            <option value="correction">Correct a record</option>
+            <option value="erasure">Remove my learning records</option>
+          </Select>
+          <Field
+            multiline
+            label="Details"
+            value={reason}
+            required
+            maxLength={500}
+            onChange={(e) => setReason(e.target.value)}
+          />
+          <Button
             className="button secondary"
             disabled={busy || !reason.trim()}
+            busy={!!busy}
           >
             Send request
-          </button>
+          </Button>
         </form>
       </div>
       <RequestHistory uid={user.uid} />

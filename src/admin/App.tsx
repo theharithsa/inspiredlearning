@@ -1,3 +1,7 @@
+import packageJson from "../../package.json" with { type: "json" };
+import AccountMenu from "../ui/AccountMenu";
+import Loading from "../ui/Loading";
+import Button from "../ui/Button";
 import { lazy, Suspense, useEffect, useState } from "react";
 import { NavLink, Link, Routes, Route, useLocation } from "react-router-dom";
 import {
@@ -184,10 +188,14 @@ function Workspace() {
           </a>
           <Theme />
           <small>{auth.currentUser?.email}</small>
-          <button className="text-button" onClick={() => void signOut(auth)}>
+          <Button
+            aria-label="Sign out"
+            className="text-button"
+            onClick={() => void signOut(auth)}
+          >
             <Icon name="logout" />
             Sign out
-          </button>
+          </Button>
         </div>
       </aside>
       <main id="main-content" tabIndex={-1} className="workspace">
@@ -202,40 +210,32 @@ function Workspace() {
             </span>
             <small>{auth.currentUser?.displayName || "Administrator"}</small>
           </div>
-          <details className="mobile-menu">
-            <summary aria-label="Account and more options">
-              <Icon name="more" />
-            </summary>
-            <div className="mobile-menu-content">
-              <small>{auth.currentUser?.email}</small>
-              <Link to="/integrations">Integrations</Link>
-              <Link to="/delivery">Delivery health</Link>
-              <a href={learnerUrl()}>Learner portal</a>
-              <Theme />
-              <button
-                className="text-button"
-                onClick={() => void signOut(auth)}
-              >
-                Sign out
-              </button>
-            </div>
-          </details>
+          <AccountMenu
+            email={auth.currentUser?.email}
+            items={[
+              { label: "Integrations", href: "#/integrations" },
+              { label: "Delivery health", href: "#/delivery" },
+              { label: "Learner portal", href: learnerUrl() },
+            ]}
+            onSignOut={() => void signOut(auth)}
+          />
         </div>
         <div className="reauth-banner">
           <p>
             Google verification is required for sensitive changes and
             administrator PDF exports.
           </p>
-          <button
+          <Button
             className="button secondary"
             disabled={busy}
+            busy={!!busy}
             onClick={() => void verify()}
           >
             Verify with Google
-          </button>
+          </Button>
         </div>
         {message && <Message>{message}</Message>}
-        <Suspense fallback={<p role="status">Loading administrator tools…</p>}>
+        <Suspense fallback={<Loading>Loading administrator tools…</Loading>}>
           <Routes>
             <Route path="/" element={<Overview />} />
             <Route path="/workshops" element={<Staff />} />
@@ -310,7 +310,7 @@ function Workspace() {
             />
           </Routes>
         </Suspense>
-        <footer>InspiredLearning Admin · v2.0</footer>
+        <footer>InspiredLearning Admin · v{packageJson.version}</footer>
       </main>
     </div>
   );
@@ -391,7 +391,7 @@ export default function AdminApp() {
   )
     return (
       <main className="admin-login">
-        <p role="status">Checking administrator access…</p>
+        <Loading>Checking administrator access…</Loading>
       </main>
     );
   if (
@@ -419,9 +419,10 @@ export default function AdminApp() {
           </Message>
         )}
         {error && <Message error>{error}</Message>}
-        <button
+        <Button
           className="button large"
           disabled={busy}
+          busy={!!busy}
           onClick={async () => {
             setBusy(true);
             setError("");
@@ -436,11 +437,16 @@ export default function AdminApp() {
           }}
         >
           {busy ? "Opening Google…" : "Continue with Google"}
-        </button>
+        </Button>
         {user && (
-          <button className="text-button" onClick={() => void signOut(auth)}>
+          <Button
+            aria-label="Sign out"
+            className="text-button"
+            onClick={() => void signOut(auth)}
+          >
+            <Icon name="logout" />
             Sign out of this account
-          </button>
+          </Button>
         )}
         <hr className="design-divider" />
         <a href={learnerUrl()}>Looking for your learning record?</a>

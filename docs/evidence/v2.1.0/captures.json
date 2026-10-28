@@ -1,0 +1,124 @@
+{
+  "capturedAt": "2026-10-28T19:33:53.651465+00:00",
+  "sourceState": "working-tree",
+  "sourceManifestSha256": "b7182e82c1423bca6c859d1772ab523481b5836d681852c542e5e3ddcb6e51a5",
+  "captures": [
+    {
+      "file": "admin-certificates-light.png",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "mode": "light",
+      "palette": "violet",
+      "font": "Roboto",
+      "appVersion": "2.1.0",
+      "sha256": "7e05392cfb7aa282db9d331b9a0091753a3ad54646b52f6a3dfaa0172b7ef550",
+      "source": "actual Chromium emulator app"
+    },
+    {
+      "file": "admin-certificates-mobile.png",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "mode": "light",
+      "palette": "violet",
+      "font": "Roboto",
+      "appVersion": "2.1.0",
+      "sha256": "5c62bd2c85c293c5f804df0b6e7a5a1f8bb197f1833d04e4d70bfc0fae685601",
+      "source": "actual Chromium emulator app"
+    },
+    {
+      "file": "admin-overview-light.png",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "mode": "light",
+      "palette": "violet",
+      "font": "Roboto",
+      "appVersion": "2.1.0",
+      "sha256": "9c4773a301d072423d065536846466e4ad40beb2c08bf794153a70bc81a23591",
+      "source": "actual Chromium emulator app"
+    },
+    {
+      "file": "font-menu-dark.png",
+      "viewport": {
+        "width": 1440,
+        "height": 1100
+      },
+      "mode": "dark",
+      "palette": "violet",
+      "font": "Roboto",
+      "appVersion": "2.1.0",
+      "sha256": "df5d4b7ab78bca24e06293a3312ec5db6eb5535f798ec182b818f086e38f062b",
+      "source": "actual public Settings component in Chromium; no screenshot mockup"
+    },
+    {
+      "file": "learner-dark-mobile.png",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "mode": "dark",
+      "palette": "violet",
+      "font": "Roboto",
+      "appVersion": "2.1.0",
+      "sha256": "5c01c8d1e621a6a87c947249622c6d8d3a2437626553ee4b090ac7c6d5c6011c",
+      "source": "actual Chromium emulator app"
+    },
+    {
+      "file": "learner-light.png",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "mode": "light",
+      "palette": "violet",
+      "font": "Roboto",
+      "appVersion": "2.1.0",
+      "sha256": "e941c226ea2e3d8f79d6b058dd8e9c0d46771a666dcb20b903c2e5387f874f1f",
+      "source": "actual Chromium emulator app"
+    },
+    {
+      "file": "public-mobile.png",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "mode": "light",
+      "palette": "violet",
+      "font": "Roboto",
+      "appVersion": "2.1.0",
+      "sha256": "1d180aef397a3821d17e873454ca56fb450af479df145ab8f353a04afa941eb2",
+      "source": "actual Chromium emulator app"
+    },
+    {
+      "file": "settings-dark.png",
+      "viewport": {
+        "width": 1440,
+        "height": 1100
+      },
+      "mode": "dark",
+      "palette": "violet",
+      "font": "Roboto",
+      "appVersion": "2.1.0",
+      "sha256": "57c92ddf104a79193dc76a6d643bd7925063939d000214da96d3522fbed066ea",
+      "source": "actual public Settings component in Chromium; no screenshot mockup"
+    },
+    {
+      "file": "settings-light.png",
+      "viewport": {
+        "width": 1440,
+        "height": 1100
+      },
+      "mode": "light",
+      "palette": "violet",
+      "font": "Roboto",
+      "appVersion": "2.1.0",
+      "sha256": "d714d39617ec8747e045db912238de9fd1dee1f9083c5f4cccad47d47b8d2e6f",
+      "source": "actual public Settings component in Chromium; no screenshot mockup"
+    }
+  ]
+}

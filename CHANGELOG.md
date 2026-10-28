@@ -62,3 +62,10 @@ This is a source maintenance release candidate, not production release evidence.
 - **Frontend maintenance** — Public routes avoid Firebase startup, live histories are bounded with load-more, transport/PDF helpers and types are shared, staff/token views split and strict TypeScript enabled.
 - **Configuration and privacy recovery** — Safe defaults and per-function profiles preserve existing limits and fixed captain mapping; legacy privacy discovery is paged/resumable, with the complete membership-index migration still open in #17.
 - No production deployment, retention change, paid provisioning, shared rule/index change or historical score/certificate migration.
+
+## [2.1.0] - 2026-10-29 (source)
+
+- **Material 3 coverage** — replace native controls/popups with pinned Material Web adapters, official symbols and shared semantic roles across learner/admin/public screens.
+- **Appearance settings** — approved violet default, six palettes and fourteen real locally served font families with license/provenance, persistence/reset and fallback feedback.
+- **Interaction verification** — keyboard/forms, dialogs/calendar, all fonts/palettes and automated accessibility checks complement existing emulator journeys.
+- Functions 2.0.0/API 1.5.0/MCP 1.0.1, auth policies and published records are unchanged. Source version does not establish deployment.

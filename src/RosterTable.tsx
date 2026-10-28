@@ -1,3 +1,5 @@
+import Checkbox from "./ui/Checkbox";
+import Button from "./ui/Button";
 import { confirmAction } from "./ui/Confirm";
 import type { StaffWorkflowProps } from "./types";
 import { action } from "./observability";
@@ -32,7 +34,7 @@ export default function RosterTable({
           {roster.students.map((s) => (
             <tr key={s.uid}>
               <td>
-                <input
+                <Checkbox
                   type="checkbox"
                   aria-label={"Select " + s.name}
                   checked={selected.includes(s.uid)}
@@ -59,9 +61,10 @@ export default function RosterTable({
               </td>
               <td>
                 {roster.facilitator && s.resultStatus === "completed" && (
-                  <button
+                  <Button
                     className="text-button danger"
                     disabled={busy || !reason.trim()}
+                    busy={!!busy}
                     onClick={async () => {
                       if (
                         await confirmAction(
@@ -78,7 +81,7 @@ export default function RosterTable({
                     }}
                   >
                     Revoke
-                  </button>
+                  </Button>
                 )}
               </td>
             </tr>

@@ -10,7 +10,7 @@ These are concise app-specific adaptations of the installed app-launchpad workfl
 
 V2 implementation guidance:
 
-- [inspiredlearning-material3](inspiredlearning-material3/SKILL.md): semantic tokens, adaptive navigation, themes/dialogs and synthetic visual evidence.
+- [inspiredlearning-material3](inspiredlearning-material3/SKILL.md): official Material controls, approved violet palettes, fourteen local fonts, adaptive navigation, keyboard/focus and synthetic visual evidence.
 - [inspiredlearning-admin-auth](inspiredlearning-admin-auth/SKILL.md): separate entries/session persistence, bootstrap/role checks and recent authentication.
 
 These app-specific skills describe implemented source, while production provisioning/configuration and live verification remain separate gates.

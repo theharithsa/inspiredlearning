@@ -1,3 +1,5 @@
+import Button from "./ui/Button";
+import Field from "./ui/Field";
 import { confirmAction } from "./ui/Confirm";
 import { useEffect, useRef, useState } from "react";
 import { apiFetch } from "./api";
@@ -132,23 +134,22 @@ export default function TelemetryHealth() {
           <small>Observed {new Date(health.asOf).toLocaleString()}</small>
         </>
       )}
-      <button
+      <Button
         className="button secondary"
         disabled={busy}
+        busy={!!busy}
         onClick={() => void load()}
       >
         Refresh delivery health
-      </button>
+      </Button>
       {error && <Message error>{error}</Message>}
       {notice && <Message>{notice}</Message>}
-      <label>
-        Redrive review reason
-        <input
-          value={reason}
-          maxLength={500}
-          onChange={(e) => setReason(e.target.value)}
-        />
-      </label>
+      <Field
+        label="Redrive review reason"
+        value={reason}
+        maxLength={500}
+        onChange={(e) => setReason(e.target.value)}
+      />
       {rows.map((row) => (
         <article key={row.id}>
           <strong>{row.eventName || "Unnamed event"}</strong>
@@ -156,24 +157,26 @@ export default function TelemetryHealth() {
             {row.attempts} attempts ·{" "}
             {row.lastStatus ? `HTTP ${row.lastStatus}` : "No HTTP response"}
           </p>
-          <button
+          <Button
             className="button secondary"
             disabled={busy || !reason.trim()}
+            busy={!!busy}
             onClick={() => void redrive(row)}
           >
             Redrive failed event
-          </button>
+          </Button>
         </article>
       ))}
       {!busy && !rows.length && <p>No failed deliveries.</p>}
       {cursor && (
-        <button
+        <Button
           className="button secondary"
           disabled={busy}
+          busy={!!busy}
           onClick={() => void load(cursor)}
         >
           Load more failed events
-        </button>
+        </Button>
       )}
     </section>
   );

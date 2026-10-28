@@ -1,3 +1,6 @@
+import AccountMenu from "./ui/AccountMenu";
+import Loading from "./ui/Loading";
+import Button from "./ui/Button";
 import Brand from "./ui/Brand";
 import Icon, { type IconName } from "./ui/Icon";
 import Theme from "./ui/Theme";
@@ -79,9 +82,10 @@ function Landing() {
             Bring your verified participation, earned credits and certificates
             together. A lasting record of the learning you build on.
           </p>
-          <button
+          <Button
             className="button large"
             disabled={busy}
+            busy={!!busy}
             onClick={async () => {
               setBusy(true);
               setError("");
@@ -95,15 +99,20 @@ function Landing() {
             }}
           >
             {busy ? "Opening Google…" : "Continue with Google →"}
-          </button>
+          </Button>
           <p className="small muted">
             Use the Google account linked to your learning records.{" "}
             <Link to="/privacy">How we use your data</Link>
           </p>
           {auth.currentUser && (
-            <button className="text-button" onClick={() => void signOut(auth)}>
+            <Button
+              aria-label="Sign out"
+              className="text-button"
+              onClick={() => void signOut(auth)}
+            >
+              <Icon name="logout" />
               Sign out of this account
-            </button>
+            </Button>
           )}
           {error && <Message error>{error}</Message>}
         </section>
@@ -282,15 +291,17 @@ function LearnerLayout({ user }: { user: User }) {
           )}
           <Theme />
           <small>{user.email}</small>
-          <button
+          <Button
+            aria-label="Sign out"
             className="text-button"
             onClick={() => {
               interaction("auth.signed-out");
               void signOut(auth);
             }}
           >
+            <Icon name="logout" />
             Sign out
-          </button>
+          </Button>
         </div>
       </aside>
       <main id="main-content" tabIndex={-1} className="workspace">
@@ -307,24 +318,17 @@ function LearnerLayout({ user }: { user: User }) {
             </span>
             <small>{profile?.name || user.displayName || "Learner"}</small>
           </div>
-          <details className="mobile-menu">
-            <summary aria-label="Account and more options">
-              <Icon name="more" />
-            </summary>
-            <div className="mobile-menu-content">
-              <small>{user.email}</small>
-              <Link to="/staff">Workshop staff</Link>
-              <Link to="/privacy">Privacy</Link>
-              {administrator && <a href={adminUrl()}>Administrator portal</a>}
-              <Theme />
-              <button
-                className="text-button"
-                onClick={() => void signOut(auth)}
-              >
-                Sign out
-              </button>
-            </div>
-          </details>
+          <AccountMenu
+            email={user.email}
+            items={[
+              { label: "Workshop staff", href: "#/staff" },
+              { label: "Privacy", href: "#/privacy" },
+              ...(administrator
+                ? [{ label: "Administrator portal", href: adminUrl() }]
+                : []),
+            ]}
+            onSignOut={() => void signOut(auth)}
+          />
         </div>
         {error && <Message error>{error}</Message>}
         {hasMore && (
@@ -334,9 +338,9 @@ function LearnerLayout({ user }: { user: User }) {
               below cover loaded records; the Inspi credit total comes from the
               complete server calculation.
             </p>
-            <button className="button secondary" onClick={loadMore}>
+            <Button className="button secondary" onClick={loadMore}>
               Load more workshop records
-            </button>
+            </Button>
           </div>
         )}
         <Routes>
@@ -360,7 +364,7 @@ function LearnerLayout({ user }: { user: User }) {
             path="/profile"
             element={
               profile === undefined ? (
-                <p role="status">Loading your profile…</p>
+                <Loading>Loading your profile…</Loading>
               ) : (
                 <Profile key={user.uid} user={user} profile={profile} />
               )
@@ -370,7 +374,7 @@ function LearnerLayout({ user }: { user: User }) {
             path="/staff"
             element={
               administrator === null ? (
-                <p role="status">Checking staff access…</p>
+                <Loading>Checking staff access…</Loading>
               ) : administrator ? (
                 <div className="panel stack">
                   <h1>Administrator portal</h1>
@@ -391,7 +395,7 @@ function LearnerLayout({ user }: { user: User }) {
             path="/admin"
             element={
               administrator === null ? (
-                <p role="status">Checking administrator access…</p>
+                <Loading>Checking administrator access…</Loading>
               ) : administrator ? (
                 <div className="panel stack">
                   <h1>Administrator portal</h1>
@@ -450,7 +454,7 @@ function Application() {
           element={
             user === undefined ? (
               <main id="main-content" tabIndex={-1} className="public-page">
-                <p role="status">Connecting to your account…</p>
+                <Loading>Connecting to your account…</Loading>
               </main>
             ) : user && googleUser(user) ? (
               <LearnerLayout key={user.uid} user={user} />
@@ -464,7 +468,10 @@ function Application() {
                       tabIndex={-1}
                       className="public-page"
                     >
-                      <Brand />
+                      <header className="public-header">
+                        <Brand />
+                        <Theme />
+                      </header>
                       <Community />
                     </main>
                   }
@@ -483,7 +490,7 @@ export default function App() {
     <Suspense
       fallback={
         <main id="main-content" tabIndex={-1} className="public-page">
-          <p role="status">Loading your page…</p>
+          <Loading>Loading your page…</Loading>
         </main>
       }
     >

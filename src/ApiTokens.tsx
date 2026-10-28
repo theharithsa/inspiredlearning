@@ -1,3 +1,6 @@
+import Button from "./ui/Button";
+import Field from "./ui/Field";
+import Select from "./ui/Select";
 import { confirmAction } from "./ui/Confirm";
 import ApiTokenList from "./ApiTokenList";
 import TokenPermissions from "./TokenPermissions";
@@ -150,7 +153,7 @@ export default function ApiTokens() {
             or leave this page.
           </p>
           <div className="staff-actions">
-            <button
+            <Button
               className="button"
               onClick={async () => {
                 try {
@@ -168,8 +171,8 @@ export default function ApiTokens() {
               }}
             >
               Copy new token
-            </button>
-            <button
+            </Button>
+            <Button
               className="button secondary"
               onClick={async () => {
                 setSecret(null);
@@ -177,7 +180,7 @@ export default function ApiTokens() {
               }}
             >
               I saved it — dismiss
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -188,17 +191,15 @@ export default function ApiTokens() {
           void create();
         }}
       >
-        <label>
-          Token name
-          <input
-            value={name}
-            disabled={busy || !!secret}
-            maxLength={80}
-            required
-            placeholder="Local MCP investigation"
-            onChange={(e) => setName(e.target.value)}
-          />
-        </label>
+        <Field
+          label="Token name"
+          value={name}
+          disabled={busy || !!secret}
+          maxLength={80}
+          required
+          placeholder="Local MCP investigation"
+          onChange={(e) => setName(e.target.value)}
+        />
         <TokenPermissions
           permissions={permissions}
           scopes={scopes}
@@ -210,38 +211,34 @@ export default function ApiTokens() {
           }
         />
         <div className="inline-form">
-          <label>
-            Expires after
-            <select
-              disabled={busy || !!secret}
-              value={days}
-              onChange={(e) => setDays(Number(e.target.value))}
-            >
-              <option value={1}>1 day</option>
-              <option value={7}>7 days</option>
-              <option value={30}>30 days</option>
-            </select>
-          </label>
-          <label>
-            Learner IDs (optional)
-            <textarea
-              value={studentIds}
-              disabled={busy || !!secret}
-              maxLength={6500}
-              placeholder="Leave empty for learners your role permits"
-              onChange={(e) => setStudentIds(e.target.value)}
-            />
-          </label>
-          <label>
-            Workshop IDs (optional)
-            <textarea
-              value={workshopIds}
-              disabled={busy || !!secret}
-              maxLength={850}
-              placeholder="Leave empty for workshops your role permits"
-              onChange={(e) => setWorkshopIds(e.target.value.toUpperCase())}
-            />
-          </label>
+          <Select
+            label="Expires after"
+            disabled={busy || !!secret}
+            value={days}
+            onChange={(e) => setDays(Number(e.target.value))}
+          >
+            <option value={1}>1 day</option>
+            <option value={7}>7 days</option>
+            <option value={30}>30 days</option>
+          </Select>
+          <Field
+            multiline
+            label="Learner IDs (optional)"
+            value={studentIds}
+            disabled={busy || !!secret}
+            maxLength={6500}
+            placeholder="Leave empty for learners your role permits"
+            onChange={(e) => setStudentIds(e.target.value)}
+          />
+          <Field
+            multiline
+            label="Workshop IDs (optional)"
+            value={workshopIds}
+            disabled={busy || !!secret}
+            maxLength={850}
+            placeholder="Leave empty for workshops your role permits"
+            onChange={(e) => setWorkshopIds(e.target.value.toUpperCase())}
+          />
         </div>
         <p className="small muted">
           Separate IDs with commas or spaces. Workshop IDs limit workshop
@@ -249,17 +246,18 @@ export default function ApiTokens() {
           selecting an explicit write permission. Tokens cannot manage other
           tokens. Creating one opens Google to confirm your identity.
         </p>
-        <button
+        <Button
           className="button"
           disabled={busy || !!secret || !name.trim() || !scopes.length}
+          busy={!!busy}
         >
           {busy ? "Working…" : "Confirm Google sign-in and create token"}
-        </button>
+        </Button>
       </form>
       <ApiTokenList
         tokens={tokens}
         permissions={permissions}
-        busy={busy}
+        busy={!!busy}
         revoke={revoke}
         cursor={cursor}
         load={async (cursor) => {

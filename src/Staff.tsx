@@ -1,3 +1,5 @@
+import Field from "./ui/Field";
+import Button from "./ui/Button";
 import AttendancePanel from "./AttendancePanel";
 import RosterTable from "./RosterTable";
 import { useEffect, useRef, useState } from "react";
@@ -88,18 +90,16 @@ export default function Staff() {
           void load();
         }}
       >
-        <label>
-          Session code
-          <input
-            value={sid}
-            maxLength={16}
-            onChange={(e) => setSid(e.target.value.toUpperCase())}
-            required
-          />
-        </label>
-        <button className="button" disabled={busy}>
+        <Field
+          label="Session code"
+          value={sid}
+          maxLength={16}
+          onChange={(e) => setSid(e.target.value.toUpperCase())}
+          required
+        />
+        <Button className="button" disabled={busy} busy={!!busy}>
           Load workshop
-        </button>
+        </Button>
       </form>
       {error && <Message error>{error}</Message>}
       {message && <Message>{message}</Message>}
@@ -124,7 +124,7 @@ export default function Staff() {
             setSelected={setSelected}
             reason={reason}
             setReason={setReason}
-            busy={busy}
+            busy={!!busy}
             run={run}
           />
           <RosterTable
@@ -132,7 +132,7 @@ export default function Staff() {
             selected={selected}
             setSelected={setSelected}
             reason={reason}
-            busy={busy}
+            busy={!!busy}
             run={run}
           />
         </>

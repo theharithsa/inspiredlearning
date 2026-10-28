@@ -1,3 +1,4 @@
+import Button from "./Button";
 /* eslint-disable react/only-export-components -- The dialog service and its host share the event contract. */
 import { useEffect, useId, useRef, useState } from "react";
 interface Request {
@@ -60,8 +61,16 @@ export default function ConfirmHost() {
     };
   }, []);
   useEffect(() => {
-    if (request && dialog.current && !dialog.current.open)
-      dialog.current.showModal();
+    if (request && dialog.current && !dialog.current.open) {
+      const el = dialog.current;
+      el.showModal();
+      const cancel = el.querySelector<
+        HTMLElement & { updateComplete?: Promise<unknown> }
+      >("[data-confirm-cancel]");
+      void Promise.resolve(cancel?.updateComplete).then(() => {
+        if (el.open) cancel?.focus();
+      });
+    }
   }, [request]);
   return request ? (
     <dialog
@@ -73,7 +82,7 @@ export default function ConfirmHost() {
         if (e.key !== "Tab") return;
         const items = Array.from(
           e.currentTarget.querySelectorAll<HTMLElement>(
-            'button:not(:disabled),a[href],input:not(:disabled),select:not(:disabled),textarea:not(:disabled),[tabindex="0"]',
+            'md-text-button:not([disabled]),md-filled-button:not([disabled]),button:not(:disabled),a[href],input:not(:disabled),[tabindex="0"]',
           ),
         ).filter((node) => node.getClientRects().length);
         const first = items[0],
@@ -94,12 +103,17 @@ export default function ConfirmHost() {
       <h2 id={title}>Confirm this change</h2>
       <p id={description}>{request.message}</p>
       <div className="dialog-actions">
-        <button className="text-button" autoFocus onClick={() => finish(false)}>
+        <Button
+          className="text-button"
+          data-confirm-cancel
+          autoFocus
+          onClick={() => finish(false)}
+        >
           Cancel
-        </button>
-        <button className="button" data-confirm onClick={() => finish(true)}>
+        </Button>
+        <Button className="button" data-confirm onClick={() => finish(true)}>
           Continue
-        </button>
+        </Button>
       </div>
     </dialog>
   ) : null;

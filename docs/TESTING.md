@@ -31,3 +31,8 @@ Run npm run lint, npm test, npm run build; sequential emulator suites npm run te
 The browser suite covers separate admin bootstrap/session/learner isolation, denied/revoked access, account-change cancellation, responsive light/dark layouts, contrast, dialog keyboard behavior and existing publication/certificate/privacy/token/delivery journeys. Synthetic screenshots are generated under test-results/v2-design. This Chromium rehearsal does not prove physical Safari, real Google popup behavior, production DNS/TLS or Dynatrace tenant visibility.
 
 Set TEST_REPORT_DIR=ci-results/structured for bounded structured Node/Playwright summaries. Keep this directory outside Playwright test-results, which is cleared when browser tests start. Missing/partial reports never count as success. GitHub artifacts are evidence only; privileged workflow observers do not execute or ingest PR artifacts.
+
+
+## Material 3 controls and appearance
+
+`npm test` includes strict preference validation, all bundled font hashes/licenses, six-palette text/outline contrast, date-only validation and a guard against raw native controls in app screens. `test/browser/material.spec.mjs` uses the actual Material adapters and DEV/emulator-only control fixture, plus public-page Settings. It checks keyboard submission, constraints, read-only/disabled controls, real dropdown selection, date selection/focus, fourteen loaded fonts, persistence/reset, font failure, every palette/mode, viewport bounds and axe WCAG rules. Existing domain journeys run through the new controls against emulators. No local preview auto-login helper is part of production source. See MATERIAL3-2.1-VERIFICATION.md for actual results and limits.

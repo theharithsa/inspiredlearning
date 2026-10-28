@@ -1,3 +1,4 @@
+import { choose } from "./material-helpers.mjs";
 import { acceptConfirmations } from "./confirm-helpers.mjs";
 import { test, expect } from "@playwright/test";
 import { createRequire } from "node:module";
@@ -541,14 +542,14 @@ test("student sees administrator decline and reopened correction request status"
   await a.page.getByRole("button", { name: "Decline request" }).click();
   await expect(a.page.getByText("No pending requests.")).toBeVisible();
   await a.page
-    .getByRole("button", { name: "Request history", exact: true })
+    .getByRole("tab", { name: "Request history", exact: true })
     .click();
   const row = a.page
     .locator("article")
     .filter({ hasText: "Please review my display name again." });
   await row.getByRole("button", { name: "Reopen request" }).click();
   await a.page
-    .getByRole("button", { name: "Pending requests", exact: true })
+    .getByRole("tab", { name: "Pending requests", exact: true })
     .click();
   await expect(
     a.page.getByText("Please review my display name again.", { exact: true }),
@@ -599,7 +600,7 @@ test("approved student removal deletes learning records and certificates while r
     .doc(`sessions/RETAIN01/students/${learnerUid}`)
     .set({ name: "Retained Learner", teamId: "mumbai-1a", role: "COO" });
   const s = await actor(browser, "learner@example.invalid", "/profile");
-  await s.page.getByLabel("Request type").selectOption("erasure");
+  await choose(s.page, "Request type", "erasure");
   await s.page
     .getByLabel("Details", { exact: true })
     .fill("Please remove only my InspiredLearning history.");
@@ -671,8 +672,9 @@ test("erased certificate is unavailable; explicit reactivation does not restore 
   const denied = await s.page.evaluate(
     (id) =>
       import("/src/firebase.ts").then(async (m) => {
-        const { httpsCallable } =
-          await import("/node_modules/.vite/deps/firebase_functions.js");
+        const { httpsCallable } = await import(
+          "/node_modules/.vite/deps/firebase_functions.js"
+        );
         try {
           await httpsCallable(m.functions, "learningCertificate")({ id });
           return "allowed";

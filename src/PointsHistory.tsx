@@ -1,3 +1,5 @@
+import Loading from "./ui/Loading";
+import Button from "./ui/Button";
 import { useRows } from "./hooks";
 import { Link } from "react-router-dom";
 import type { Workshop } from "./types";
@@ -27,7 +29,7 @@ export default function PointsHistory({
       {error ? (
         <p role="alert">{error}</p>
       ) : rows === undefined ? (
-        <p role="status">Loading credit history…</p>
+        <Loading>Loading credit history…</Loading>
       ) : rows.length ? (
         rows
           .slice()
@@ -55,9 +57,9 @@ export default function PointsHistory({
         <p className="muted">No credit adjustments recorded yet.</p>
       )}
       {hasMore && (
-        <button className="button secondary" onClick={loadMore}>
+        <Button className="button secondary" onClick={loadMore}>
           Load more records
-        </button>
+        </Button>
       )}
     </section>
   );

@@ -1,3 +1,4 @@
+import { choose, setColorMode } from "./material-helpers.mjs";
 import { test, expect } from "@playwright/test";
 import { createRequire } from "node:module";
 import fs from "node:fs";
@@ -128,12 +129,7 @@ test("Material themes, compact navigation and actual surfaces remain usable acro
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.screenshot({ path: dir + "/learner-light.png", fullPage: false });
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.getByLabel("Account and more options").click();
-  await page
-    .getByLabel("Appearance")
-    .filter({ visible: true })
-    .selectOption("dark");
-  await page.getByLabel("Account and more options").click();
+  await setColorMode(page, "dark");
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   await noOverflow(page);
   await page.screenshot({
@@ -154,10 +150,7 @@ test("Material themes, compact navigation and actual surfaces remain usable acro
     await noOverflow(page);
   }
   await page.setViewportSize({ width: 1440, height: 1000 });
-  await page
-    .getByLabel("Appearance")
-    .filter({ visible: true })
-    .selectOption("light");
+  await setColorMode(page, "light");
   await page.evaluate(() => document.fonts.ready);
   await expect(page.locator(".app-shell")).toHaveCount(1);
   await expect(page.locator("html")).not.toHaveClass(/theme-changing/);
@@ -196,7 +189,7 @@ test("Material confirmation supports Escape, traps focus and restores its opener
   page,
 }) => {
   await login(page, "v2-dialog@example.invalid", false, "/profile");
-  await page.getByLabel("Request type").selectOption("erasure");
+  await choose(page, "Request type", "erasure");
   await page
     .getByLabel("Details", { exact: true })
     .fill("Synthetic cancellation check");
@@ -220,7 +213,7 @@ test("text and button color pairs meet normal-text contrast in both themes", asy
 }) => {
   await page.goto("/#/privacy");
   for (const theme of ["light", "dark"]) {
-    await page.getByLabel("Appearance").selectOption(theme);
+    await setColorMode(page, theme);
     const ratios = await page.evaluate(() => {
       const style = getComputedStyle(document.documentElement);
       const luminance = (hex) => {
@@ -261,7 +254,7 @@ test("changing accounts cancels an unconfirmed learner request", async ({
     false,
     "/profile",
   );
-  await page.getByLabel("Request type").selectOption("erasure");
+  await choose(page, "Request type", "erasure");
   await page
     .getByLabel("Details", { exact: true })
     .fill("Synthetic account-switch cancellation");

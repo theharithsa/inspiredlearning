@@ -1,0 +1,244 @@
+[
+  {
+    "id": "roboto",
+    "family": "Roboto",
+    "category": "Sans serif",
+    "cssSource": "https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap",
+    "licenseSource": "https://raw.githubusercontent.com/google/fonts/main/ofl/roboto/OFL.txt",
+    "license": "roboto-OFL.txt",
+    "assets": [
+      {
+        "file": "roboto-400.woff2",
+        "source": "https://fonts.gstatic.com/s/roboto/v51/KFO7CnqEu92Fr1ME7kSn66aGLdTylUAMa3yUBHMdazQ.woff2",
+        "sha256": "0a44e0bb6ba5c8537e8814c148ef7755f1bce12112361231f595ecc584a18d7a",
+        "bytes": 37520
+      }
+    ]
+  },
+  {
+    "id": "google-sans",
+    "family": "Google Sans",
+    "category": "Sans serif",
+    "cssSource": "https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&display=swap",
+    "licenseSource": "https://raw.githubusercontent.com/google/fonts/main/ofl/googlesans/OFL.txt",
+    "license": "google-sans-OFL.txt",
+    "assets": [
+      {
+        "file": "google-sans-400.woff2",
+        "source": "https://fonts.gstatic.com/s/googlesans/v71/4UasrENHsxJlGDuGo1OIlJfC6l_24rlCK1Yo_Iqcsih3SAyH6cAwhX9RPjIUvbQoi-E.woff2",
+        "sha256": "0feef32352366fe225c73de9d355e8922f18cb5eb48e445c71e97388e4f71d98",
+        "bytes": 35852
+      }
+    ]
+  },
+  {
+    "id": "lato",
+    "family": "Lato",
+    "category": "Sans serif",
+    "cssSource": "https://fonts.googleapis.com/css2?family=Lato:wght@400;500;700&display=swap",
+    "licenseSource": "https://raw.githubusercontent.com/google/fonts/main/ofl/lato/OFL.txt",
+    "license": "lato-OFL.txt",
+    "assets": [
+      {
+        "file": "lato-400.woff2",
+        "source": "https://fonts.gstatic.com/s/lato/v25/S6uyw4BMUTPHjx4wXiWtFCc.woff2",
+        "sha256": "d4ae5188a65370ecfe28f42293bbee8297cfd5712c6aadfdb270d48f2bcd88b0",
+        "bytes": 13980
+      },
+      {
+        "file": "lato-700.woff2",
+        "source": "https://fonts.gstatic.com/s/lato/v25/S6u9w4BMUTPHh6UVSwiPGQ3q5d0.woff2",
+        "sha256": "7a7ce1a34f3e9944fe88fc61abbc93b6db383afa2b90815fd7ccea456fbce4e5",
+        "bytes": 14168
+      }
+    ]
+  },
+  {
+    "id": "inter",
+    "family": "Inter",
+    "category": "Sans serif",
+    "cssSource": "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap",
+    "licenseSource": "https://raw.githubusercontent.com/google/fonts/main/ofl/inter/OFL.txt",
+    "license": "inter-OFL.txt",
+    "assets": [
+      {
+        "file": "inter-400.woff2",
+        "source": "https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7W0Q5nw.woff2",
+        "sha256": "c940764593d0fe5d596be327ca7558855e018039fb78509aa21921fd3644c3e4",
+        "bytes": 48432
+      }
+    ]
+  },
+  {
+    "id": "open-sans",
+    "family": "Open Sans",
+    "category": "Sans serif",
+    "cssSource": "https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;700&display=swap",
+    "licenseSource": "https://raw.githubusercontent.com/google/fonts/main/ofl/opensans/OFL.txt",
+    "license": "open-sans-OFL.txt",
+    "assets": [
+      {
+        "file": "open-sans-400.woff2",
+        "source": "https://fonts.gstatic.com/s/opensans/v44/memvYaGs126MiZpBA-UvWbX2vVnXBbObj2OVTS-mu0SC55I.woff2",
+        "sha256": "441af0def989ebfdbd6ad85ffaed85e967ab21a05f1dd342f16259464a206dd0",
+        "bytes": 42964
+      }
+    ]
+  },
+  {
+    "id": "source-sans-3",
+    "family": "Source Sans 3",
+    "category": "Sans serif",
+    "cssSource": "https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;700&display=swap",
+    "licenseSource": "https://raw.githubusercontent.com/google/fonts/main/ofl/sourcesans3/OFL.txt",
+    "license": "source-sans-3-OFL.txt",
+    "assets": [
+      {
+        "file": "source-sans-3-400.woff2",
+        "source": "https://fonts.gstatic.com/s/sourcesans3/v20/nwpStKy2OAdR1K-IwhWudF-R3w8aZejf5Hc.woff2",
+        "sha256": "587435ca9d90732b8c1ce4958222c6ad3ade2b875500188e1d318efbcb61f4c5",
+        "bytes": 28804
+      }
+    ]
+  },
+  {
+    "id": "noto-sans",
+    "family": "Noto Sans",
+    "category": "Sans serif",
+    "cssSource": "https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;700&display=swap",
+    "licenseSource": "https://raw.githubusercontent.com/google/fonts/main/ofl/notosans/OFL.txt",
+    "license": "noto-sans-OFL.txt",
+    "assets": [
+      {
+        "file": "noto-sans-400.woff2",
+        "source": "https://fonts.gstatic.com/s/notosans/v42/o-0bIpQlx3QUlC5A4PNB6Ryti20_6n1iPHjc5a7du3mhPy0.woff2",
+        "sha256": "afc7a910f4ff04ee2ff7b3a2ef8b24f8340b8ea8d8125f2779f1f0b69d1b56b9",
+        "bytes": 35856
+      }
+    ]
+  },
+  {
+    "id": "merriweather",
+    "family": "Merriweather",
+    "category": "Serif",
+    "cssSource": "https://fonts.googleapis.com/css2?family=Merriweather:wght@400;500;700&display=swap",
+    "licenseSource": "https://raw.githubusercontent.com/google/fonts/main/ofl/merriweather/OFL.txt",
+    "license": "merriweather-OFL.txt",
+    "assets": [
+      {
+        "file": "merriweather-400.woff2",
+        "source": "https://fonts.gstatic.com/s/merriweather/v33/u-4e0qyriQwlOrhSvowK_l5UcA6zuSYEqOzpPe3HOZJ5eX1WtLaQwmYiSeqqJ-mXq1Gi.woff2",
+        "sha256": "af1be39e2ff60ede976bc3a93b9aceb3ac7103207b21a62d1971e3ea8cf95b97",
+        "bytes": 97608
+      }
+    ]
+  },
+  {
+    "id": "source-serif-4",
+    "family": "Source Serif 4",
+    "category": "Serif",
+    "cssSource": "https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@400;500;700&display=swap",
+    "licenseSource": "https://raw.githubusercontent.com/google/fonts/main/ofl/sourceserif4/OFL.txt",
+    "license": "source-serif-4-OFL.txt",
+    "assets": [
+      {
+        "file": "source-serif-4-400.woff2",
+        "source": "https://fonts.gstatic.com/s/sourceserif4/v15/vEFF2_tTDB4M7-auWDN0ahZJW3IX2ih5nk3AucvUHf6kDXr4Y3qwzQ.woff2",
+        "sha256": "8e38e3fbd74dea20aabe0831ffef04c9f30bf6fc5b99b7a2649be0dd8c6d859c",
+        "bytes": 50952
+      }
+    ]
+  },
+  {
+    "id": "lora",
+    "family": "Lora",
+    "category": "Serif",
+    "cssSource": "https://fonts.googleapis.com/css2?family=Lora:wght@400;500;700&display=swap",
+    "licenseSource": "https://raw.githubusercontent.com/google/fonts/main/ofl/lora/OFL.txt",
+    "license": "lora-OFL.txt",
+    "assets": [
+      {
+        "file": "lora-400.woff2",
+        "source": "https://fonts.gstatic.com/s/lora/v37/0QIvMX1D_JOuMwr7I_FMl_E.woff2",
+        "sha256": "6b102ab35aa1f2b315788bb4853434ed1e52137603bf7a3da71a682276748d45",
+        "bytes": 37792
+      }
+    ]
+  },
+  {
+    "id": "roboto-mono",
+    "family": "Roboto Mono",
+    "category": "Monospace",
+    "cssSource": "https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;700&display=swap",
+    "licenseSource": "https://raw.githubusercontent.com/google/fonts/main/ofl/robotomono/OFL.txt",
+    "license": "roboto-mono-OFL.txt",
+    "assets": [
+      {
+        "file": "roboto-mono-400.woff2",
+        "source": "https://fonts.gstatic.com/s/robotomono/v31/L0x5DF4xlVMF-BfR8bXMIjhLq3-cXbKD.woff2",
+        "sha256": "2ed6ac9efae6d21f51b2946176a0eef79a4043d643f9ac976e66d7fc4d57803a",
+        "bytes": 32752
+      }
+    ]
+  },
+  {
+    "id": "ibm-plex-mono",
+    "family": "IBM Plex Mono",
+    "category": "Monospace",
+    "cssSource": "https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;700&display=swap",
+    "licenseSource": "https://raw.githubusercontent.com/google/fonts/main/ofl/ibmplexmono/OFL.txt",
+    "license": "ibm-plex-mono-OFL.txt",
+    "assets": [
+      {
+        "file": "ibm-plex-mono-400.woff2",
+        "source": "https://fonts.gstatic.com/s/ibmplexmono/v20/-F63fjptAgt5VM-kVkqdyU8n1i8q131nj-o.woff2",
+        "sha256": "c36f509c0a8f9f85f29cb44bc8701d8a9e0b14c499e77a884f789ead7093a7ac",
+        "bytes": 10052
+      },
+      {
+        "file": "ibm-plex-mono-500.woff2",
+        "source": "https://fonts.gstatic.com/s/ibmplexmono/v20/-F6qfjptAgt5VM-kVkqdyU8n3twJwlBFgsAXHNk.woff2",
+        "sha256": "a76f53ca6612e7b3828eec2311098675b7f9849ae4169a8bcef6302aec02a6c0",
+        "bytes": 10060
+      },
+      {
+        "file": "ibm-plex-mono-700.woff2",
+        "source": "https://fonts.gstatic.com/s/ibmplexmono/v20/-F6qfjptAgt5VM-kVkqdyU8n3pQPwlBFgsAXHNk.woff2",
+        "sha256": "9e1455e6e9c5866f607e464fffb7855486dcf575b7e69b83a3d234e587fce41b",
+        "bytes": 10128
+      }
+    ]
+  },
+  {
+    "id": "jetbrains-mono",
+    "family": "JetBrains Mono",
+    "category": "Monospace",
+    "cssSource": "https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap",
+    "licenseSource": "https://raw.githubusercontent.com/google/fonts/main/ofl/jetbrainsmono/OFL.txt",
+    "license": "jetbrains-mono-OFL.txt",
+    "assets": [
+      {
+        "file": "jetbrains-mono-400.woff2",
+        "source": "https://fonts.gstatic.com/s/jetbrainsmono/v24/tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxDcwgknk-4.woff2",
+        "sha256": "2c32b9b3ee358c119e210f6f5195f9bd34894d78a785ff2e95d60e718e400af4",
+        "bytes": 31340
+      }
+    ]
+  },
+  {
+    "id": "google-sans-code",
+    "family": "Google Sans Code",
+    "category": "Monospace",
+    "cssSource": "https://fonts.googleapis.com/css2?family=Google+Sans+Code:wght@400;500;700&display=swap",
+    "licenseSource": "https://raw.githubusercontent.com/google/fonts/main/ofl/googlesanscode/OFL.txt",
+    "license": "google-sans-code-OFL.txt",
+    "assets": [
+      {
+        "file": "google-sans-code-400.woff2",
+        "source": "https://fonts.gstatic.com/s/googlesanscode/v22/pxiSyogzv91QhV44Z_GQBHsGf5PuckJMZfIVTPZaiXEp_jF58LS-gXBy.woff2",
+        "sha256": "98eee6fe6dc8f6341f80caf9c7e72a5241dd78188d403a12bc6aeb23a3e8c1a3",
+        "bytes": 34948
+      }
+    ]
+  }
+]

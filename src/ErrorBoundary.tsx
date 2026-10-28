@@ -1,3 +1,4 @@
+import Button from "./ui/Button";
 import { Component, type ReactNode } from "react";
 export default class ErrorBoundary extends Component<
   { children: ReactNode },
@@ -23,9 +24,9 @@ export default class ErrorBoundary extends Component<
             Check your connection, then reload. If another InspiredLearning tab
             is open, close it before trying again.
           </p>
-          <button className="button" onClick={() => window.location.reload()}>
+          <Button className="button" onClick={() => window.location.reload()}>
             Reload page
-          </button>
+          </Button>
         </main>
       );
     return this.props.children;

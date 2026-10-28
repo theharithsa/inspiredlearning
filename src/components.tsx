@@ -1,3 +1,4 @@
+import Icon from "./ui/Icon";
 import { workshopCredits } from "./credits";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
@@ -15,7 +16,8 @@ export function Message({
       role={error ? "alert" : "status"}
       className={"notice" + (error ? " error" : "")}
     >
-      {children}
+      <Icon name={error ? "error" : "info"} />
+      <span>{children}</span>
     </p>
   );
 }

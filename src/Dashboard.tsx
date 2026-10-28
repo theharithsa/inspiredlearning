@@ -1,3 +1,4 @@
+import Loading from "./ui/Loading";
 import { apiFetch } from "./api";
 import { useEffect, useState } from "react";
 import { auth } from "./firebase";
@@ -103,7 +104,7 @@ export default function Dashboard({
         </span>
       </div>
       {workshops === undefined ? (
-        <p role="status">Loading your learning history…</p>
+        <Loading>Loading your learning history…</Loading>
       ) : workshops.length ? (
         <div className="cards">
           {workshops.map((w) => (
