@@ -1,0 +1,49 @@
+{
+  "version": "2.1.3",
+  "functionsVersion": "2.0.1",
+  "apiContract": "1.5.0",
+  "revision": "42b2efb5b6a85f1bef8926022b2aaaa5c07e71d4",
+  "ciRun": 40909430445,
+  "ciTestedMerge": "7638759c96e11861c62fd5ff5de6aa2502774dfa",
+  "hosting": {
+    "learner": {
+      "version": "74c1fc945f26b967",
+      "releasedAt": "2026-10-29T16:32:08.791Z"
+    },
+    "admin": {
+      "version": "09fb3f38660686a8",
+      "releasedAt": "2026-10-29T16:31:14.031Z"
+    }
+  },
+  "publishedRecords": {
+    "checkedAt": "2026-10-29T16:33:45.269Z",
+    "certificates": {
+      "count": 196,
+      "counts": {
+        "award:issued": 38,
+        "participation:issued": 119,
+        "team:revoked": 15,
+        "region:revoked": 20,
+        "participation:revoked": 3,
+        "award:revoked": 1
+      },
+      "sha256": "30ddc28eb8e39403b658ce5500a1d3665148560b1ce6981389081672fd364b0a"
+    },
+    "workshopRecords": {
+      "count": 119,
+      "sha256": "42cae599333335f8ad8b47c3850fba857c7df54052339f7d461577c2d2773e22"
+    }
+  },
+  "projectionsMatch": true,
+  "sharedAuthenticatedLimits": true,
+  "publicKeysDistributed": false,
+  "alerts": "deferred",
+  "membershipMigration": "held",
+  "nativeRumTraceNavigation": "not-verified",
+  "ciObserver": "unbound-disabled",
+  "screenshots": {
+    "live-settings.png": "Deployed public Settings, no learner records",
+    "live-admin-sign-in.png": "Deployed signed-out administrator entry",
+    "demo-learner-profile.png": "Synthetic CI fixture; authenticated layout, not a real learner"
+  }
+}
