@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.4] - source candidate
+
+- Align sidebar Settings and Sign out as Material list actions with the same icon/label inset as adjacent links in learner and admin apps.
+- Move the account control to the header’s right edge; open account options directly from the avatar and remove the separate three-dot trigger.
+- Display the signed-in Google/Firebase profile photo with an initials fallback for missing or failed images. Keep identity details in the account menu and preserve compact-screen access.
+- Verify avatar-menu keyboard/focus, narrow-screen geometry, image failure, Settings and sign-out flows with synthetic emulator accounts (#72). Production remains 2.1.3 until a separately approved release; Functions 2.0.1 / API 1.5.0 / MCP 1.0.1 are unchanged.
+
 ## [2.1.3] - 2026-10-29
 
 Deployed to [inspi.in](https://inspi.in) and [admin.inspi.in](https://admin.inspi.in). App 2.1.3 / Functions 2.0.1 / API 1.5.0 / MCP 1.0.1.

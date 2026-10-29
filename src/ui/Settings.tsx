@@ -1,6 +1,7 @@
 /* eslint-disable react/only-export-components -- Global settings service and host share a local-only event. */
 import { useEffect, useState } from "react";
 import Button from "./Button";
+import SidebarAction from "./SidebarAction";
 import Select from "./Select";
 import Radio from "./Radio";
 import Icon from "./Icon";
@@ -18,7 +19,13 @@ const event = "inspiredlearning:open-settings";
 export function openSettings() {
   window.dispatchEvent(new Event(event));
 }
-export function SettingsButton() {
+export function SettingsButton({ navigation = false }: { navigation?: boolean }) {
+  if (navigation)
+    return (
+      <SidebarAction icon="settings" label="Settings" dialog onClick={openSettings}>
+        Settings
+      </SidebarAction>
+    );
   return (
     <Button
       type="button"

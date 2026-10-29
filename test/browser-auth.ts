@@ -4,6 +4,7 @@ import {
   signInWithCredential,
   signInAnonymously,
   signOut,
+  updateProfile,
 } from "firebase/auth";
 import { auth, authReady } from "../src/firebase";
 if (
@@ -12,7 +13,7 @@ if (
   auth.app.options.projectId !== "demo-chaicart"
 )
   throw new Error("Browser rehearsal requires local Firebase emulators.");
-export async function login(email: string) {
+export async function login(email: string, photoURL?: string) {
   await authReady;
   const claims = {
     iss: "https://accounts.google.com",
@@ -21,6 +22,7 @@ export async function login(email: string) {
     email,
     email_verified: true,
     name: email.split("@")[0],
+    ...(photoURL ? { picture: photoURL } : {}),
     iat: Math.floor(Date.now() / 1000),
     exp: Math.floor(Date.now() / 1000) + 3600,
   };
@@ -30,9 +32,9 @@ export async function login(email: string) {
       .replaceAll("/", "_")
       .replaceAll("=", "");
   const token = part({ alg: "none", typ: "JWT" }) + "." + part(claims) + ".";
-  return (
-    await signInWithCredential(auth, GoogleAuthProvider.credential(token))
-  ).user.uid;
+  const { user } = await signInWithCredential(auth, GoogleAuthProvider.credential(token));
+  if (photoURL) await updateProfile(user, { photoURL });
+  return user.uid;
 }
 export async function anonymous() {
   await authReady;

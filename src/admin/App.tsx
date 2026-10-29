@@ -1,5 +1,6 @@
 import packageJson from "../../package.json" with { type: "json" };
 import AccountMenu from "../ui/AccountMenu";
+import SidebarAction from "../ui/SidebarAction";
 import Loading from "../ui/Loading";
 import Button from "../ui/Button";
 import { lazy, Suspense, useEffect, useState } from "react";
@@ -186,16 +187,14 @@ function Workspace() {
             <Icon name="learning" />
             <span>Learner portal</span>
           </a>
-          <Theme />
-          <small>{auth.currentUser?.email}</small>
-          <Button
-            aria-label="Sign out"
-            className="text-button"
+          <Theme navigation />
+          <SidebarAction
+            icon="logout"
+            label="Sign out"
             onClick={() => void signOut(auth)}
           >
-            <Icon name="logout" />
             Sign out
-          </Button>
+          </SidebarAction>
         </div>
       </aside>
       <main id="main-content" tabIndex={-1} className="workspace">
@@ -204,13 +203,9 @@ function Workspace() {
             <Icon name="admin" />
             <span>InspiredLearning Admin</span>
           </div>
-          <div className="account-chip">
-            <span className="avatar" aria-hidden="true">
-              {(auth.currentUser?.displayName || "A").slice(0, 1).toUpperCase()}
-            </span>
-            <small>{auth.currentUser?.displayName || "Administrator"}</small>
-          </div>
           <AccountMenu
+            name={auth.currentUser?.displayName || "Administrator"}
+            photoURL={auth.currentUser?.photoURL}
             email={auth.currentUser?.email}
             items={[
               { label: "Integrations", href: "#/integrations" },

@@ -146,7 +146,7 @@ export function installClicks() {
     const target =
       path.find((node) =>
         node.matches(
-          "a,md-filled-button,md-filled-tonal-button,md-outlined-button,md-text-button,md-icon-button,md-checkbox,md-radio,md-menu-item,md-select-option",
+          "a,md-filled-button,md-filled-tonal-button,md-outlined-button,md-text-button,md-icon-button,md-checkbox,md-radio,md-list-item,md-menu-item,md-select-option",
         ),
       ) || path.find((node) => node.matches('button,input[type="checkbox"]'));
     if (!target || target.hasAttribute("disabled")) return;

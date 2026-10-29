@@ -19,13 +19,13 @@ export async function openSettings(page) {
     .getByRole("button", { name: "Settings", exact: true })
     .filter({ visible: true });
   const more = page
-    .getByRole("button", { name: "Account and more options", exact: true })
+    .getByRole("button", { name: "Account menu", exact: true })
     .filter({ visible: true });
   await expect(direct.or(more).first()).toBeVisible();
   if (await direct.count()) await direct.first().click();
   else {
     await page
-      .getByRole("button", { name: "Account and more options", exact: true })
+      .getByRole("button", { name: "Account menu", exact: true })
       .click();
     await page.getByRole("menuitem", { name: "Settings", exact: true }).click();
   }

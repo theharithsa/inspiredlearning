@@ -350,13 +350,6 @@
 .task-card > .icon {
   color: var(--md-sys-color-primary);
 }
-.account-chip {
-  max-width: min(50%, 320px);
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-width: 0;
-}
 .avatar {
   display: grid;
   place-items: center;
@@ -367,12 +360,6 @@
   color: var(--md-sys-color-on-tertiary-container);
   font-weight: 500;
   flex: none;
-}
-.account-chip small {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 .nav-label {
   min-width: 0;
