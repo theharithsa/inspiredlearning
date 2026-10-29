@@ -87,3 +87,7 @@ This is a source maintenance release candidate, not production release evidence.
 - Candidate #14: enforce Hosting CSP, revalidate all SPA HTML, externalize Swagger initialization and load RUM asynchronously with bounded readiness buffering; production OAuth/RUM validation remains required.
 
 - Patch Firebase CLI tooling advisories (#57) with pinned CLI 15.34.2 and narrowly scoped, API-reviewed core/uuid overrides. Add real Pub/Sub propagation, multipart HTTP and CLI emulator compatibility gates. No runtime Functions dependency or production deployment changes are included.
+
+## 2.1.3 — 29 October 2026
+
+Deployed learner/admin layout refinements, enforced CSP and safe SPA caching, asynchronous RUM readiness, and approved authenticated shared request counters. Functions 2.0.1 / API 1.5.0. See docs/RELEASE-2.1.3.md for tests, deployed revisions, preservation and remaining gates.
