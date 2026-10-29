@@ -40,6 +40,15 @@ for (const viewport of [
     await body.evaluate((el) => {
       el.scrollTop = 0;
     });
+    if (viewport.width === 1280) {
+      const font = await dialog
+        .locator('md-outlined-select[data-field-label="Site font"]')
+        .boundingBox();
+      const bodyBounds = await body.boundingBox();
+      expect(font.y + font.height).toBeLessThanOrEqual(
+        bodyBounds.y + bodyBounds.height,
+      );
+    }
     await page.screenshot({
       path: `test-results/layout-review/settings-${viewport.width}x${viewport.height}.png`,
       animations: "disabled",
