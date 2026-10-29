@@ -252,7 +252,30 @@ fieldset:disabled {
   flex-wrap: wrap;
 }
 .settings-dialog {
-  width: min(860px, calc(100vw - 48px));
+  width: min(960px, calc(100vw - 48px));
+  overflow: hidden;
+}
+.settings-dialog[open] {
+  display: flex;
+  flex-direction: column;
+}
+.settings-dialog > .dialog-heading {
+  flex: none;
+  margin-bottom: 16px;
+}
+.settings-body {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 4px;
+  scrollbar-gutter: stable;
+}
+.settings-dialog > .dialog-actions {
+  flex: none;
+  position: static;
+  margin-top: 16px;
+  padding: 16px 0 0;
+  border-top: 1px solid var(--md-sys-color-outline-variant);
 }
 .settings-intro {
   max-width: 70ch;
@@ -261,9 +284,9 @@ fieldset:disabled {
 }
 .settings-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
-  gap: 28px;
-  margin-top: 24px;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  gap: 24px;
+  margin-top: 16px;
   align-items: start;
 }
 .settings-controls {
@@ -301,7 +324,7 @@ fieldset:disabled {
   flex-direction: row;
   align-items: center;
   gap: 8px;
-  min-height: 84px;
+  min-height: 64px;
   cursor: pointer;
   border: 1px solid var(--md-sys-color-outline-variant);
   border-radius: 12px;
@@ -468,11 +491,8 @@ fieldset:disabled {
     gap: 24px;
   }
   .settings-dialog .dialog-actions {
-    position: sticky;
-    bottom: -24px;
-    background: var(--md-sys-color-surface-container-high);
-    padding-bottom: 16px;
-    z-index: 1;
+    position: static;
+    padding-bottom: 0;
   }
   .staff-actions > .md-button {
     flex: 1 1 auto;
@@ -522,7 +542,7 @@ fieldset:disabled {
 }
 @media (min-width: 1200px) {
   .app-shell {
-    grid-template-columns: 320px minmax(0, 1fr);
+    grid-template-columns: 280px minmax(0, 1fr);
   }
   .sidebar .brand {
     font-size: var(--md-sys-typescale-title-large);

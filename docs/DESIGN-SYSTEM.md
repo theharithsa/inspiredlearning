@@ -35,3 +35,7 @@ Each screen must retain semantic labels, focus/error feedback and real loading/e
 Target WCAG 2.2 AA without claiming certification: check token contrast, keyboard/focus, touch targets, 200% zoom/large text, long/non-Latin strings, reduced motion and light/dark at compact/medium/expanded/wide/short viewports. Use isolated emulator users and reviewed screenshots of actual app states, never participant exports. Browser emulation is not physical Safari verification.
 
 References: https://m3.material.io/styles/color/the-color-system ; https://m3.material.io/styles/typography/applying-type ; https://m3.material.io/foundations/layout/understanding-layout/overview . Provider/runtime docs are checked separately for implementation APIs.
+
+## Visual acceptance correction (#63)
+
+The live 2.1.1 review found that component, contrast and overflow passes did not establish page composition quality. Inspect actual task density and nested scrolling at short laptop sizes as well as wide screenshots. Settings must retain its title/close control and action footer while only the body scrolls; typography controls and their menus must remain reachable. Avoid duplicate dismiss/reset controls in the sample. Shared stacks must not stretch every action to field width; preserve full-width actions only where the task benefits. Review header/banner/heading spacing together so page chrome does not displace the primary form. The local correction is a preview, not production evidence or a claim that all routes have passed visual acceptance.
