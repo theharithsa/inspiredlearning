@@ -1,6 +1,6 @@
 # InspiredLearning v2.0.0 release plan
 
-Implementation is tracked by #34. This file prepares a reviewable release; it is not evidence of deployment or authorization to provision a Hosting site, alter DNS/auth domains, bind CI credentials or migrate learner data.
+Implementation is tracked by #34. **Production execution completed for app 2.1.1 on 29 October 2026; see [RELEASE-2.1.1.md](RELEASE-2.1.1.md) for actual evidence and remaining telemetry limitations.** The instructions below retain the original pre-deployment plan. This file prepares a reviewable release; it is not evidence of deployment or authorization to provision a Hosting site, alter DNS/auth domains, bind CI credentials or migrate learner data.
 
 ## Source scope
 
@@ -14,7 +14,7 @@ Build outputs: dist/ (learner/public), dist-admin/ (administrator), each with pu
 
 1. Inspect current status/remotes/handover, final PR and exact-head checks. Preserve unrelated Live/workshop-reference edits. Rebuild from the tested merged revision with existing secure production public config; never use demo CI artifacts. Verify version manifests, source revision, surface and configuration. Review package/lockfile/version consistency and rollback source.
 2. Run lint/unit/build, complete integration/Auth/Swagger/MCP/browser suites, relevant unchanged Live regression, production dependency audit and safe secret scan. Review both themes, keyboard/confirmation behavior, compact/medium/expanded/short/zoom and long/missing strings. Record synthetic screenshot metadata/hash; no participant exports. Physical Safari/live OAuth remain explicit manual checks.
-3. Confirm Firebase project chaicloud-workshop, existing learner Hosting inspiredlearning-vh and Functions codebase inspiredlearning/asia-south1. A read-only site inventory on 28 October found no dedicated admin Hosting site. firebase.admin.json defines logical target inspiredlearning-admin, public dist-admin, same-origin API rewrite; it intentionally has no fabricated .firebaserc mapping.
+3. Confirm Firebase project chaicloud-workshop, existing learner Hosting inspiredlearning-vh and Functions codebase inspiredlearning/asia-south1. A read-only site inventory on 28 October found no dedicated admin Hosting site. firebase.admin.json defines logical target inspiredlearning-admin, public dist-admin, same-origin API rewrite; at that planning point no mapping existed. The actual admin site inspiredlearning-admin-vh was subsequently provisioned and bound in .firebaserc by #61.
 4. After scoped resource approval, choose/check an actual available site ID, create/bind it using the secure existing provider workflow, and map admin.inspi.in. Verify DNS/TLS and Firebase Auth authorized domains. Keep learner domain and Live sites untouched. No memory/instance/concurrency increases or paid security infrastructure are part of this release.
 5. Verify the approved RUM tag supports the admin origin and existing documented email attribution. No duplicate tag, Replay enablement or copied credential. #9 tenant Settings/alert installation and #14 live CSP compatibility remain distinct gates; report-only CSP is not enforced CSP.
 

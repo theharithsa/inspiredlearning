@@ -1,5 +1,7 @@
 # Release checks — 7 October 2026
 
+Current production evidence and independent Hosting rollback references: [2.1.1 release](RELEASE-2.1.1.md), deployed 29 October 2026. Learner https://inspi.in and administrator https://admin.inspi.in. Older single-portal routes below are historical.
+
 ## Administrator support release
 
 Source `b14a76b` adds role-gated administrator controls, private certificate preview, verified profile/certificate corrections, archived completion reinstatement, live paginated requests, request decisions, scoped resumable removal and future-only reactivation. Runtime deployed to the existing Firebase URL on 7 October; changed functions were confirmed ACTIVE, the RUM tag and new administrator controls are present in production assets, and the production Firebase configuration is correct. Shared privacy rule is released; pending/history production queries were accepted without additional indexes. No real learner records were changed by this release's simulation.
