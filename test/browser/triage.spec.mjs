@@ -138,6 +138,15 @@ test("generic clicks do not call telemetry and profile updates do not refetch cr
     if (req.url().includes("/api/v1/me/scores")) scores++;
   });
   const uid = await login(page, "triage-credits@example.invalid");
+  // Empty accounts lead with next steps. Use an actual credit balance to await
+  // the loaded summary before checking that unrelated profile edits do not refetch.
+  await db.doc(`learningLearners/${uid}/creditEntries/triage-baseline`).set({
+    sourceType: "community",
+    delta: 1,
+  });
+  await expect(
+    page.getByText("Total Inspi credits", { exact: true }).locator("..").getByText("1", { exact: true }),
+  ).toBeVisible();
   await expect(page.getByText("Across your Inspi activities")).toBeVisible();
   const previous = scores;
   await db

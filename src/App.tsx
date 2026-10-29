@@ -382,9 +382,7 @@ function LearnerLayout({ user }: { user: User }) {
                     Open the dedicated administrator app to manage learning
                     records.
                   </p>
-                  <a className="button" href={adminUrl()}>
-                    Open administrator portal
-                  </a>
+                  <Button href={adminUrl()}>Open administrator portal</Button>
                 </div>
               ) : (
                 <Staff />
@@ -399,9 +397,7 @@ function LearnerLayout({ user }: { user: User }) {
               ) : administrator ? (
                 <div className="panel stack">
                   <h1>Administrator portal</h1>
-                  <a className="button" href={adminUrl()}>
-                    Open administrator portal
-                  </a>
+                  <Button href={adminUrl()}>Open administrator portal</Button>
                 </div>
               ) : (
                 <Message error>Administrator access required.</Message>

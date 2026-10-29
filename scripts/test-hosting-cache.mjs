@@ -37,7 +37,7 @@ try {
         output,
         "--only",
         "hosting",
-        "node scripts/test-node.mjs hosting-cache test/hosting-cache.test.mjs",
+        `node scripts/test-node.mjs hosting-cache-${surface} test/hosting-cache.test.mjs`,
       ],
       {
         stdio: "inherit",

@@ -1,7 +1,8 @@
+import Button from "./ui/Button";
 import Brand from "./ui/Brand";
 import Theme from "./ui/Theme";
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { apiJson } from "./api";
 import { Message } from "./components";
 export default function Verify() {
@@ -96,9 +97,7 @@ export default function Verify() {
             </p>
           )
         )}
-        <Link className="button" to="/certificates">
-          My certificates →
-        </Link>
+        <Button href="#/certificates">My certificates →</Button>
       </section>
     </main>
   );

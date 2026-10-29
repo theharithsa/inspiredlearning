@@ -1,3 +1,4 @@
+import Disclosure from "./ui/Disclosure";
 import Field from "./ui/Field";
 import Button from "./ui/Button";
 import Select from "./ui/Select";
@@ -45,7 +46,7 @@ export default function Profile({
       </header>
       {message && <Message>{message}</Message>}
       {error && <Message error>{error}</Message>}
-      <div className="split">
+      <div className="profile-layout">
         <form
           className="panel stack"
           onSubmit={async (e) => {
@@ -60,7 +61,6 @@ export default function Profile({
           }}
         >
           <h2>Profile</h2>
-          <p className="small muted">Account reference: {user.uid}</p>
           <Field
             label="Display name"
             value={name}
@@ -68,15 +68,16 @@ export default function Profile({
             required
             onChange={(e) => setName(e.target.value)}
           />
-          <Field label="Google account" value={user.email || ""} readOnly />
-          <p className="muted">
-            Your verified records and issued certificates keep the name recorded
-            by workshop staff. A display-name edit does not change an issued
-            certificate.
+          <p className="small muted">
+            Changing your display name does not change an issued certificate.
           </p>
           <Button className="button" disabled={busy} busy={!!busy}>
             Save profile
           </Button>
+          <Disclosure label="Account details">
+            <Field label="Google account" value={user.email || ""} readOnly />
+            <p className="small muted">Account reference: {user.uid}</p>
+          </Disclosure>
         </form>
         <form
           className="panel stack"
@@ -95,10 +96,10 @@ export default function Profile({
             }, "Request submitted. Your facilitator can review it with you.");
           }}
         >
-          <h2>Need a record corrected?</h2>
-          <p>
-            You can also request removal of your learning records. We retain
-            issued records until the request is reviewed.
+          <h2>Record support</h2>
+          <p className="muted">
+            Request a correction or removal. Your existing records remain until
+            review.
           </p>
           <Select
             label="Request type"

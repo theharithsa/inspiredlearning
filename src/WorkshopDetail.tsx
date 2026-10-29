@@ -1,3 +1,4 @@
+import Button from "./ui/Button";
 import Loading from "./ui/Loading";
 import { auth } from "./firebase";
 import { useRecord } from "./hooks";
@@ -166,9 +167,7 @@ export default function WorkshopDetail() {
               ))}
             </div>
             {w.certificateId && (
-              <Link className="button" to="/certificates">
-                View certificate →
-              </Link>
+              <Button href="#/certificates">View certificate →</Button>
             )}
           </section>
         </>
