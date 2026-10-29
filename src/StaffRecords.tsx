@@ -83,10 +83,33 @@ export default function StaffRecords({
   }
   return (
     <section className="panel stack">
-      <span className="eyebrow">PERMANENT RECORDS & REQUESTS</span>
-      <h2>Support beyond the live session.</h2>
+      <h2>{showRequests ? "Review learner requests" : "Find a learner"}</h2>
       {error && <Message error>{error}</Message>}
       {notice && <Message>{notice}</Message>}
+      {showRequests && (
+        <Field
+          multiline
+          label="Review / correction note"
+          value={reason}
+          maxLength={500}
+          onChange={(e) => setReason(e.target.value)}
+        />
+      )}
+      {showRequests && (
+        <RequestsPanel
+          refresh={requestVersion}
+          reason={reason}
+          onDone={() => {
+            setRequestVersion((v) => v + 1);
+            if (lookup) void load(lookup.uid);
+          }}
+          onOpen={(uid) => {
+            setReference(uid);
+            void load(uid);
+          }}
+        />
+      )}
+      {showRequests && <h3>Find a learner record</h3>}
       <form
         className="inline-form"
         onSubmit={(e) => {
@@ -95,7 +118,8 @@ export default function StaffRecords({
         }}
       >
         <Field
-          label="Learner email, account reference or certificate ID"
+          label="Learner reference"
+          supportingText="Email, account reference or certificate ID"
           value={reference}
           required
           onChange={(e) => setReference(e.target.value)}
@@ -104,13 +128,15 @@ export default function StaffRecords({
           Find record
         </Button>
       </form>
-      <Field
-        multiline
-        label="Review / correction note"
-        value={reason}
-        maxLength={500}
-        onChange={(e) => setReason(e.target.value)}
-      />
+      {!showRequests && (
+        <Field
+          multiline
+          label="Review / correction note"
+          value={reason}
+          maxLength={500}
+          onChange={(e) => setReason(e.target.value)}
+        />
+      )}
       {lookup && (
         <div>
           <h3>
@@ -221,20 +247,6 @@ export default function StaffRecords({
             </div>
           ))}
         </div>
-      )}
-      {showRequests && (
-        <RequestsPanel
-          refresh={requestVersion}
-          reason={reason}
-          onDone={() => {
-            setRequestVersion((v) => v + 1);
-            if (lookup) void load(lookup.uid);
-          }}
-          onOpen={(uid) => {
-            setReference(uid);
-            void load(uid);
-          }}
-        />
       )}
       <p className="muted">
         Corrections and revocation work even after a live session is deleted.

@@ -29,7 +29,7 @@ export default function Workshops({
         </div>
       ) : (
         <Empty title="No workshops yet">
-          Join a ChaiCart session with this Google account to start your
+          Join a supported workshop with this Google account to start your
           participation record.
         </Empty>
       )}

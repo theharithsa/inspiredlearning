@@ -24,17 +24,20 @@ export function Message({
 export function Empty({
   title,
   children,
+  action,
 }: {
   title: string;
   children: React.ReactNode;
+  action?: React.ReactNode;
 }) {
   return (
     <div className="empty">
       <span className="empty-mark" aria-hidden="true">
-        ↗
+        <Icon name="learning" />
       </span>
       <h2>{title}</h2>
       <p>{children}</p>
+      {action && <div className="empty-actions">{action}</div>}
     </div>
   );
 }

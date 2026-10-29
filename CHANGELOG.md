@@ -83,4 +83,6 @@ This is a source maintenance release candidate, not production release evidence.
 
 ## Unreleased
 
+- 2.1.3 candidate (#63/#34): simplify empty learner states, group profile/support tasks, finish Material link CTAs and retain synthetic route/state screenshots across both surfaces.
+
 - Patch Firebase CLI tooling advisories (#57) with pinned CLI 15.34.2 and narrowly scoped, API-reviewed core/uuid overrides. Add real Pub/Sub propagation, multipart HTTP and CLI emulator compatibility gates. No runtime Functions dependency or production deployment changes are included.

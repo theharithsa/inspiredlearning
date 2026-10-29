@@ -1,7 +1,7 @@
+import Button from "./ui/Button";
 import Brand from "./ui/Brand";
 import Theme from "./ui/Theme";
 import { useEffect } from "react";
-import { Link } from "react-router-dom";
 export default function Privacy() {
   useEffect(() => {
     document.title = "Privacy · InspiredLearning";
@@ -40,9 +40,7 @@ export default function Privacy() {
           deleted. Downloaded certificates cannot be recalled; verification
           reflects revocations.
         </p>
-        <Link className="button" to="/">
-          Return to InspiredLearning →
-        </Link>
+        <Button href="#/">Return to InspiredLearning →</Button>
       </section>
     </main>
   );

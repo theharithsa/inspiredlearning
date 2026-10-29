@@ -432,7 +432,7 @@ test("administrator navigation is role gated and archived certificates can be re
     a.page.getByRole("navigation", { name: "Administrator navigation" }),
   ).toBeVisible();
   await a.page
-    .getByLabel("Learner email, account reference or certificate ID")
+    .getByLabel("Learner reference")
     .fill("learner@example.invalid");
   await a.page.getByRole("button", { name: "Find record" }).click();
   await a.page

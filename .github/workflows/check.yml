@@ -41,6 +41,12 @@ jobs:
       - run: npm run test:rehearsal
         env:
           CI: "1"
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        if: success()
+        with:
+          name: synthetic-route-review
+          path: test-results/route-review
+          retention-days: 14
       - name: Report trusted-main test outcomes
         if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.DYNATRACE_CI_ENABLED == 'true'
         run: node scripts/observability/report-tests.mjs

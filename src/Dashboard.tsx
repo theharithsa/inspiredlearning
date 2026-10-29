@@ -1,3 +1,4 @@
+import Button from "./ui/Button";
 import Loading from "./ui/Loading";
 import { apiFetch } from "./api";
 import { useEffect, useState } from "react";
@@ -54,6 +55,13 @@ export default function Dashboard({
     };
   }, [uid, workshops, entries, hasProfile]);
   const complete = workshops?.filter((w) => w.status === "completed") || [];
+  const empty = workshops?.length === 0;
+  const showStats =
+    workshops === undefined ||
+    !!workshops.length ||
+    !!entries?.length ||
+    creditError ||
+    (account && account.totalCredits !== 0);
   return (
     <>
       <header className="page-heading">
@@ -68,33 +76,35 @@ export default function Dashboard({
           workshops and verified achievements, all in one place.
         </p>
       </header>
-      <div className="stats">
-        <div>
-          <span>Completed workshops</span>
-          <strong>{workshops === undefined ? "—" : complete.length}</strong>
+      {showStats && (
+        <div className="stats">
+          <div>
+            <span>Completed workshops</span>
+            <strong>{workshops === undefined ? "—" : complete.length}</strong>
+          </div>
+          <div>
+            <span>Total Inspi credits</span>
+            <strong>{account?.totalCredits ?? "—"}</strong>
+            <small>
+              {creditError
+                ? "Could not load credits"
+                : account?.unknownAwards
+                  ? "Some published credits are unknown"
+                  : account
+                    ? "Across your Inspi activities"
+                    : "Loading credits…"}
+            </small>
+          </div>
+          <div>
+            <span>Certified workshops</span>
+            <strong>
+              {workshops === undefined
+                ? "—"
+                : complete.filter((w) => w.certificateId).length}
+            </strong>
+          </div>
         </div>
-        <div>
-          <span>Total Inspi credits</span>
-          <strong>{account?.totalCredits ?? "—"}</strong>
-          <small>
-            {creditError
-              ? "Could not load credits"
-              : account?.unknownAwards
-                ? "Some published credits are unknown"
-                : account
-                  ? "Across your Inspi activities"
-                  : "Loading credits…"}
-          </small>
-        </div>
-        <div>
-          <span>Certified workshops</span>
-          <strong>
-            {workshops === undefined
-              ? "—"
-              : complete.filter((w) => w.certificateId).length}
-          </strong>
-        </div>
-      </div>
+      )}
       <div className="section-heading">
         <h2>Your workshops</h2>
         <span>
@@ -112,28 +122,40 @@ export default function Dashboard({
           ))}
         </div>
       ) : (
-        <Empty title="Your next chapter starts here">
+        <Empty
+          title="Your next chapter starts here"
+          action={
+            <>
+              <Button href="#/profile">Check my account</Button>
+              <Button href="#/community" variant="text">
+                Explore the community
+              </Button>
+            </>
+          }
+        >
           Join a supported workshop with this Google account. Your participation
           will appear here; verified completion adds your issued certificate and
           published results.
         </Empty>
       )}
-      <div className="split">
-        <section className="panel">
-          <span className="eyebrow">MILESTONES</span>
-          <h2>Progress that means something.</h2>
-          <p>
-            {complete.length === 0
-              ? "Complete your first workshop to earn your first milestone."
-              : complete.length === 1
-                ? "First workshop completed. You have started a learning habit."
-                : `${complete.length} workshops completed. Keep building on what you learned.`}
-          </p>
-          <p className="muted">
-            Your total uses published workshop awards and recorded credit
-            adjustments. Live activity scores and report scores may differ.
-          </p>
-        </section>
+      <div className={empty ? "dashboard-empty-support" : "split"}>
+        {!empty && (
+          <section className="panel">
+            <span className="eyebrow">MILESTONES</span>
+            <h2>Progress that means something.</h2>
+            <p>
+              {complete.length === 0
+                ? "Complete your first workshop to earn your first milestone."
+                : complete.length === 1
+                  ? "First workshop completed. You have started a learning habit."
+                  : `${complete.length} workshops completed. Keep building on what you learned.`}
+            </p>
+            <p className="muted">
+              Your total uses published workshop awards and recorded credit
+              adjustments. Live activity scores and report scores may differ.
+            </p>
+          </section>
+        )}
         <CommunityCard />
       </div>
     </>

@@ -1,3 +1,4 @@
+import Button from "../ui/Button";
 import Brand from "../ui/Brand";
 import Theme from "../ui/Theme";
 import Icon from "../ui/Icon";
@@ -16,10 +17,10 @@ export default function Handoff() {
           Administrator tools now have their own sign-in and workspace. Continue
           to the administrator portal with your authorized Google account.
         </p>
-        <a className="button" href={adminUrl()}>
+        <Button href={adminUrl()}>
           <Icon name="admin" />
           Open administrator portal
-        </a>
+        </Button>
         <p className="muted small">
           Your learner account stays available here. No credentials are
           transferred in this link.
