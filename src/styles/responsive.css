@@ -290,7 +290,7 @@
     align-items: flex-start;
     flex-direction: column;
   }
-  .workspace-top .account-chip small {
+  .workspace-top .account-name {
     display: none;
   }
   .theme-control select {

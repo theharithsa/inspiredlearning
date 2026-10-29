@@ -1,4 +1,5 @@
 import AccountMenu from "./ui/AccountMenu";
+import SidebarAction from "./ui/SidebarAction";
 import Loading from "./ui/Loading";
 import Button from "./ui/Button";
 import Brand from "./ui/Brand";
@@ -289,19 +290,17 @@ function LearnerLayout({ user }: { user: User }) {
               <span>Administrator portal</span>
             </a>
           )}
-          <Theme />
-          <small>{user.email}</small>
-          <Button
-            aria-label="Sign out"
-            className="text-button"
+          <Theme navigation />
+          <SidebarAction
+            icon="logout"
+            label="Sign out"
             onClick={() => {
               interaction("auth.signed-out");
               void signOut(auth);
             }}
           >
-            <Icon name="logout" />
             Sign out
-          </Button>
+          </SidebarAction>
         </div>
       </aside>
       <main id="main-content" tabIndex={-1} className="workspace">
@@ -310,15 +309,9 @@ function LearnerLayout({ user }: { user: User }) {
             <Icon name="learning" />
             <span>Your learning</span>
           </div>
-          <div className="account-chip">
-            <span className="avatar" aria-hidden="true">
-              {(profile?.name || user.displayName || "L")
-                .slice(0, 1)
-                .toUpperCase()}
-            </span>
-            <small>{profile?.name || user.displayName || "Learner"}</small>
-          </div>
           <AccountMenu
+            name={profile?.name || user.displayName || "Learner"}
+            photoURL={user.photoURL}
             email={user.email}
             items={[
               { label: "Workshop staff", href: "#/staff" },
