@@ -103,7 +103,7 @@ export function apiHandler({ db, auth, rate, measured, audit }) {
         require.resolve("swagger-ui-dist/" + req.path.split("/").at(-1)),
       );
     try {
-      rate("api-ip:" + req.ip, publicVerify ? 60 : 120);
+      await rate("api-ip:" + req.ip, publicVerify ? 60 : 120);
       if (publicVerify) {
         if (Object.keys(req.query).length)
           throw Object.assign(new Error("No query filters allowed."), {
@@ -144,8 +144,8 @@ export function apiHandler({ db, auth, rate, measured, audit }) {
         actor = googleActor(t.uid, t);
         authTime = t.auth_time;
       }
-      rate("api:" + actor.uid, 120);
-      if (actor.apiTokenId) rate("api-token:" + actor.apiTokenId, 60);
+      await rate("api:" + actor.uid, 120);
+      if (actor.apiTokenId) await rate("api-token:" + actor.apiTokenId, 60);
       if (
         ((management && req.method === "POST") ||
           writeRoute ||
@@ -239,6 +239,8 @@ export function apiHandler({ db, auth, rate, measured, audit }) {
       );
       return res.json(result);
     } catch (e) {
+      if (e.code === "resource-exhausted" && e.details?.reason === "rate-limit")
+        res.set("Retry-After", String(e.details.retryAfterSeconds));
       if (e.code === "unauthenticated")
         log("WARN", "API authentication rejected", {
           "http.request.method": req.method,

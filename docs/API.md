@@ -101,3 +101,7 @@ See [API-MAINTENANCE-1.4.md](API-MAINTENANCE-1.4.md) for Google-admin-only telem
 ## v2 source contract 1.5.0
 
 Compatible contract 1.5.0 has 44 operations and adds Google-global-admin-only GET /api/v1/admin/access. The endpoint returns capabilities and the 300-second recency policy without learner data or profile creation. Sensitive Google-admin writes and non-owner certificate PDF previews require recent verified auth_time; stale/missing authentication returns failed-precondition. API token scopes, owner/captain boundaries and /api/v1 compatibility remain unchanged. See API-V2-ADMIN-CONTRACT.md. These are source contracts; production version must be checked independently.
+
+## Shared quota candidate (#15)
+
+The gated implementation in docs/SHARED-RATE-LIMITS.md retains existing limits and API errors. A rate-limit 429 includes Retry-After; resource-capacity 429 responses do not invent a retry time. Database protection failures return unavailable/503 rather than failing open. The feature remains disabled until usage and trusted ingress identity are reviewed. No new domain endpoint or API-contract version is introduced by this compatible candidate.
