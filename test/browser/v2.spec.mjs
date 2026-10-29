@@ -12,6 +12,12 @@ const email = "v2-admin@example.invalid";
 test.beforeAll(async () => {
   if (process.env.GCLOUD_PROJECT !== "demo-chaicart")
     throw Error("Emulators required");
+  if (
+    !/^(127\.0\.0\.1|localhost):\d+$/.test(
+      process.env.FIREBASE_AUTH_EMULATOR_HOST || "",
+    )
+  )
+    throw Error("Use the isolated Auth emulator for administrator tests");
   process.env.FIRESTORE_EMULATOR_HOST = "127.0.0.1:8185";
   app = initializeApp({ projectId: "demo-chaicart" }, "v2-browser");
   db = getFirestore(app);
@@ -117,7 +123,10 @@ test("Material themes, compact navigation and actual surfaces remain usable acro
   fs.mkdirSync(dir, { recursive: true });
   await login(page, "v2-design-learner@example.invalid", false);
   await expect(
-    page.getByText("Across your Inspi activities", { exact: true }),
+    page.getByRole("heading", {
+      name: "Your next chapter starts here",
+      exact: true,
+    }),
   ).toBeVisible();
   for (const width of [320, 390, 768, 840, 1200, 1600]) {
     await page.setViewportSize({ width, height: 900 });
