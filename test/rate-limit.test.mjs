@@ -66,9 +66,13 @@ test("expiry resets, clock rollback cannot reopen quota, and observers cannot af
     }),
     id = key();
   await rate(id, 1);
-  time -= 1000;
-  await assert.rejects(rate(id, 1), { code: "resource-exhausted" });
-  time += 61000;
+  time -= 100000;
+  await assert.rejects(rate(id, 1), (error) => {
+    assert.equal(error.code, "resource-exhausted");
+    assert.equal(error.details.retryAfterSeconds, 60);
+    return true;
+  });
+  time += 160000;
   await rate(id, 1);
 });
 test("denied batch writes no partial counters and malformed state fails closed", async () => {

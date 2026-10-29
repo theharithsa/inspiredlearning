@@ -83,9 +83,9 @@ export function createSharedRateLimiter(
               return {
                 retryAfterSeconds: Math.max(
                   ...denied.map((r) =>
-                    Math.max(
-                      1,
-                      Math.ceil((r.start + RATE_WINDOW_MS - time) / 1000),
+                    Math.min(
+                      RATE_WINDOW_MS / 1000,
+                      Math.max(1, Math.ceil((r.start + RATE_WINDOW_MS - time) / 1000)),
                     ),
                   ),
                 ),
