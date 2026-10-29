@@ -1,6 +1,6 @@
 # CSP, HTML cache and RUM loading — #14
 
-Source candidate only. Production remains app 2.1.2 / Functions 2.0.0 until a separately approved release. These changes do not change authentication policy, learner records, certificate content or API permissions.
+Source candidate: Functions 2.0.1, compatible API 1.5.0. Production remains app 2.1.2 / Functions 2.0.0 until a separately approved release. These changes do not change authentication policy, learner records, certificate content or API permissions.
 
 Both Hosting configurations enforce Content-Security-Policy instead of report-only. Scripts remain self-hosted except the existing approved Google and Dynatrace sources; inline scripts are blocked. Swagger initialization moves to a same-origin external script. Firebase/Google auth frames, blob PDF frames/workers, existing API/telemetry connections and local fonts remain allowed. Inline styles remain allowed because Material Web and React styles depend on them. This is a bounded allowlist, not a claim that CSP eliminates XSS.
 
