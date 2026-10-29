@@ -170,3 +170,14 @@ export async function cleanRateCounters(
     return expired.length;
   });
 }
+
+// Public IP provenance is not attested through all Hosting/direct-call paths.
+export function chooseRateLimiter(local, shared, enabled) {
+  return (key, limit = 120) => {
+    const unverifiedPublicKey =
+      key.startsWith("api-ip:") || key.startsWith("verify:");
+    return enabled && !unverifiedPublicKey
+      ? shared(key, limit)
+      : local(key, limit);
+  };
+}

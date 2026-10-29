@@ -1,4 +1,4 @@
-import { createSharedRateLimiter } from "./rate-limit.js";
+import { createSharedRateLimiter, chooseRateLimiter } from "./rate-limit.js";
 import { checkCallableStepUp, requireRecentAuth } from "./admin-session.js";
 import { functionProfiles } from "./config.js";
 import { SpanKind } from "@opentelemetry/api";
@@ -46,7 +46,11 @@ const sharedRate = createSharedRateLimiter(db, {
       ...fields,
     }),
 });
-const rate = process.env.SHARED_RATE_LIMITS === "true" ? sharedRate : localRate;
+const rate = chooseRateLimiter(
+  localRate,
+  sharedRate,
+  process.env.SHARED_RATE_LIMITS === "true",
+);
 export const learningAction = onCall(options("actions"), async (r) => {
   const actor = await actorOf(r);
   await rate(actor.uid);

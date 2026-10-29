@@ -4,6 +4,7 @@ import { createRequire } from "node:module";
 import { randomUUID } from "node:crypto";
 import {
   createSharedRateLimiter,
+  chooseRateLimiter,
   cleanRateCounters,
   rateId,
 } from "../functions/rate-limit.js";
@@ -119,4 +120,21 @@ test("database outage fails closed instead of reverting to an independent local 
     },
   });
   await assert.rejects(rate(key()), { code: "unavailable" });
+});
+
+test("rollout gate uses shared counters only for backend-verified actor/token keys", async () => {
+  const seen = [];
+  const local = (key) => seen.push(["local", key]),
+    shared = (key) => seen.push(["shared", key]);
+  const on = chooseRateLimiter(local, shared, true),
+    off = chooseRateLimiter(local, shared, false);
+  await on("api-ip:untrusted", 120);
+  await on("verify:untrusted", 60);
+  await on("api:verified-uid", 120);
+  await on("api-token:verified-token", 60);
+  await off("api:verified-uid", 120);
+  assert.deepEqual(
+    seen.map((x) => x[0]),
+    ["local", "local", "shared", "shared", "local"],
+  );
 });

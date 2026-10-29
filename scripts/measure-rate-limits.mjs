@@ -25,7 +25,7 @@ const reports = [];
 try {
   for (const scenario of [
     "callable-sequential",
-    "rest-three-counters",
+    "rest-actor-token",
     "two-instance-burst",
   ]) {
     const observations = [],
@@ -45,9 +45,8 @@ try {
       try {
         const rate = i % 2 ? rateA : rateB;
         await rate(ids[0], 120);
-        if (scenario === "rest-three-counters") {
-          await rate(ids[1], 120);
-          await rate(ids[2], 60);
+        if (scenario === "rest-actor-token") {
+          await rate(ids[1], 60);
         }
         accepted++;
       } catch (e) {
