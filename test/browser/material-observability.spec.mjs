@@ -1,3 +1,4 @@
+import packageJson from "../../package.json" with { type: "json" };
 import { test, expect } from "@playwright/test";
 import { openSettings, choose } from "./material-helpers.mjs";
 test("Material shadow clicks retain versioned client metadata without capturing field values", async ({
@@ -31,7 +32,7 @@ test("Material shadow clicks retain versioned client metadata without capturing 
   for (const event of events) {
     expect(event.type).toMatch(/^com\.inspiredlearning\.rum\./);
     expect(event.data["event.authority"]).toBe("client-observed");
-    expect(event.data["app.version"]).toBe("2.1.0");
+    expect(event.data["app.version"]).toBe(packageJson.version);
     expect(event.data["app.surface"]).toBe("learner");
     expect(Object.keys(event.data).sort()).toEqual(
       [
