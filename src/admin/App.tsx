@@ -1,3 +1,4 @@
+import { enterSurface } from "../ui/expressive-motion";
 import packageJson from "../../package.json" with { type: "json" };
 import AccountMenu from "../ui/AccountMenu";
 import SidebarAction from "../ui/SidebarAction";
@@ -120,11 +121,14 @@ function Workspace() {
     document.title = `${navigation.find(([path]) => path === pathname)?.[2] || "Administration"} · InspiredLearning Admin`;
     interaction("page.view");
     let observer: MutationObserver | undefined;
+    let stopMotion: (() => void) | undefined;
     const focus = () => {
       const h = document.querySelector<HTMLElement>("main h1");
       if (!h) return false;
       h.tabIndex = -1;
       h.focus({ preventScroll: true });
+      const surface = h.closest<HTMLElement>(".page-heading");
+      if (surface) stopMotion = enterSurface(surface);
       window.scrollTo(0, 0);
       observer?.disconnect();
       return true;
@@ -133,7 +137,10 @@ function Workspace() {
       observer = new MutationObserver(focus);
       observer.observe(document.body, { childList: true, subtree: true });
     }
-    return () => observer?.disconnect();
+    return () => {
+      observer?.disconnect();
+      stopMotion?.();
+    };
   }, [pathname]);
   async function verify() {
     const user = auth.currentUser;

@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, type ReactNode } from "react";
 import Button from "./Button";
 import Icon from "./Icon";
+import { enterSurface } from "./expressive-motion";
 interface Props {
   title: string;
   children: ReactNode;
@@ -25,6 +26,7 @@ export default function Dialog({
       el = ref.current;
     if (!el) return;
     el.showModal();
+    const stopMotion = enterSurface(el);
     let active = true;
     const ready = Array.from(
       el.querySelectorAll<HTMLElement>(
@@ -43,6 +45,7 @@ export default function Dialog({
     window.addEventListener("hashchange", escape);
     return () => {
       active = false;
+      stopMotion();
       window.removeEventListener("hashchange", escape);
       el.close();
       if (opener instanceof HTMLElement && opener.isConnected) opener.focus();

@@ -1,4 +1,6 @@
+import { enterSurface } from "./ui/expressive-motion";
 import AccountMenu from "./ui/AccountMenu";
+import Reveal from "./ui/Reveal";
 import SidebarAction from "./ui/SidebarAction";
 import Loading from "./ui/Loading";
 import Button from "./ui/Button";
@@ -39,11 +41,14 @@ function PageEvents() {
     };
     document.title = `${titles[pathname] || (pathname.startsWith("/verify/") ? "Certificate verification" : "Learning record")} · InspiredLearning`;
     let observer: MutationObserver | undefined;
+    let stopMotion: (() => void) | undefined;
     const focusHeading = () => {
       const heading = document.querySelector<HTMLElement>("main h1");
       if (!heading) return false;
       heading.tabIndex = -1;
       heading.focus({ preventScroll: true });
+      const surface = heading.closest<HTMLElement>(".page-heading");
+      if (surface) stopMotion = enterSurface(surface);
       window.scrollTo(0, 0);
       observer?.disconnect();
       return true;
@@ -52,7 +57,10 @@ function PageEvents() {
       observer = new MutationObserver(focusHeading);
       observer.observe(document.body, { childList: true, subtree: true });
     }
-    return () => observer?.disconnect();
+    return () => {
+      observer?.disconnect();
+      stopMotion?.();
+    };
   }, [pathname]);
   return null;
 }
@@ -65,18 +73,21 @@ function Landing() {
         <Brand />
         <div className="public-header-actions">
           <Theme />
-          <Link to="/community">Our community</Link>
-          <a className="text-button" href={adminUrl()}>
+          <Button variant="text" href="#/community">
+            Our community
+          </Button>
+          <Button variant="text" href={adminUrl()}>
             Administrator sign-in
-          </a>
+          </Button>
         </div>
       </header>
       <div className="landing-hero">
-        <section>
-          <span className="eyebrow">YOUR LEARNING, CONNECTED</span>
+        <Reveal className="hero-copy" expressive>
+          <span className="hero-kicker">
+            <Icon name="learning" /> YOUR LEARNING, CONNECTED
+          </span>
           <h1>
             Make your learning
-            <br />
             <em>count for more.</em>
           </h1>
           <p className="lead">
@@ -116,32 +127,61 @@ function Landing() {
             </Button>
           )}
           {error && <Message error>{error}</Message>}
-        </section>
-        <div
-          className="journey-illustration"
-          role="img"
-          aria-label="Participate, earn recognition, and keep learning"
-        >
-          <div className="orbit" aria-hidden="true">
-            <Icon name="learning" />
-          </div>
-          <div className="journey-step">
-            <span>01</span>
-            <strong>Show up</strong>
-            <p>Participate in the workshop.</p>
-          </div>
-          <div className="journey-step">
-            <span>02</span>
-            <strong>Look back</strong>
-            <p>See your verified progress.</p>
-          </div>
-          <div className="journey-step">
-            <span>03</span>
-            <strong>Keep going</strong>
-            <p>Build with your community.</p>
-          </div>
-        </div>
+        </Reveal>
+        <Reveal className="hero-art" expressive delay={60}>
+          <figure>
+            <img
+              src="/illustrations/learning-world.webp"
+              width="1280"
+              height="1280"
+              fetchPriority="high"
+              alt="Three learners explore an open book together, with a friendly notebook and a blooming idea."
+            />
+            <figcaption>
+              <span className="hero-spark" aria-hidden="true">
+                ✦
+              </span>{" "}
+              A little curiosity goes a long way.
+            </figcaption>
+          </figure>
+        </Reveal>
       </div>
+      <section
+        className="learning-story"
+        aria-labelledby="learning-story-title"
+      >
+        <div>
+          <span className="eyebrow">MORE THAN A WORKSHOP</span>
+          <h2 id="learning-story-title">
+            A workshop ends.
+            <br />
+            <em>Your progress doesn’t.</em>
+          </h2>
+        </div>
+        <ol>
+          <li>
+            <span>01</span>
+            <div>
+              <strong>Show up & explore</strong>
+              <p>Get involved in your workshop.</p>
+            </div>
+          </li>
+          <li>
+            <span>02</span>
+            <div>
+              <strong>Keep what you earn</strong>
+              <p>Find your verified results and recognition.</p>
+            </div>
+          </li>
+          <li>
+            <span>03</span>
+            <div>
+              <strong>Make your next move</strong>
+              <p>Build on it with your learning community.</p>
+            </div>
+          </li>
+        </ol>
+      </section>
       <div className="landing-features">
         <article>
           <Icon name="workshops" />
@@ -168,8 +208,23 @@ function Landing() {
           </p>
         </article>
       </div>
-      <CommunityCard />
-      <footer>InspiredLearning · Curiosity into practice.</footer>
+      <section
+        className="landing-community"
+        aria-label="Keep learning together"
+      >
+        <CommunityCard />
+        <img
+          src="/illustrations/learning-companion.webp"
+          width="1024"
+          height="1024"
+          loading="lazy"
+          alt="A cheerful notebook learning companion with a pencil and a growing idea."
+        />
+      </section>
+      <footer className="landing-footer">
+        <span>InspiredLearning · Curiosity into practice.</span>
+        <Link to="/privacy">Privacy & your records</Link>
+      </footer>
     </main>
   );
 }

@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.2.0] - source candidate
+
+- Recompose the public landing page with original cartoon learning-world and notebook-companion illustrations, a clear Google entry, expressive type/shape hierarchy and responsive learning-story/community sections.
+- Use semantic tonal containers for shared learner/admin panels, task cards and navigation. Keep the 2.1.4 aligned sidebar actions and Google-avatar account menu.
+- Add current Material 3 spatial spring tokens and separate effects timing: expressive homepage entry, restrained operational feedback, velocity-preserving pointer retargeting, dialog/confirmation/route-heading entry and immediate keyboard/reduced-motion handling.
+- Add responsive visual, image-load, accessibility and interruption/reduced-motion regressions, plus pure spring-continuity/convergence tests (#74). See [design audit and sources](docs/design/MATERIAL3-EXPRESSIVE-2.2.md) and [image provenance/prompts](public/illustrations/README.md).
+- Source/preview only. Production remains 2.1.3; Functions 2.0.1 / API 1.5.0 / MCP 1.0.1 and all identity, credit, certificate and privacy policies are unchanged.
+
 ## [2.1.4] - source candidate
 
 - Align sidebar Settings and Sign out as Material list actions with the same icon/label inset as adjacent links in learner and admin apps.

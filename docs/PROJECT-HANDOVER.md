@@ -1,5 +1,7 @@
 # Private project handover
 
+Source candidate **2.2.0** (#74): current Material 3 tonal/shape hierarchy, physical spatial motion and an original illustrated public homepage. Includes the source-only 2.1.4 navigation correction below. Read [the design audit](design/MATERIAL3-EXPRESSIVE-2.2.md); production remains 2.1.3 until separately approved.
+
 Source candidate **2.1.4** (#72): aligned sidebar actions and a right-aligned Google-avatar account menu across both apps. This is a frontend source/preview correction; the production deployment below remains 2.1.3 until separately approved.
 
 Current production: **app v2.1.3 / Functions 2.0.1 / API 1.5.0 / MCP 1.0.1**, revision 42b2efb5b6a85f1bef8926022b2aaaa5c07e71d4. Learners use https://inspi.in and administrators https://admin.inspi.in. Read [RELEASE-2.1.3.md](RELEASE-2.1.3.md) for actual deployment, preservation, rollback and remaining gates; verify live manifests before relying on this snapshot. #9 alerts remain deferred, #17 migration held, and #34/#63 retain their documented remaining acceptance work. Historical evidence remains in RELEASE-2.1.1.md and the v2.1.2 GitHub release; it is not current deployment authority.

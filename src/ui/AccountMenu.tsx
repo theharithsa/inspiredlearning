@@ -1,4 +1,5 @@
 import { useReducedMotion } from "./motion";
+import { usePressMotion } from "./expressive-motion";
 import { useEffect, useId, useRef, useState } from "react";
 import "@material/web/menu/menu.js";
 import "@material/web/menu/menu-item.js";
@@ -24,6 +25,7 @@ export default function AccountMenu({
   onSignOut: () => void;
 }) {
   const quick = useReducedMotion();
+  const triggerRef = usePressMotion();
   const [failedPhoto, setFailedPhoto] = useState<string | null>(null);
   const showPhoto = !!photoURL && failedPhoto !== photoURL;
   const id = "account-" + useId().replace(/[^a-z0-9]/gi, ""),
@@ -68,6 +70,7 @@ export default function AccountMenu({
         {name}
       </span>
       <md-icon-button
+        ref={triggerRef}
         className="account-trigger"
         id={id}
         aria-label="Account menu"

@@ -1,13 +1,13 @@
 {
   "name": "inspiredlearning",
   "private": true,
-  "version": "2.1.4",
+  "version": "2.2.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build && vite build --mode admin",
     "lint": "oxlint src test scripts",
-    "test": "node scripts/test-node.mjs unit test/model.test.mjs test/api.test.mjs test/certificate-policy.test.mjs test/telemetry-policy.test.mjs test/config.test.mjs test/admin-session.test.mjs test/delivery-observability.test.mjs test/delivery-export.test.mjs test/appearance.test.mjs test/rum-readiness.test.mjs",
+    "test": "node scripts/test-node.mjs unit test/model.test.mjs test/api.test.mjs test/certificate-policy.test.mjs test/telemetry-policy.test.mjs test/config.test.mjs test/admin-session.test.mjs test/delivery-observability.test.mjs test/delivery-export.test.mjs test/appearance.test.mjs test/rum-readiness.test.mjs test/spring.test.mjs",
     "test:browser": "playwright test",
     "test:rehearsal": "node scripts/rehearsal.mjs",
     "test:integration": "firebase emulators:exec --config firebase.rehearsal.json --project demo-chaicart --only firestore \"node scripts/test-node.mjs integration --test-concurrency=1 test/integration.test.mjs test/outbox.test.mjs test/maintenance.test.mjs test/rate-limit.test.mjs\"",
