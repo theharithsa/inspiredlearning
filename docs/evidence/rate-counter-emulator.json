@@ -1,0 +1,44 @@
+{
+  "environment": "loopback Firestore emulator / demo-chaicart",
+  "measuredAt": "2026-10-29T14:48:31.285Z",
+  "productionActivated": false,
+  "limitations": "Document-operation observations are not billed-usage receipts or production latency/load evidence. IP provenance remains a rollout gate. Cleanup uses bounded query plus transactional rereads/deletes and is separate from these request counts.",
+  "reports": [
+    {
+      "scenario": "callable-sequential",
+      "requests": 20,
+      "accepted": 20,
+      "rejected": 0,
+      "failed": 0,
+      "logicalTransactionReads": 20,
+      "committedDocumentWrites": 20,
+      "transactionAttempts": 20,
+      "p50Ms": 6,
+      "p95Ms": 3119
+    },
+    {
+      "scenario": "rest-three-counters",
+      "requests": 20,
+      "accepted": 20,
+      "rejected": 0,
+      "failed": 0,
+      "logicalTransactionReads": 60,
+      "committedDocumentWrites": 60,
+      "transactionAttempts": 60,
+      "p50Ms": 15,
+      "p95Ms": 16
+    },
+    {
+      "scenario": "two-instance-burst",
+      "requests": 16,
+      "accepted": 16,
+      "rejected": 0,
+      "failed": 0,
+      "logicalTransactionReads": 17,
+      "committedDocumentWrites": 16,
+      "transactionAttempts": 17,
+      "p50Ms": 3381,
+      "p95Ms": 3419
+    }
+  ]
+}

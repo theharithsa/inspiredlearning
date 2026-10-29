@@ -1,3 +1,4 @@
+import { cleanRateCounters } from "./rate-limit.js";
 import { observeBacklog } from "./outbox-health.js";
 import { functionProfiles } from "./config.js";
 import { randomUUID } from "node:crypto";
@@ -216,6 +217,7 @@ export const retryLearningEvents = onSchedule(
         });
       }
     }
+    if (process.env.SHARED_RATE_LIMITS === "true") await cleanRateCounters(db);
     const { outboxHealth } = await import("./telemetry-admin.js");
     await measured(
       "outbox.health",
