@@ -7,6 +7,7 @@ export async function choose(scope, label, value) {
       .filter({ visible: true });
   await expect(control).toHaveAttribute("data-menu-state", "closed");
   await control.getByRole("combobox").click();
+  await expect(control).toHaveAttribute("data-menu-state", "opened");
   await control
     .locator(`md-select-option[data-value=${JSON.stringify(String(value))}]`)
     .click();

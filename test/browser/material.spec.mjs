@@ -176,7 +176,8 @@ test("every palette and mode themes the actual open dropdown and remains usable 
       const control = dialog.locator(
         'md-outlined-select[data-field-label="Site font"]',
       );
-      await control.click();
+      await control.getByRole("combobox").click();
+      await expect(control).toHaveAttribute("data-menu-state", "opened");
       const surface = await control.locator("md-menu").evaluate((el) => {
         const box = el.shadowRoot
           .querySelector(".menu")
@@ -199,6 +200,7 @@ test("every palette and mode themes the actual open dropdown and remains usable 
       expect(surface.bottom).toBeLessThanOrEqual(surface.height + 1);
       expect(surface.color).toMatch(/^#/);
       await page.keyboard.press("Escape");
+      await expect(control).toHaveAttribute("data-menu-state", "closed");
     }
   for (const width of [320, 390, 768, 1200, 1600]) {
     await page.setViewportSize({ width, height: 600 });
