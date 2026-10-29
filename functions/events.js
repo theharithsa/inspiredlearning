@@ -1,3 +1,4 @@
+import { cleanRateCounters } from "./rate-limit.js";
 import { observeBacklog } from "./outbox-health.js";
 import { functionProfiles } from "./config.js";
 import { randomUUID } from "node:crypto";
@@ -243,5 +244,15 @@ export const retryLearningEvents = onSchedule(
         });
       }
     }
+    // Counter housekeeping must not prevent privacy recovery or canonical delivery.
+    if (process.env.SHARED_RATE_LIMITS === "true" && Date.now() - started < budgetMs)
+      try {
+        await cleanRateCounters(db);
+      } catch {
+        log("WARN", "Rate counter cleanup deferred", {
+          operation: "rate.cleanup",
+          outcome: "failure",
+        });
+      }
   },
 );

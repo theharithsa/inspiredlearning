@@ -1,3 +1,4 @@
+import { createSharedRateLimiter, chooseRateLimiter } from "./rate-limit.js";
 import { checkCallableStepUp, requireRecentAuth } from "./admin-session.js";
 import { functionProfiles } from "./config.js";
 import { SpanKind } from "@opentelemetry/api";
@@ -22,7 +23,7 @@ const db = getFirestore();
 const options = (name) => ({ ...functionProfiles[name], secrets: [token] });
 const actorOf = (r) => callableActor(r, instrumentAuth(getAuth()));
 const buckets = new Map();
-function rate(key, limit = 120) {
+function localRate(key, limit = 120) {
   const now = Date.now();
   let b = buckets.get(key);
   if (!b || now - b.start > 60000) {
@@ -37,9 +38,22 @@ function rate(key, limit = 120) {
   if (buckets.size > 10000)
     for (const [k, v] of buckets) if (now - v.start > 60000) buckets.delete(k);
 }
+// Explicit rollout gate: shared counters stay off until measured usage is reviewed.
+const sharedRate = createSharedRateLimiter(db, {
+  observe: (fields) =>
+    log("INFO", "Rate counter observation", {
+      operation: "rate.limit",
+      ...fields,
+    }),
+});
+const rate = chooseRateLimiter(
+  localRate,
+  sharedRate,
+  process.env.SHARED_RATE_LIMITS === "true",
+);
 export const learningAction = onCall(options("actions"), async (r) => {
   const actor = await actorOf(r);
-  rate(actor.uid);
+  await rate(actor.uid);
   if (
     !r.data ||
     typeof r.data !== "object" ||
@@ -84,7 +98,7 @@ export const learningAction = onCall(options("actions"), async (r) => {
 });
 export const learningCertificate = onCall(options("pdf"), async (r) => {
   const actor = await actorOf(r);
-  rate(actor.uid, 30);
+  await rate(actor.uid, 30);
   if (!validCertificate(r.data?.id))
     throw new HttpsError("invalid-argument", "Choose a valid certificate.");
   return measured(
@@ -173,7 +187,7 @@ export const learningCertificate = onCall(options("pdf"), async (r) => {
   );
 });
 export const learningVerify = onCall(options("verify"), async (r) => {
-  rate("verify:" + r.rawRequest.ip, 60);
+  await rate("verify:" + r.rawRequest.ip, 60);
   return measured(
     "certificate.verify",
     null,
@@ -186,7 +200,7 @@ export const learningTelemetry = onCall(
   options("legacyTelemetry"),
   async (r) => {
     const actor = await actorOf(r);
-    rate("telemetry:" + actor.uid, 100);
+    await rate("telemetry:" + actor.uid, 100);
     const allowed = new Set([
       "ui.click",
       "page.view",
