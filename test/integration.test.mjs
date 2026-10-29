@@ -1049,7 +1049,14 @@ test("HTTP API and Swagger serve authenticated reads without disclosing private 
       405,
     );
     const docs = await fetch(base + "/api/docs");
-    assert.match(await docs.text(), /persistAuthorization:false/);
+    const docsHtml = await docs.text();
+    assert.match(docsHtml, /src="\/api\/docs\/swagger-init\.js"/);
+    assert.doesNotMatch(docsHtml, /<script>/);
+    const initializer = await fetch(base + "/api/docs/swagger-init.js");
+    assert.equal(initializer.status, 200);
+    assert.match(initializer.headers.get("content-type"), /javascript/);
+    assert.equal(initializer.headers.get("cache-control"), "no-store");
+    assert.match(await initializer.text(), /persistAuthorization:false/);
     const css = await fetch(base + "/api/docs/swagger-ui.css");
     assert.equal(css.status, 200);
     assert.match(css.headers.get("content-type"), /css/);

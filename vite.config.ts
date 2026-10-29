@@ -76,7 +76,7 @@ export default defineConfig(({ command, mode }) => {
           html.replace(
             "<!-- APP_RUM -->",
             rum
-              ? `<script src="${rum.replaceAll('"', "&quot;")}" crossorigin="anonymous"></script>`
+              ? `<script src="${rum.replaceAll('"', "&quot;")}" crossorigin="anonymous" async data-app-rum="async"></script>`
               : "",
           ),
       },

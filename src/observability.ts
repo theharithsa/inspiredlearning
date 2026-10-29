@@ -1,3 +1,4 @@
+import { createRumReadiness } from "./rum-readiness";
 import packageJson from "../package.json" with { type: "json" };
 import { cancelConfirmations } from "./ui/Confirm";
 import { isAdminApp } from "./surface";
@@ -22,14 +23,35 @@ try {
     "device-" + crypto.randomUUID();
   localStorage.setItem("inspiredlearning-device", device);
 } catch {}
+const browserObserver = createRumReadiness({
+  identify(value) {
+    if (!window.dtrum?.identifyUser) return false;
+    try {
+      window.dtrum.identifyUser(value);
+      return true;
+    } catch {
+      return false;
+    }
+  },
+  send(name, data) {
+    if (!window.dynatrace?.sendBizEvent) return false;
+    try {
+      window.dynatrace.sendBizEvent(name, data);
+    } catch {}
+    return true;
+  },
+  canRetry: () => !!document.querySelector('script[data-app-rum="async"]'),
+});
+window.addEventListener("pagehide", () => browserObserver.clear());
 let previousIdentity: string | null | undefined;
 export function identity(user: User | null) {
   if (previousIdentity !== user?.uid) {
     cancelConfirmations();
+    browserObserver.clear();
     previousIdentity = user?.uid;
   }
   try {
-    window.dtrum?.identifyUser(user?.email || device);
+    browserObserver.identity(user?.email || device);
   } catch {}
 }
 const safeNames = new Set([
@@ -45,7 +67,7 @@ const safeNames = new Set([
 ]);
 export function rum(name: string, fields: Record<string, unknown> = {}) {
   try {
-    window.dynatrace?.sendBizEvent("com.inspiredlearning.rum." + name, {
+    browserObserver.event("com.inspiredlearning.rum." + name, {
       "event.provider": "inspiredlearning-rum",
       "event.authority": "client-observed",
       "event.source": "browser",
