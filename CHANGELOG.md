@@ -69,3 +69,8 @@ This is a source maintenance release candidate, not production release evidence.
 - **Appearance settings** — approved violet default, six palettes and fourteen real locally served font families with license/provenance, persistence/reset and fallback feedback.
 - **Interaction verification** — keyboard/forms, dialogs/calendar, all fonts/palettes and automated accessibility checks complement existing emulator journeys.
 - Functions 2.0.0/API 1.5.0/MCP 1.0.1, auth policies and published records are unchanged. Source version does not establish deployment.
+
+## [2.1.1] - 2026-10-29
+
+- Patch the frontend’s transitive re2js dependency to 2.8.7 for GHSA-gg6h-894w-4m9c, found during the production release audit (#60).
+- Keep the Material 3 design, Firebase identities, permissions and published records unchanged. Functions remains 2.0.0, API 1.5.0 and MCP 1.0.1.

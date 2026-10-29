@@ -7,6 +7,9 @@
       "hosting": {
         "inspiredlearning": [
           "inspiredlearning-vh"
+        ],
+        "inspiredlearning-admin": [
+          "inspiredlearning-admin-vh"
         ]
       }
     }
