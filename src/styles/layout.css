@@ -71,7 +71,7 @@
 .workspace {
   max-width: 1440px;
   width: 100%;
-  padding: 0 40px;
+  padding: 0 32px;
   min-width: 0;
 }
 .workspace-top {
@@ -79,11 +79,11 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 20px 0;
+  padding: 12px 0;
   color: var(--muted);
   font-size: var(--md-sys-typescale-body-medium);
   border-bottom: 1px solid var(--line);
-  min-height: 88px;
+  min-height: 64px;
 }
 .workspace-top .top-title {
   display: flex;
@@ -97,14 +97,18 @@
   background: var(--md-sys-color-primary);
 }
 .page-heading {
-  padding: 36px 0 16px;
+  padding: 24px 0 16px;
+}
+.page-heading h1 {
+  margin-bottom: 8px;
 }
 .page-heading p {
+  margin-bottom: 0;
   color: var(--muted);
   max-width: 680px;
 }
 .page-heading.compact {
-  padding: 32px 0 12px;
+  padding: 24px 0 12px;
 }
 .page-heading.compact h1 {
   font-size: var(--md-sys-typescale-headline-large);

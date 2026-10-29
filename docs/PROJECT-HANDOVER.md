@@ -1,6 +1,6 @@
 # Private project handover
 
-Current production release: **app v2.1.1 / Functions 2.0.0 / API 1.5.0 / MCP 1.0.1**, deployed 29 October 2026. Learners use https://inspi.in; administrators use https://admin.inspi.in with separate tab/session sign-in and recent Google reauthentication. Read [RELEASE-2.1.1.md](RELEASE-2.1.1.md) for exact deployed revisions, checks, rollback and remaining observability limits before older historical sections. #34 tracks the broader v2 scope; #60/#61 record the release security patch.
+Current application source: **app v2.1.2 / Functions 2.0.0 / API 1.5.0 / MCP 1.0.1**. The spacing/Settings correction is #64; remaining visual review is #63. Learners use https://inspi.in and administrators use https://admin.inspi.in. Verify both live version.json manifests before assuming a source merge is deployed. The [v2.1.2 release record](https://github.com/theharithsa/inspiredlearning/releases/tag/v2.1.2) records the completed deployment and rollback references once published. Historical 2.1.1 deployment evidence is in [RELEASE-2.1.1.md](RELEASE-2.1.1.md); shared Auth and backend versions are unchanged.
 
 Workspace: InspiredLearning alongside `chaicart-live` and `workshop-reference`. Private repository: https://github.com/theharithsa/inspiredlearning. Firebase project: chaicloud-workshop; Hosting site: inspiredlearning-vh; Functions codebase: inspiredlearning; region: asia-south1. Domain inspi.in is managed in GoDaddy.
 
