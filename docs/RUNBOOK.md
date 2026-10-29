@@ -1,5 +1,7 @@
 # Operations runbook
 
+Current production evidence and independent Hosting rollback references: [2.1.1 release](RELEASE-2.1.1.md), deployed 29 October 2026. Learner https://inspi.in and administrator https://admin.inspi.in. Older single-portal routes below are historical.
+
 ## Deploy
 
 Project: `chaicloud-workshop`. Hosting target `inspiredlearning` maps to `inspiredlearning-vh`; Functions codebase `inspiredlearning` uses region `asia-south1` and the existing server secret `DYNATRACE_PLATFORM_TOKEN`.

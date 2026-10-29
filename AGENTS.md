@@ -14,3 +14,5 @@ Maintenance decisions are in docs/MAINTENANCE-POLICY-2026-10-27.md. v2.0.0 / adm
 
 
 v2.0.0 implementation is authorized under #34: Material 3 across existing InspiredLearning workflows and a separate admin.inspi.in app, with approved tab/session persistence and recent reauthentication, no mandatory MFA. This supersedes the earlier planning-only UI restriction. Read docs/DESIGN-SYSTEM.md, docs/API-V2-ADMIN-CONTRACT.md and docs/V2-RELEASE-PLAN.md. Membership #17 is design-only until migration is separately accepted. Source PR/merge permission does not authorize admin Hosting/DNS/Auth-domain provisioning, CI credential binding or production deployment. Preserve fixed captain mapping, current limits, outbox retention and documented email attribution.
+
+Current production deployment: app 2.1.1 at inspi.in and admin.inspi.in; Functions 2.0.0/API 1.5.0. Read docs/RELEASE-2.1.1.md before relying on the historical planning-only gates above. Future deployments, identity-policy changes, paid provisioning and learner migrations still require their own scope.
