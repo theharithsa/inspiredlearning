@@ -74,3 +74,9 @@ This is a source maintenance release candidate, not production release evidence.
 
 - Patch the frontend’s transitive re2js dependency to 2.8.7 for GHSA-gg6h-894w-4m9c, found during the production release audit (#60).
 - Keep the Material 3 design, Firebase identities, permissions and published records unchanged. Functions remains 2.0.0, API 1.5.0 and MCP 1.0.1.
+
+## [2.1.2] - 2026-10-29
+
+- Keep the Settings title, close control and action footer visible while only the body scrolls; remove duplicate preview actions and make the font control visible at laptop height.
+- Rebalance shared workspace, heading, panel and verification-banner spacing; use content-width actions in stacked forms.
+- Add four viewport geometry regressions. This is the scoped correction in #64; broader route-by-route visual acceptance remains tracked by #63. Functions 2.0.0/API 1.5.0/MCP 1.0.1 are unchanged.
