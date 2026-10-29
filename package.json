@@ -7,14 +7,16 @@
     "dev": "vite",
     "build": "tsc -b && vite build && vite build --mode admin",
     "lint": "oxlint src test scripts",
-    "test": "node scripts/test-node.mjs unit test/model.test.mjs test/api.test.mjs test/certificate-policy.test.mjs test/telemetry-policy.test.mjs test/config.test.mjs test/admin-session.test.mjs test/delivery-observability.test.mjs test/delivery-export.test.mjs test/appearance.test.mjs",
+    "test": "node scripts/test-node.mjs unit test/model.test.mjs test/api.test.mjs test/certificate-policy.test.mjs test/telemetry-policy.test.mjs test/config.test.mjs test/admin-session.test.mjs test/delivery-observability.test.mjs test/delivery-export.test.mjs test/appearance.test.mjs test/rum-readiness.test.mjs",
     "test:browser": "playwright test",
     "test:rehearsal": "node scripts/rehearsal.mjs",
     "test:integration": "firebase emulators:exec --config firebase.rehearsal.json --project demo-chaicart --only firestore \"node scripts/test-node.mjs integration --test-concurrency=1 test/integration.test.mjs test/outbox.test.mjs test/maintenance.test.mjs\"",
     "test:swagger": "node scripts/test-node.mjs swagger test/swagger.test.mjs",
     "test:api-auth": "firebase emulators:exec --config firebase.rehearsal.json --project demo-chaicart --only auth,firestore \"node scripts/test-node.mjs auth test/api-auth.test.mjs\"",
     "test:tooling": "node scripts/test-node.mjs tooling test/tooling-compat.test.mjs",
-    "test:tooling-emulator": "firebase emulators:exec --project demo-chaicart --config test/firebase.tooling.json --only pubsub \"node scripts/test-node.mjs tooling-pubsub test/tooling-pubsub.test.mjs\""
+    "test:tooling-emulator": "firebase emulators:exec --project demo-chaicart --config test/firebase.tooling.json --only pubsub \"node scripts/test-node.mjs tooling-pubsub test/tooling-pubsub.test.mjs\"",
+    "test:security-browser": "node scripts/test-node.mjs security-browser test/security-browser.test.mjs",
+    "test:hosting-cache": "node scripts/test-hosting-cache.mjs"
   },
   "dependencies": {
     "@material/web": "2.5.0",

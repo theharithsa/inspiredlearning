@@ -82,11 +82,17 @@ export function apiHandler({ db, auth, rate, measured, audit }) {
         .set("Allow", methods.join(", "))
         .json({ error: { code: "method-not-allowed" } });
     if (req.path === "/api/openapi.json") return res.json(spec);
+    if (req.path === "/api/docs/swagger-init.js")
+      return res
+        .type("application/javascript")
+        .send(
+          'SwaggerUIBundle({url:"/api/openapi.json",dom_id:"#swagger-ui",persistAuthorization:false,validatorUrl:null});',
+        );
     if (req.path === "/api/docs" || req.path === "/api/docs/")
       return res
         .type("html")
         .send(
-          '<!doctype html><html><head><title>InspiredLearning API</title><link rel="stylesheet" href="/api/docs/swagger-ui.css"></head><body><div id="swagger-ui"></div><script src="/api/docs/swagger-ui-bundle.js"></script><script>SwaggerUIBundle({url:"/api/openapi.json",dom_id:"#swagger-ui",persistAuthorization:false,validatorUrl:null});</script></body></html>',
+          '<!doctype html><html><head><title>InspiredLearning API</title><link rel="stylesheet" href="/api/docs/swagger-ui.css"></head><body><div id="swagger-ui"></div><script src="/api/docs/swagger-ui-bundle.js"></script><script src="/api/docs/swagger-init.js"></script></body></html>',
         );
     if (
       ["/api/docs/swagger-ui.css", "/api/docs/swagger-ui-bundle.js"].includes(

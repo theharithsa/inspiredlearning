@@ -79,3 +79,7 @@ The independent inspiredlearning-delivery service exports source-validated GitHu
 ## App 2.1.0 appearance
 
 Browser session metadata now includes `app.version` from the frontend package and `app.surface`. The click observer recognizes Material shadow-control hosts through the composed event path and records only existing safe `ui.click` action metadata. It does not collect typed field values, font URLs or preference payloads. Appearance is a local browser preference; it does not emit canonical server business outcomes or write Firestore. Functions remains 2.0.0 and API remains 1.5.0. Local collector acceptance and source tests do not establish production RUM or Dynatrace tenant visibility.
+
+## Asynchronous RUM source candidate (#14)
+
+The candidate tag loads asynchronously. Identity and application observations have a five-second, 32-event in-memory readiness buffer cleared on account change/page hide; blocked agents remain best effort. Browser observations retain client-observed authority and the existing email attribution policy. Early native timings/actions may be absent; no native cross-signal linkage follows from queue delivery. See [Hosting security verification](SECURITY-HOSTING-HARDENING.md) for local evidence and outstanding production gates.
