@@ -12,7 +12,9 @@
     "test:rehearsal": "node scripts/rehearsal.mjs",
     "test:integration": "firebase emulators:exec --config firebase.rehearsal.json --project demo-chaicart --only firestore \"node scripts/test-node.mjs integration --test-concurrency=1 test/integration.test.mjs test/outbox.test.mjs test/maintenance.test.mjs\"",
     "test:swagger": "node scripts/test-node.mjs swagger test/swagger.test.mjs",
-    "test:api-auth": "firebase emulators:exec --config firebase.rehearsal.json --project demo-chaicart --only auth,firestore \"node scripts/test-node.mjs auth test/api-auth.test.mjs\""
+    "test:api-auth": "firebase emulators:exec --config firebase.rehearsal.json --project demo-chaicart --only auth,firestore \"node scripts/test-node.mjs auth test/api-auth.test.mjs\"",
+    "test:tooling": "node scripts/test-node.mjs tooling test/tooling-compat.test.mjs",
+    "test:tooling-emulator": "firebase emulators:exec --project demo-chaicart --config test/firebase.tooling.json --only pubsub \"node scripts/test-node.mjs tooling-pubsub test/tooling-pubsub.test.mjs\""
   },
   "dependencies": {
     "@material/web": "2.5.0",
@@ -36,13 +38,19 @@
     "@types/react-dom": "^19.2.7",
     "@vitejs/plugin-react": "^6.1.1",
     "ajv": "^8.20.0",
-    "firebase-tools": "15.34.1",
+    "firebase-tools": "15.34.2",
     "oxlint": "^1.81.0",
     "protobufjs": "^7.6.6",
     "typescript": "~6.0.2",
     "vite": "^8.3.0"
   },
   "overrides": {
-    "@grpc/grpc-js": "^1.13.6"
+    "@grpc/grpc-js": "^1.13.6",
+    "@google-cloud/pubsub": {
+      "@opentelemetry/core": "2.12.0"
+    },
+    "gaxios@6.7.1": {
+      "uuid": "11.1.1"
+    }
   }
 }

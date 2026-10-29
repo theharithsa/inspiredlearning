@@ -80,3 +80,7 @@ This is a source maintenance release candidate, not production release evidence.
 - Keep the Settings title, close control and action footer visible while only the body scrolls; remove duplicate preview actions and make the font control visible at laptop height.
 - Rebalance shared workspace, heading, panel and verification-banner spacing; use content-width actions in stacked forms.
 - Add four viewport geometry regressions. This is the scoped correction in #64; broader route-by-route visual acceptance remains tracked by #63. Functions 2.0.0/API 1.5.0/MCP 1.0.1 are unchanged.
+
+## Unreleased
+
+- Patch Firebase CLI tooling advisories (#57) with pinned CLI 15.34.2 and narrowly scoped, API-reviewed core/uuid overrides. Add real Pub/Sub propagation, multipart HTTP and CLI emulator compatibility gates. No runtime Functions dependency or production deployment changes are included.
