@@ -17,4 +17,4 @@ v2.0.0 implementation is authorized under #34: Material 3 across existing Inspir
 
 Current production deployment: app 2.1.2 at inspi.in and admin.inspi.in; Functions 2.0.0/API 1.5.0. Read docs/RELEASE-2.1.1.md before relying on the historical planning-only gates above. Future deployments, identity-policy changes, paid provisioning and learner migrations still require their own scope.
 
-Maintenance candidate 2.1.3 is tracked in docs/RELEASE-2.1.3-PLAN.md. Shared Firestore rate counters remain disabled until measured usage/rollout scope is accepted; public IP protection remains separately unresolved. #9 alert setup is explicitly deferred. #17 membership writer/rules/backfill/cutover is not included. Preserve those gates even after source merges.
+Maintenance candidate 2.1.3 is tracked in docs/RELEASE-2.1.3-PLAN.md. The owner accepted shared authenticated limits after usage review; activate only with an approved production Functions release. Public IP protection remains separately unresolved. #9 alert setup is explicitly deferred. #17 membership writer/rules/backfill/cutover is explicitly on hold. Preserve those gates even after source merges.

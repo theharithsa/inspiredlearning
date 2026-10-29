@@ -9,13 +9,13 @@ This is a reviewable source/release plan, not deployment authorization or a comp
 - REST API remains 1.5.0; MCP remains 1.0.1. No domain permissions, credits, certificates, fixed captain mapping or shared Firebase UIDs change.
 - CLI-only advisory remediation was merged in #65. It does not require a production deployment.
 
-#9 alert delivery remains deferred by explicit decision. Outbox retention and documented email telemetry remain unchanged. No membership-index writer, rules/index deployment, backfill or completeness cutover (#17), paid infrastructure or CI credential binding is included. The separate membership-retention decision remains pending.
+#9 alert delivery remains deferred by explicit decision. Outbox retention and documented email telemetry remain unchanged. No membership-index writer, rules/index deployment, backfill or completeness cutover (#17), paid infrastructure or CI credential binding is included. The membership migration is explicitly on hold by owner decision.
 
 ## Predeployment gates
 
 1. Review and merge #66/#67/#68 only on passing exact-head checks; resolve the combined source and run the applicable integrated checks. Do not reuse success from a previous head or treat cancelled/skipped jobs as passing.
 2. Run lint, unit, both demo builds, production dependency audits, Firestore integration, Auth, Swagger, MCP and full browser rehearsal. Include test:security-browser and test:hosting-cache from #67, tooling compatibility and the six counter emulator cases from #66. Review CI synthetic-route-review screenshots from #68. Tests use demo-chaicart/local collectors only.
-3. Review the measured request-counter operations and the authenticated/public phase decision. Keep SHARED_RATE_LIMITS unset/false unless separately accepted; do not silently enable it as part of a UI/CSP deployment. The emulator report is not production performance or billing evidence.
+3. The owner accepted shared authenticated limits after reviewing emulator usage: verified users/API tokens only, with public checks available under the existing anonymous throttle. Activate SHARED_RATE_LIMITS=true with the approved production Functions rollout; the source default remains off. Public/pre-auth IP keys remain excluded regardless of this flag. The emulator report is not production performance or billing evidence; record actual counter operation/latency observations separately after activation.
 4. Capture current deployed functions/Hosting revisions and read-only learner/certificate projection hashes. Confirm existing secure configuration/rollback artifacts without printing credentials. Build the exact clean merged revision with the existing production public config passed to both modes. Verify both version.json files: app version, correct surface, clean revision and production environment. Never deploy the demo CI artifacts.
 5. Obtain release authorization for the concrete integrated candidate. Repository source/merge permission alone does not grant production rollout.
 
