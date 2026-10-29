@@ -36,6 +36,9 @@ jobs:
       - run: npm run test:tooling && npm run test:tooling-emulator
       - run: npm run test:integration
       - run: npx playwright install --with-deps chromium
+      - run: npm run test:security-browser && npm run test:hosting-cache
+        env:
+          CI: "1"
       - run: npm run test:swagger && node scripts/test-node.mjs mcp mcp/test/*.test.mjs
       - run: npm run test:api-auth
       - run: npm run test:rehearsal
