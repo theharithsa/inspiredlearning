@@ -1,4 +1,5 @@
 import Icon from "./ui/Icon";
+import Button from "./ui/Button";
 import { workshopCredits } from "./credits";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
@@ -53,15 +54,15 @@ export function CommunityCard() {
         Join fellow learners and captains on Discord. Ask questions, share what
         you build and help someone take their next step.
       </p>
-      <a
-        className="button light"
+      <Button
+        variant="tonal"
         data-event="discord.opened"
         href={DISCORD}
         target="_blank"
         rel="noreferrer"
       >
         Join the community ↗
-      </a>
+      </Button>
     </aside>
   );
 }

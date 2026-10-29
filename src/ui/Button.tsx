@@ -12,6 +12,7 @@ import "@material/web/button/text-button.js";
 import "@material/web/iconbutton/icon-button.js";
 import "@material/web/progress/circular-progress.js";
 import Icon from "./Icon";
+import { usePressMotion } from "./expressive-motion";
 type Props = ButtonHTMLAttributes<HTMLButtonElement> & {
   href?: string;
   target?: string;
@@ -29,6 +30,7 @@ export default function Button({
   busy,
   ...props
 }: Props) {
+  const motionRef = usePressMotion(props.disabled || busy);
   const kind =
     variant ||
     (className.includes("icon-button")
@@ -74,6 +76,7 @@ export default function Button({
     {
       ...props,
       ...aria,
+      ref: motionRef,
       disabled: props.disabled || busy,
       "aria-busy": busy ? "true" : undefined,
       className: `md-button ${classes}`,

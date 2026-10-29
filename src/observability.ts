@@ -143,12 +143,17 @@ export function installClicks() {
     const path = event
       .composedPath()
       .filter((node): node is HTMLElement => node instanceof HTMLElement);
+    const candidates = path.filter((node) =>
+      node.matches(
+        "a,md-filled-button,md-filled-tonal-button,md-outlined-button,md-text-button,md-icon-button,md-checkbox,md-radio,md-list-item,md-menu-item,md-select-option",
+      ),
+    );
+    // A Material link renders an inner anchor. Retain the allowlisted action
+    // on its adapter host instead of replacing it with a generic UI click.
     const target =
-      path.find((node) =>
-        node.matches(
-          "a,md-filled-button,md-filled-tonal-button,md-outlined-button,md-text-button,md-icon-button,md-checkbox,md-radio,md-list-item,md-menu-item,md-select-option",
-        ),
-      ) || path.find((node) => node.matches('button,input[type="checkbox"]'));
+      candidates.find((node) => safeNames.has(node.dataset.event || "")) ||
+      candidates[0] ||
+      path.find((node) => node.matches('button,input[type="checkbox"]'));
     if (!target || target.hasAttribute("disabled")) return;
     const name = target.dataset.event || "ui.click";
     interaction(safeNames.has(name) ? name : "ui.click");

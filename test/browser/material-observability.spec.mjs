@@ -51,3 +51,34 @@ test("Material shadow clicks retain versioned client metadata without capturing 
   expect(JSON.stringify(events)).not.toContain("Private draft value 90317");
   expect(JSON.stringify(events)).not.toContain("Site font");
 });
+
+test("Material community links retain the allowlisted client action across their inner anchor", async ({
+  page,
+}) => {
+  await page.route("https://**dynatrace.com/**", (route) => route.abort());
+  await page.context().route("https://discord.gg/**", (route) => route.abort());
+  await page.goto("/");
+  const link = page.getByRole("link", {
+    name: "Join the community ↗",
+    exact: true,
+  });
+  await expect(link).toBeVisible();
+  await page.evaluate(() => {
+    window.__materialEvents = [];
+    window.dynatrace = {
+      sendBizEvent: (type, data) =>
+        window.__materialEvents.push({ type, data }),
+    };
+  });
+  const [popup] = await Promise.all([page.waitForEvent("popup"), link.click()]);
+  await popup.close();
+  const events = await page.evaluate(() =>
+    window.__materialEvents.filter(
+      (e) => e.type === "com.inspiredlearning.rum.discord.opened",
+    ),
+  );
+  expect(events).toHaveLength(1);
+  expect(events[0].data["event.authority"]).toBe("client-observed");
+  expect(events[0].data["app.version"]).toBe(packageJson.version);
+  expect(Object.keys(events[0].data)).not.toContain("text");
+});

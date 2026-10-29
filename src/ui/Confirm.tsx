@@ -1,4 +1,5 @@
 import Button from "./Button";
+import { enterSurface } from "./expressive-motion";
 /* eslint-disable react/only-export-components -- The dialog service and its host share the event contract. */
 import { useEffect, useId, useRef, useState } from "react";
 interface Request {
@@ -64,12 +65,14 @@ export default function ConfirmHost() {
     if (request && dialog.current && !dialog.current.open) {
       const el = dialog.current;
       el.showModal();
+      const stopMotion = enterSurface(el);
       const cancel = el.querySelector<
         HTMLElement & { updateComplete?: Promise<unknown> }
       >("[data-confirm-cancel]");
       void Promise.resolve(cancel?.updateComplete).then(() => {
         if (el.open) cancel?.focus();
       });
+      return stopMotion;
     }
   }, [request]);
   return request ? (
