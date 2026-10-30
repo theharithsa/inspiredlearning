@@ -464,6 +464,40 @@ test("privileged reporting keeps production credentials out of source Checks and
   );
   assert.ok(!observer.includes("pull_request.head.sha"));
   assert.ok(observer.includes("--ignore-scripts"));
+  assert.ok(observer.includes("name: Production"));
+  assert.ok(observer.includes("deployment: false"));
   assert.ok(observer.includes("retention-days: 14"));
   assert.ok(!observer.includes("id-token: write"));
+});
+
+test("reviewed deployment replay preserves original provider/probe times and rejects modified receipts", async () => {
+  const { recordedDeploymentEvents } = await import(
+    "../scripts/observability/recorded-deployments.mjs"
+  );
+  const receipts = [hostingFacts(receipt()), hostingFacts(receipt("admin"))];
+  const rows = recordedDeploymentEvents(receipts);
+  assert.equal(rows.length, 4);
+  assert.equal(rows[0].time, time);
+  assert.equal(rows[1].time, observed);
+  const { readFileSync } = await import("node:fs");
+  const actual = JSON.parse(
+    readFileSync(
+      new URL(
+        "../docs/evidence/observability-2.2.1/provider-observation.json",
+        import.meta.url,
+      ),
+      "utf8",
+    ),
+  );
+  assert.equal(recordedDeploymentEvents(actual.receipts).length, 4);
+  assert.throws(() => recordedDeploymentEvents([receipts[0]]));
+  assert.throws(() =>
+    recordedDeploymentEvents([
+      receipts[0],
+      {
+        ...receipts[1],
+        manifest: { ...receipts[1].manifest, revision: "b".repeat(40) },
+      },
+    ]),
+  );
 });

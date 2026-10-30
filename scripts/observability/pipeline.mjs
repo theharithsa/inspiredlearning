@@ -110,6 +110,8 @@ export function deliveryPipeline(origin, credential, { local = false } = {}) {
       unit: "s",
     });
   function span(name, attrs, start, end, parent) {
+    // Count source-observed phases even when skipped/cancelled timestamps are absent.
+    counter.add(1, { phase: name, outcome: attrs["github.outcome"] });
     const from = Date.parse(start),
       to = Date.parse(end);
     if (!Number.isFinite(from) || !Number.isFinite(to) || to < from)
@@ -126,7 +128,6 @@ export function deliveryPipeline(origin, credential, { local = false } = {}) {
     )
       s.setStatus({ code: SpanStatusCode.ERROR });
     s.end(to);
-    counter.add(1, { phase: name, outcome: attrs["github.outcome"] });
     duration.record((to - from) / 1000, {
       phase: name,
       outcome: attrs["github.outcome"],

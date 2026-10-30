@@ -1,3 +1,4 @@
+import { recordedDeploymentEvents } from "./recorded-deployments.mjs";
 import { boundedJson, telemetryOrigin } from "./transport.mjs";
 import { eventRecord } from "./events.mjs";
 import { enqueue, drain } from "./spool.mjs";
@@ -38,6 +39,9 @@ async function github(path) {
   return boundedJson(r, 5_000_000);
 }
 let eventName = process.env.GITHUB_EVENT_NAME;
+const replayHosting =
+  eventName === "workflow_dispatch" &&
+  ["true", true].includes(event.inputs?.replay_hosting_observation);
 if (eventName === "workflow_dispatch") {
   const { run_id, attempt } = event.inputs || {};
   if (
@@ -229,6 +233,20 @@ try {
     for (const payload of testEvents(identity, reports, observedAt))
       await enqueue(folder, payload);
   }
+  if (replayHosting) {
+    // Reviewed default-branch provider receipts only. Never PR/user-supplied paths,
+    // never restamp the historical deployment or its original probe time.
+    const raw = readFileSync(
+      new URL(
+        "../../docs/evidence/observability-2.2.1/provider-observation.json",
+        import.meta.url,
+      ),
+      "utf8",
+    );
+    if (raw.length > 100000) throw Error("Recorded observation too large");
+    for (const payload of recordedDeploymentEvents(JSON.parse(raw).receipts))
+      await enqueue(folder, payload);
+  }
   const summary = await drain(folder, endpoint.origin, credential);
   console.log(
     JSON.stringify({
@@ -240,5 +258,10 @@ try {
   );
   if (summary.failed || summary.pending) process.exitCode = 1;
 } finally {
-  if (pipeline) console.log(JSON.stringify({ otlp: await pipeline.close() }));
+  if (pipeline) {
+    const result = await pipeline.close();
+    console.log(JSON.stringify({ otlp: result }));
+    if (Object.values(result.signals).some((signal) => signal.sdkFailure > 0))
+      process.exitCode = 1;
+  }
 }

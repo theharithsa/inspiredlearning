@@ -145,7 +145,12 @@ export async function drain(
     });
     await rename(temporary, file);
     summary[record.status]++;
-    if (result.status === 401 || result.status === 403) stop = true;
+    if (
+      result.status === 401 ||
+      result.status === 403 ||
+      ["transport", "transient-exhausted"].includes(result.reason)
+    )
+      stop = true;
   }
   return summary;
 }

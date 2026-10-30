@@ -109,4 +109,4 @@ Revision 42b2efb5b6a85f1bef8926022b2aaaa5c07e71d4 is live on both origins; all n
 
 ## 2.2.1 observability source — #77
 
-Current source candidate expands dt-obs browser and delivery coverage. Read [OBSERVABILITY-2.2.1.md](OBSERVABILITY-2.2.1.md) before activation/replay. Production remains 2.2.0; Functions/API/MCP are unchanged. CI needs dedicated secure credential binding and separate tenant verification; no token from chat is copied. Four provider/probe events for existing 2.2.0 releases were queued locally, not ingested. #9 alerts remain deferred and #17 migration held.
+Current source candidate expands dt-obs browser and delivery coverage. Read [OBSERVABILITY-2.2.1.md](OBSERVABILITY-2.2.1.md) before activation/replay. Production remains 2.2.0; Functions/API/MCP are unchanged. The owner supplied Production/DYNATRACE_CI_TOKEN through GitHub; the workflow references it without deployment tracking. Enablement and tenant verification remain pending; no token value from chat is copied. Four provider/probe events for existing 2.2.0 releases were queued locally, not ingested. #9 alerts remain deferred and #17 migration held.

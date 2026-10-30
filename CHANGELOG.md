@@ -6,7 +6,7 @@
 - Move structured test ingestion into the trusted observer; exclude PR artifacts, validate bounded data-only ZIP summaries and preserve sanitized retry state. Add per-signal OTel SDK outcome diagnostics and current reporter version.
 - Capture real Firebase Hosting deployment/rollback facts separately from live manifest/API/access verification, with optional verified native deployment markers.
 - Add redacted browser route, callable/REST duration, request-ID and rejection/failure context with account-switch isolation. Keep canonical learner events unchanged.
-- [Coverage, recovery, local evidence and activation/deployment gates](docs/OBSERVABILITY-2.2.1.md). No 2.2.1 production deployment or CI credential binding is certified.
+- [Coverage, recovery, local evidence and activation/deployment gates](docs/OBSERVABILITY-2.2.1.md). No 2.2.1 production deployment or CI activation is certified.
 
 ## [2.2.0] - 2026-10-30
 
