@@ -126,6 +126,14 @@ test("provider deployment and later runtime verification are distinct, sanitized
   });
   assert.equal(failed.events[0].data["sdlc.status"], "deployed");
   assert.equal(failed.verification, "failed");
+  assert.equal(failed.events[0].data["vcs.revision"], undefined);
+  assert.equal(failed.events[0].data["artifact.expected.revision"], sha);
+  assert.throws(() =>
+    nativeDeployment(
+      { ...r, manifest: { ...r.manifest, version: "9.9.9" } },
+      { now: Date.parse(observed) },
+    ),
+  );
   assert.throws(() => nativeDeployment(failed));
   assert.throws(() =>
     hostingFacts({

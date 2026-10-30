@@ -1,3 +1,4 @@
+import { isDeepStrictEqual } from "node:util";
 import { createHash } from "node:crypto";
 import { eventRecord, sourceTime } from "./events.mjs";
 import { verifiedDeployment } from "./release-verification.mjs";
@@ -63,10 +64,19 @@ export function hostingFacts({
   const digest = createHash("sha256")
     .update(JSON.stringify(Object.fromEntries(Object.entries(manifest).sort())))
     .digest("hex");
+  let match = false;
+  try {
+    verifiedDeployment(manifest, live, surface);
+    match = true;
+  } catch {}
   const data = {
     "github.repository": repository,
-    "vcs.revision": manifest.revision,
-    "app.version": manifest.version,
+    ...(match
+      ? { "vcs.revision": manifest.revision, "app.version": manifest.version }
+      : {
+          "artifact.expected.revision": manifest.revision,
+          "artifact.expected.version": manifest.version,
+        }),
     "app.surface": surface,
     "deployment.environment": "production",
     "deployment.id": after.name,
@@ -76,11 +86,6 @@ export function hostingFacts({
     "deployment.origin": config.origin,
     "artifact.manifest.sha256": digest,
   };
-  let match = false;
-  try {
-    verifiedDeployment(manifest, live, surface);
-    match = true;
-  } catch {}
   const passed =
     match && checks?.api === true && checks?.anonymousAdminDenied === true;
   const deployment = eventRecord({
@@ -160,7 +165,7 @@ export function nativeDeployment(
     checks: { api: true, anonymousAdminDenied: true },
     observedAt: receipt.observedAt,
   });
-  if (replay.events[0].id !== receipt.events?.[0]?.id)
+  if (!isDeepStrictEqual(replay.events[0], receipt.events?.[0]))
     throw Error("Deployment receipt identity mismatch");
   const startTime = Date.parse(sourceTime(receipt.source.releaseTime));
   if (startTime < now - 30 * 86400000 || startTime > now + 300000)
