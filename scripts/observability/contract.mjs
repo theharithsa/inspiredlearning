@@ -271,3 +271,31 @@ export function relationshipFacts(pr, issues, repository) {
     };
   });
 }
+
+export function reviewAssociations(source, candidates, repository) {
+  const direct = source.pull_requests;
+  if (!Array.isArray(direct) || direct.length > 10)
+    throw Error("Invalid review/PR associations");
+  let numbers = direct.map((pr) => pr.number);
+  if (!numbers.length) {
+    if (!Array.isArray(candidates) || candidates.length >= 100)
+      throw Error("Commit association bound exceeded");
+    numbers = candidates
+      .filter(
+        (pr) =>
+          pr.base?.repo?.full_name === repository &&
+          pr.head?.repo?.full_name === repository &&
+          pr.head?.sha === source.head_sha &&
+          pr.head?.ref === source.head_branch,
+      )
+      .map((pr) => pr.number);
+  }
+  if (
+    !numbers.length ||
+    numbers.length > 10 ||
+    new Set(numbers).size !== numbers.length ||
+    numbers.some((n) => !Number.isSafeInteger(n) || n < 1)
+  )
+    throw Error("Review/PR association unavailable or ambiguous");
+  return numbers;
+}

@@ -12,6 +12,7 @@ import {
   runIdentity,
   reviewRunIdentity,
   reviewFacts,
+  reviewAssociations,
   workflowFacts,
   lifecycleFact,
   relationshipFacts,
@@ -87,26 +88,29 @@ if (eventName === "workflow_run") {
   }
   rows = workflowFacts(identity, jobs);
   if (reviewSignal) {
-    const prs = source.pull_requests;
-    if (!Array.isArray(prs) || !prs.length || prs.length > 10)
-      throw Error("Review/PR association unavailable or over bound");
-    for (const pr of prs) {
-      if (!Number.isSafeInteger(pr.number) || pr.number < 1)
-        throw Error("Invalid source PR association");
+    // GitHub can clear run.pull_requests after merge. Recover only source-API
+    // commit associations with the exact same head repo, SHA and branch.
+    const candidates = source.pull_requests?.length
+      ? []
+      : await github(
+          `/repos/${repository}/commits/${source.head_sha}/pulls?per_page=100`,
+        );
+    const numbers = reviewAssociations(source, candidates, repository);
+    for (const number of numbers) {
       const reviews = await github(
-        `/repos/${repository}/pulls/${pr.number}/reviews?per_page=100`,
+        `/repos/${repository}/pulls/${number}/reviews?per_page=100`,
       );
       if (!Array.isArray(reviews)) throw Error("Invalid review response");
       if (
         reviews.length === 100 &&
         (
           await github(
-            `/repos/${repository}/pulls/${pr.number}/reviews?per_page=100&page=2`,
+            `/repos/${repository}/pulls/${number}/reviews?per_page=100&page=2`,
           )
         ).length
       )
         throw Error("Review pagination bound exceeded");
-      rows.push(...reviewFacts(pr.number, reviews, repository));
+      rows.push(...reviewFacts(number, reviews, repository));
     }
   }
   pipeline = deliveryPipeline(endpoint.origin, credential);
