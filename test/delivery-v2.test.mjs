@@ -276,6 +276,25 @@ function archive(name, value) {
 test("data-only archive parser refuses traversal/unexpected entries; missing tests never go green", () => {
   assert.throws(() => parseArchive(archive("../unit.json", {})));
   assert.throws(() => parseArchive(archive("run.sh", "secret")));
+  const names = [
+    "unit",
+    "integration",
+    "auth",
+    "swagger",
+    "mcp",
+    "browser",
+    "security-browser",
+    "hosting-cache-learner",
+    "hosting-cache-admin",
+    "tooling",
+    "tooling-pubsub",
+  ];
+  const zip = spawnSync("python3", [
+    "-c",
+    'import io,zipfile,json,sys; b=io.BytesIO(); z=zipfile.ZipFile(b,"w"); [z.writestr(n+".json",json.dumps({"schema":1,"runner":"node","complete":False})) for n in json.loads(sys.argv[1])]; z.close(); sys.stdout.buffer.write(b.getvalue())',
+    JSON.stringify(names),
+  ]).stdout;
+  assert.deepEqual(Object.keys(parseArchive(zip)), names);
   const reports = parseArchive(
     archive("unit.json", {
       schema: 1,
@@ -290,7 +309,7 @@ test("data-only archive parser refuses traversal/unexpected entries; missing tes
     reports,
     observed,
   );
-  assert.equal(rows.length, 10);
+  assert.equal(rows.length, 11);
   assert.ok(
     rows.every((r) => r.data["test.report.status"] === "missing-or-partial"),
   );

@@ -8,7 +8,8 @@ export const suites = [
   "mcp",
   "browser",
   "security-browser",
-  "hosting-cache",
+  "hosting-cache-learner",
+  "hosting-cache-admin",
   "tooling",
   "tooling-pubsub",
 ];
