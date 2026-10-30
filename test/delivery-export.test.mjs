@@ -52,7 +52,23 @@ test("delivery pipeline sends actual independent traces, metrics and logs with C
         outcome: "success",
       },
     );
-    await pipeline.close();
+    // A cancelled run with absent execution timestamps is a fact, not a duration.
+    await pipeline.workflow(
+      {},
+      [{ id: 3, conclusion: "cancelled", steps: [] }],
+      {
+        repository: "fixture/app",
+        runId: 3,
+        attempt: 1,
+        sha: "a".repeat(40),
+        outcome: "cancelled",
+      },
+    );
+    const result = await pipeline.close();
+    for (const signal of ["traces", "metrics", "logs"]) {
+      assert.ok(result.signals[signal].sdkSuccess > 0);
+      assert.equal(result.signals[signal].sdkFailure, 0);
+    }
     for (const signal of ["traces", "metrics", "logs"])
       assert.ok(received.get("/api/v2/otlp/v1/" + signal)?.length, signal);
     const wire = protobuf

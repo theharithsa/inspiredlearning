@@ -1,3 +1,9 @@
+import {
+  observeRequest,
+  routeTemplate,
+  outcome,
+  browserRoute,
+} from "./browser-telemetry";
 export async function apiJson<T>(
   response: Response,
   fallback: string,
@@ -49,16 +55,51 @@ export async function apiFetch<T>(
   const headers = new Headers(options.headers);
   headers.set("Authorization", `Bearer ${token}`);
   if (options.body) headers.set("Content-Type", "application/json");
-  const response = await fetch(path, {
-    ...options,
-    headers,
-    cache: "no-store",
-    redirect: "error",
-  });
-  const result = await apiJson<T>(response, fallback);
-  if (auth.currentUser?.uid !== user.uid)
-    throw new Error("Your signed-in account changed.");
-  return result;
+  const started = performance.now();
+  const uiRoute = browserRoute();
+  let response: Response | undefined;
+  let failure: unknown;
+  try {
+    response = await fetch(path, {
+      ...options,
+      headers,
+      cache: "no-store",
+      redirect: "error",
+    });
+    const result = await apiJson<T>(response, fallback);
+    if (auth.currentUser?.uid !== user.uid)
+      throw new Error("Your signed-in account changed.");
+    return result;
+  } catch (error) {
+    failure = error;
+    throw error;
+  } finally {
+    if (auth.currentUser?.uid === user.uid) {
+      const result = outcome(failure, response?.status);
+      const requestId = response?.headers.get("X-Request-Id");
+      observeRequest({
+        "http.route": routeTemplate(target.pathname, true),
+        "ui.route": uiRoute,
+        "http.request.method": [
+          "GET",
+          "POST",
+          "PUT",
+          "PATCH",
+          "DELETE",
+          "HEAD",
+        ].includes((options.method || "GET").toUpperCase())
+          ? (options.method || "GET").toUpperCase()
+          : "OTHER",
+        "http.response.status_code": response?.status || 0,
+        "duration.ms": Math.round(performance.now() - started),
+        outcome: result.outcome,
+        "error.kind": result.errorKind,
+        ...(requestId && /^[a-f0-9-]{36}$/.test(requestId)
+          ? { "request.id": requestId }
+          : {}),
+      });
+    }
+  }
 }
 export interface PdfResponse {
   base64: string;

@@ -19,3 +19,6 @@ node_modules
 dist-admin/
 
 ci-results/
+
+# Sanitized delivery receipts/retry records; never credentials.
+.observability/

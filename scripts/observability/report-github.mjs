@@ -1,30 +1,32 @@
+import { recordedDeploymentEvents } from "./recorded-deployments.mjs";
+import { boundedJson, telemetryOrigin } from "./transport.mjs";
+import { eventRecord } from "./events.mjs";
+import { enqueue, drain } from "./spool.mjs";
+import { testEvents } from "./report-tests.mjs";
+import { parseArchive, selectArtifact } from "./test-artifact.mjs";
 import { verifiedRelease } from "./release-verification.mjs";
 import { createHash } from "node:crypto";
 import { deliveryPipeline } from "./pipeline.mjs";
 import { readFileSync } from "node:fs";
 import {
   runIdentity,
+  reviewRunIdentity,
+  reviewFacts,
   workflowFacts,
   lifecycleFact,
-  stableId,
+  relationshipFacts,
 } from "./contract.mjs";
 const repository = process.env.GITHUB_REPOSITORY;
 if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository || ""))
   throw Error("Invalid repository");
-const event = JSON.parse(readFileSync(process.env.GITHUB_EVENT_PATH, "utf8"));
+let event = JSON.parse(readFileSync(process.env.GITHUB_EVENT_PATH, "utf8"));
 const credential = process.env.DYNATRACE_CI_TOKEN;
 if (!credential) throw Error("CI telemetry secret not configured");
-const endpoint = new URL(
-  process.env.DYNATRACE_ENDPOINT || "https://indiacs.live.dynatrace.com",
-);
-if (
-  endpoint.protocol !== "https:" ||
-  !endpoint.hostname.endsWith(".live.dynatrace.com") ||
-  endpoint.pathname !== "/" ||
-  endpoint.username ||
-  endpoint.password
-)
-  throw Error("Invalid telemetry origin");
+const endpoint = {
+  origin: telemetryOrigin(
+    process.env.DYNATRACE_ENDPOINT || "https://indiacs.live.dynatrace.com",
+  ),
+};
 async function github(path) {
   const r = await fetch("https://api.github.com" + path, {
     headers: {
@@ -36,16 +38,38 @@ async function github(path) {
     signal: AbortSignal.timeout(20000),
   });
   if (!r.ok) throw Error("GitHub source read failed: " + r.status);
-  const text = await r.text();
-  if (text.length > 5_000_000) throw Error("GitHub response too large");
-  return JSON.parse(text);
+  return boundedJson(r, 5_000_000);
 }
-let identity, rows, pipeline;
-if (process.env.GITHUB_EVENT_NAME === "workflow_run") {
+let eventName = process.env.GITHUB_EVENT_NAME;
+const replayHosting =
+  eventName === "workflow_dispatch" &&
+  ["true", true].includes(event.inputs?.replay_hosting_observation);
+if (eventName === "workflow_dispatch") {
+  const { run_id, attempt } = event.inputs || {};
+  if (
+    !/^[1-9][0-9]{0,14}$/.test(run_id || "") ||
+    !/^[1-9][0-9]{0,5}$/.test(attempt || "")
+  )
+    throw Error("Invalid replay run/attempt");
+  const source = await github(
+    `/repos/${repository}/actions/runs/${run_id}/attempts/${attempt}`,
+  );
+  event = { workflow_run: source };
+  eventName = "workflow_run";
+}
+let identity, rows, pipeline, sourceRun;
+const folder = process.env.TELEMETRY_SPOOL || ".observability/spool";
+const observedAt = new Date().toISOString();
+if (eventName === "workflow_run") {
   const source = await github(
     `/repos/${repository}/actions/runs/${Number(event.workflow_run?.id)}/attempts/${Number(event.workflow_run?.run_attempt)}`,
   );
-  identity = runIdentity(source, repository);
+  const reviewSignal =
+    source.path?.split("@")[0] === ".github/workflows/review-signal.yml";
+  identity = reviewSignal
+    ? reviewRunIdentity(source, repository)
+    : runIdentity(source, repository);
+  sourceRun = source;
   if (
     source.id !== event.workflow_run.id ||
     source.head_sha !== event.workflow_run.head_sha ||
@@ -62,12 +86,35 @@ if (process.env.GITHUB_EVENT_NAME === "workflow_run") {
     if (page === 10) throw Error("Job pagination bound exceeded");
   }
   rows = workflowFacts(identity, jobs);
+  if (reviewSignal) {
+    const prs = source.pull_requests;
+    if (!Array.isArray(prs) || !prs.length || prs.length > 10)
+      throw Error("Review/PR association unavailable or over bound");
+    for (const pr of prs) {
+      if (!Number.isSafeInteger(pr.number) || pr.number < 1)
+        throw Error("Invalid source PR association");
+      const reviews = await github(
+        `/repos/${repository}/pulls/${pr.number}/reviews?per_page=100`,
+      );
+      if (!Array.isArray(reviews)) throw Error("Invalid review response");
+      if (
+        reviews.length === 100 &&
+        (
+          await github(
+            `/repos/${repository}/pulls/${pr.number}/reviews?per_page=100&page=2`,
+          )
+        ).length
+      )
+        throw Error("Review pagination bound exceeded");
+      rows.push(...reviewFacts(pr.number, reviews, repository));
+    }
+  }
   pipeline = deliveryPipeline(endpoint.origin, credential);
   await pipeline.workflow(source, jobs, identity);
 } else {
-  rows = [lifecycleFact(process.env.GITHUB_EVENT_NAME, event, repository)];
+  rows = [lifecycleFact(eventName, event, repository)];
   identity = { repository, sha: rows[0].revision };
-  if (process.env.GITHUB_EVENT_NAME === "release") {
+  if (eventName === "release") {
     const tag = event.release.tag_name;
     if (!/^v?\d+\.\d+\.\d+$/.test(tag || ""))
       throw Error("Unsupported release tag");
@@ -92,85 +139,159 @@ if (process.env.GITHUB_EVENT_NAME === "workflow_run") {
       .update(event.release.body || "")
       .digest("hex");
   }
-  const pr = event.pull_request;
-  if (pr && Number.isSafeInteger(pr.number)) {
-    const reviews = await github(
-      `/repos/${repository}/pulls/${pr.number}/reviews?per_page=100`,
+}
+// Allowlisted source metadata only. Observation time is explicit when the source
+// does not expose an authoritative transition timestamp.
+try {
+  for (const row of rows) {
+    const payload = eventRecord({
+      kind: "github." + row.kind + "." + (row.action || row.outcome),
+      source: "github",
+      identity: [repository, row.eventId],
+      occurredAt: row.occurredAt,
+      observedAt,
+      authority: "source-confirmed-automation",
+      status: row.action || row.outcome,
+      data: {
+        "github.repository": repository,
+        "github.run.id": identity.runId || null,
+        "github.run.attempt": identity.attempt || null,
+        "vcs.revision": row.revision || identity.sha || null,
+        "github.workflow.path": identity.workflow || null,
+        "github.source.id": String(row.id || row.sourceId),
+        "github.outcome": row.outcome || null,
+        "github.number": row.number || null,
+        "github.review.state": row.reviewState || null,
+        "github.head.revision": row.headRevision || null,
+        "github.base.revision": row.baseRevision || null,
+        "github.merge.revision": row.mergeRevision || null,
+        "release.notes.sha256": row.notesDigest || null,
+      },
+    });
+    await enqueue(folder, payload);
+  }
+  if (event.pull_request && Number.isSafeInteger(event.pull_request.number)) {
+    const response = await fetch("https://api.github.com/graphql", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer " + process.env.GITHUB_TOKEN,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        query:
+          "query($owner:String!,$repo:String!,$number:Int!){repository(owner:$owner,name:$repo){pullRequest(number:$number){closingIssuesReferences(first:100){pageInfo{hasNextPage} nodes{number repository{nameWithOwner}}}}}}",
+        variables: {
+          owner: repository.split("/")[0],
+          repo: repository.split("/")[1],
+          number: event.pull_request.number,
+        },
+      }),
+      redirect: "error",
+      signal: AbortSignal.timeout(20000),
+    });
+    if (!response.ok) throw Error("Relationship source read failed");
+    const result = await boundedJson(response, 1000000),
+      refs = result.data?.repository?.pullRequest?.closingIssuesReferences;
+    if (result.errors || !refs || refs.pageInfo.hasNextPage)
+      throw Error("Relationship source incomplete");
+    for (const link of relationshipFacts(
+      event.pull_request,
+      refs.nodes,
+      repository,
+    ))
+      await enqueue(
+        folder,
+        eventRecord({
+          kind: "github.relationship.observed",
+          source: "github",
+          identity: [link.eventId],
+          observedAt,
+          authority: "source-confirmed-automation",
+          status: "linked",
+          data: {
+            "github.repository": repository,
+            "github.issue.number": link.issue,
+            "github.pull_request.number": link.pr,
+            "vcs.revision": link.revision,
+          },
+        }),
+      );
+  }
+  // Only main-push summaries from this exact source run/attempt are consumed.
+  if (sourceRun?.event === "push" && sourceRun.head_branch === "main") {
+    const listing = await github(
+      `/repos/${repository}/actions/runs/${identity.runId}/artifacts?per_page=100`,
     );
-    for (const review of reviews) {
+    const artifact = selectArtifact(listing, identity, sourceRun);
+    let reports = {};
+    if (artifact) {
+      const response = await fetch(
+        `https://api.github.com/repos/${repository}/actions/artifacts/${artifact.id}/zip`,
+        {
+          headers: { Authorization: "Bearer " + process.env.GITHUB_TOKEN },
+          redirect: "manual",
+          signal: AbortSignal.timeout(20000),
+        },
+      );
+      if (response.status !== 302) throw Error("Artifact redirect missing");
+      const location = new URL(response.headers.get("location"));
       if (
-        !Number.isSafeInteger(review.id) ||
-        !["APPROVED", "CHANGES_REQUESTED", "COMMENTED", "DISMISSED"].includes(
-          review.state,
+        location.protocol !== "https:" ||
+        location.username ||
+        location.password ||
+        !(
+          location.hostname.endsWith(".blob.core.windows.net") ||
+          location.hostname.endsWith(".actions.githubusercontent.com")
         )
       )
-        continue;
-      rows.push({
-        kind: "review",
-        action: review.state.toLowerCase(),
-        sourceId: review.id,
-        eventId: stableId([
-          repository,
-          "review",
-          review.id,
-          review.state,
-          review.submitted_at,
-        ]),
+        throw Error("Untrusted artifact location");
+      // Signed storage URL receives no GitHub or ingest credential.
+      const download = await fetch(location, {
+        redirect: "error",
+        signal: AbortSignal.timeout(20000),
       });
+      if (!download.ok) throw Error("Artifact download failed");
+      const parts = [];
+      let size = 0;
+      for await (const chunk of download.body) {
+        size += chunk.length;
+        if (size > 1000000) throw Error("Artifact download too large");
+        parts.push(chunk);
+      }
+      reports = parseArchive(Buffer.concat(parts));
     }
+    for (const payload of testEvents(identity, reports, observedAt))
+      await enqueue(folder, payload);
+  }
+  if (replayHosting) {
+    // Reviewed default-branch provider receipts only. Never PR/user-supplied paths,
+    // never restamp the historical deployment or its original probe time.
+    const raw = readFileSync(
+      new URL(
+        "../../docs/evidence/observability-2.2.1/provider-observation.json",
+        import.meta.url,
+      ),
+      "utf8",
+    );
+    if (raw.length > 100000) throw Error("Recorded observation too large");
+    for (const payload of recordedDeploymentEvents(JSON.parse(raw).receipts))
+      await enqueue(folder, payload);
+  }
+  const summary = await drain(folder, endpoint.origin, credential);
+  console.log(
+    JSON.stringify({
+      ...summary,
+      source: "github",
+      tenantVisibility: "not-verified",
+      otlp: "SDK shutdown is not per-record acceptance",
+    }),
+  );
+  if (summary.failed || summary.pending) process.exitCode = 1;
+} finally {
+  if (pipeline) {
+    const result = await pipeline.close();
+    console.log(JSON.stringify({ otlp: result }));
+    if (Object.values(result.signals).some((signal) => signal.sdkFailure > 0))
+      process.exitCode = 1;
   }
 }
-const headers = {
-  "Content-Type": "application/cloudevents+json",
-  Authorization:
-    (credential.startsWith("dt0c01.") ? "Api-Token " : "Bearer ") + credential,
-};
-// No logs, titles, bodies, command text, assertion messages, artifacts or user email.
-for (const row of rows) {
-  const data = {
-    "event.id": row.eventId,
-    "event.name": "github." + row.kind + "." + (row.action || row.outcome),
-    "event.provider": "inspiredlearning-github",
-    "event.authority": "source-confirmed-automation",
-    "github.repository": repository,
-    "github.run.id": identity.runId || null,
-    "github.run.attempt": identity.attempt || null,
-    "vcs.revision": identity.sha || null,
-    "github.source.id": String(row.id || row.sourceId),
-    "github.outcome": row.outcome || null,
-    "release.notes.sha256": row.notesDigest || null,
-  };
-  const payload = {
-    specversion: "1.0",
-    id: row.eventId,
-    source: "github:" + repository,
-    type: "com.inspiredlearning.github." + row.kind,
-    time: new Date().toISOString(),
-    data,
-  };
-  let accepted = false;
-  for (let attempt = 0; attempt < 3; attempt++) {
-    const r = await fetch(endpoint.origin + "/api/v2/bizevents/ingest", {
-      method: "POST",
-      headers,
-      body: JSON.stringify(payload),
-      signal: AbortSignal.timeout(10000),
-      redirect: "error",
-    });
-    if (r.status === 202) {
-      accepted = true;
-      break;
-    }
-    if (r.status < 500 && r.status !== 429) break;
-  }
-  if (!accepted) throw Error("CI business-event ingestion not accepted");
-}
-await pipeline?.close();
-console.log(
-  JSON.stringify({
-    reported: rows.length,
-    source: "github",
-    accepted: true,
-    tenantVisibility: "not-verified",
-  }),
-);

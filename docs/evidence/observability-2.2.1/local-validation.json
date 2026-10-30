@@ -1,0 +1,39 @@
+{
+  "date": "2026-10-30",
+  "candidate": "2.2.1",
+  "evidenceSource": "Local command output, not tenant or production verification",
+  "lint": "passed",
+  "typescript": "passed",
+  "frontendBuilds": [
+    "learner passed",
+    "admin passed"
+  ],
+  "unit": {
+    "tests": 55,
+    "passed": 55,
+    "failed": 0
+  },
+  "browser": {
+    "tests": 62,
+    "passed": 62,
+    "failed": 0,
+    "duration": "4.8 minutes"
+  },
+  "browserIsolation": "Java 21, demo-chaicart, localhost collector; temporary Firestore 8186 and Functions 5006/web 5196; hardcoded fixture port references changed only during the run and restored. No override changes committed.",
+  "earlierAttempts": [
+    "Java absent from shell PATH; no tests executed",
+    "Occupied default emulator port; no tests executed",
+    "Fixed-port fixtures reached the wrong local demo emulator and admin test failed; rerun isolated all fixtures",
+    "New REST assertion initially counted an unrelated in-flight /me/scores request; narrowed to target route and both new REST tests passed"
+  ],
+  "providerObservation": "Both existing 2.2.0 Hosting releases/public checks passed, four events queued locally, not ingested",
+  "ci": "Tracked on exact PR head separately",
+  "notVerified": [
+    "CI activation",
+    "Dynatrace transport acceptance",
+    "Tenant searchability",
+    "Native deployment association",
+    "Native RUM/backend navigation",
+    "2.2.1 Hosting rollout"
+  ]
+}

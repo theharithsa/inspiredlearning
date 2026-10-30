@@ -1,12 +1,27 @@
 name: Delivery observability
 on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: Completed Checks or Review signal run (same repository)
+        required: true
+        type: string
+      attempt:
+        description: Exact source run attempt
+        required: true
+        type: string
+      replay_hosting_observation:
+        description: Replay reviewed 30 October Hosting facts (original times; no deploy)
+        required: false
+        default: false
+        type: boolean
   workflow_run:
-    workflows: [Checks]
+    workflows: [Checks, Review signal]
     types: [completed]
   issues:
     types: [opened, closed, reopened]
   pull_request_target:
-    types: [opened, closed, reopened, ready_for_review]
+    types: [opened, closed, reopened, ready_for_review, synchronize]
   release:
     types: [published]
 permissions:
@@ -18,6 +33,9 @@ jobs:
   report:
     # Explicit secure binding required; skipped is not a verified ingest result.
     if: vars.DYNATRACE_CI_ENABLED == 'true' && (github.event_name != 'workflow_run' || github.event.workflow_run.head_repository.full_name == github.repository)
+    environment:
+      name: Production
+      deployment: false
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -36,3 +54,12 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           DYNATRACE_CI_TOKEN: ${{ secrets.DYNATRACE_CI_TOKEN }}
           DYNATRACE_ENDPOINT: https://indiacs.live.dynatrace.com
+      - name: Preserve sanitized retry state
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: telemetry-spool-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .observability/spool
+          include-hidden-files: true
+          if-no-files-found: ignore
+          retention-days: 14
