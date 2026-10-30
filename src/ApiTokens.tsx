@@ -134,16 +134,17 @@ export default function ApiTokens() {
   }
   return (
     <section className="panel stack" aria-labelledby="api-tokens-title">
-      <span className="eyebrow">INTEGRATIONS</span>
-      <h2 id="api-tokens-title">API tokens</h2>
-      <p>
-        Create a scoped token for Swagger or an integration. Choose the data it
-        can read or correct. Your administrator access is checked on every
-        request.
-      </p>
-      <a href="/api/docs" target="_blank" rel="noreferrer">
-        Open API documentation ↗
-      </a>
+      <div className="section-heading token-create-heading">
+        <h2 id="api-tokens-title">Create API token</h2>
+        <Button
+          href="/api/docs"
+          target="_blank"
+          rel="noreferrer"
+          variant="text"
+        >
+          API documentation
+        </Button>
+      </div>
       {error && <Message error>{error}</Message>}
       {notice && <Message>{notice}</Message>}
       {secret && (
@@ -191,15 +192,27 @@ export default function ApiTokens() {
           void create();
         }}
       >
-        <Field
-          label="Token name"
-          value={name}
-          disabled={busy || !!secret}
-          maxLength={80}
-          required
-          placeholder="Local MCP investigation"
-          onChange={(e) => setName(e.target.value)}
-        />
+        <div className="inline-form token-identity-fields">
+          <Field
+            label="Token name"
+            value={name}
+            disabled={busy || !!secret}
+            maxLength={80}
+            required
+            placeholder="Local MCP investigation"
+            onChange={(e) => setName(e.target.value)}
+          />
+          <Select
+            label="Expires after"
+            disabled={busy || !!secret}
+            value={days}
+            onChange={(e) => setDays(Number(e.target.value))}
+          >
+            <option value={1}>1 day</option>
+            <option value={7}>7 days</option>
+            <option value={30}>30 days</option>
+          </Select>
+        </div>
         <TokenPermissions
           permissions={permissions}
           scopes={scopes}
@@ -211,16 +224,6 @@ export default function ApiTokens() {
           }
         />
         <div className="inline-form">
-          <Select
-            label="Expires after"
-            disabled={busy || !!secret}
-            value={days}
-            onChange={(e) => setDays(Number(e.target.value))}
-          >
-            <option value={1}>1 day</option>
-            <option value={7}>7 days</option>
-            <option value={30}>30 days</option>
-          </Select>
           <Field
             multiline
             label="Learner IDs (optional)"
