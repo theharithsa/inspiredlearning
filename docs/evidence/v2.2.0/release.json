@@ -1,0 +1,195 @@
+{
+  "version": "2.2.0",
+  "revision": "6b18944592632dcca5a0f0876b41ba09de16d478",
+  "scope": "Hosting only",
+  "hostingBefore": {
+    "inspiredlearning-vh": [
+      {
+        "name": "sites/inspiredlearning-vh/releases/1793291528791000",
+        "releaseTime": "2026-10-29T16:32:08.791Z",
+        "type": "DEPLOY",
+        "version": "sites/inspiredlearning-vh/versions/74c1fc945f26b967"
+      }
+    ],
+    "inspiredlearning-admin-vh": [
+      {
+        "name": "sites/inspiredlearning-admin-vh/releases/1793291474031000",
+        "releaseTime": "2026-10-29T16:31:14.031Z",
+        "type": "DEPLOY",
+        "version": "sites/inspiredlearning-admin-vh/versions/09fb3f38660686a8"
+      }
+    ],
+    "chaicart-gmu0810": [
+      {
+        "name": "sites/chaicart-gmu0810/releases/1791509305200000",
+        "releaseTime": "2026-10-09T01:28:25.200Z",
+        "type": "DEPLOY",
+        "version": "sites/chaicart-gmu0810/versions/62e49b5bcc174654"
+      }
+    ],
+    "chaicloud-workshop": [
+      {
+        "name": "sites/chaicloud-workshop/releases/1791523857101000",
+        "releaseTime": "2026-10-09T05:30:57.101Z",
+        "type": "DEPLOY",
+        "version": "sites/chaicloud-workshop/versions/3e1b149e54d87fa3"
+      }
+    ]
+  },
+  "hostingAfter": {
+    "inspiredlearning-vh": [
+      {
+        "name": "sites/inspiredlearning-vh/releases/1793340066263000",
+        "releaseTime": "2026-10-30T06:01:06.263Z",
+        "type": "DEPLOY",
+        "version": "sites/inspiredlearning-vh/versions/7a60990658b3e00b"
+      }
+    ],
+    "inspiredlearning-admin-vh": [
+      {
+        "name": "sites/inspiredlearning-admin-vh/releases/1793340034178000",
+        "releaseTime": "2026-10-30T06:00:34.178Z",
+        "type": "DEPLOY",
+        "version": "sites/inspiredlearning-admin-vh/versions/d858b41a07625334"
+      }
+    ],
+    "chaicart-gmu0810": [
+      {
+        "name": "sites/chaicart-gmu0810/releases/1791509305200000",
+        "releaseTime": "2026-10-09T01:28:25.200Z",
+        "type": "DEPLOY",
+        "version": "sites/chaicart-gmu0810/versions/62e49b5bcc174654"
+      }
+    ],
+    "chaicloud-workshop": [
+      {
+        "name": "sites/chaicloud-workshop/releases/1791523857101000",
+        "releaseTime": "2026-10-09T05:30:57.101Z",
+        "type": "DEPLOY",
+        "version": "sites/chaicloud-workshop/versions/3e1b149e54d87fa3"
+      }
+    ]
+  },
+  "before": {
+    "checkedAt": "2026-10-30T05:59:38.782Z",
+    "certificates": {
+      "count": 196,
+      "counts": {
+        "award:issued": 38,
+        "participation:issued": 119,
+        "team:revoked": 15,
+        "region:revoked": 20,
+        "participation:revoked": 3,
+        "award:revoked": 1
+      },
+      "sha256": "30ddc28eb8e39403b658ce5500a1d3665148560b1ce6981389081672fd364b0a"
+    },
+    "workshopRecords": {
+      "count": 119,
+      "sha256": "42cae599333335f8ad8b47c3850fba857c7df54052339f7d461577c2d2773e22"
+    }
+  },
+  "after": {
+    "checkedAt": "2026-10-30T06:01:54.061Z",
+    "certificates": {
+      "count": 196,
+      "counts": {
+        "award:issued": 38,
+        "participation:issued": 119,
+        "team:revoked": 15,
+        "region:revoked": 20,
+        "participation:revoked": 3,
+        "award:revoked": 1
+      },
+      "sha256": "30ddc28eb8e39403b658ce5500a1d3665148560b1ce6981389081672fd364b0a"
+    },
+    "workshopRecords": {
+      "count": 119,
+      "sha256": "42cae599333335f8ad8b47c3850fba857c7df54052339f7d461577c2d2773e22"
+    }
+  },
+  "publicChecks": [
+    {
+      "revision": "6b18944592632dcca5a0f0876b41ba09de16d478",
+      "version": "2.2.0",
+      "surface": "learner",
+      "origin": "https://inspi.in",
+      "artifactAndPublicApi": "verified",
+      "googleLoginAndPrivateJourneys": "not-verified",
+      "tenantObservability": "not-verified"
+    },
+    {
+      "revision": "6b18944592632dcca5a0f0876b41ba09de16d478",
+      "version": "2.2.0",
+      "surface": "admin",
+      "origin": "https://admin.inspi.in",
+      "artifactAndPublicApi": "verified",
+      "googleLoginAndPrivateJourneys": "not-verified",
+      "tenantObservability": "not-verified"
+    }
+  ],
+  "imageChecks": [
+    {
+      "origin": "https://inspi.in",
+      "asset": "learning-world.webp",
+      "status": 200,
+      "bytes": 313130,
+      "sha256": "d48c2a75d2f46dfe218d1eac681e40c095a5bf2a0fa5540d411695489d9ece16"
+    },
+    {
+      "origin": "https://inspi.in",
+      "asset": "learning-companion.webp",
+      "status": 200,
+      "bytes": 188136,
+      "sha256": "45333cec1d06f28e402d061a4977ac3b6f5388f16e16836c267ebf2ba7a796bb"
+    },
+    {
+      "origin": "https://admin.inspi.in",
+      "asset": "learning-world.webp",
+      "status": 200,
+      "bytes": 313130,
+      "sha256": "d48c2a75d2f46dfe218d1eac681e40c095a5bf2a0fa5540d411695489d9ece16"
+    },
+    {
+      "origin": "https://admin.inspi.in",
+      "asset": "learning-companion.webp",
+      "status": 200,
+      "bytes": 188136,
+      "sha256": "45333cec1d06f28e402d061a4977ac3b6f5388f16e16836c267ebf2ba7a796bb"
+    }
+  ],
+  "browser": {
+    "learnerExistingSessionRestored": true,
+    "adminPublicSettingsFontLoadAndRestore": true,
+    "freshGooglePopup": "not-retested",
+    "privateAdminTools": "not-retested",
+    "capturedCspFailures": 0
+  },
+  "rum": {
+    "version": "2.2.0",
+    "surfaces": [
+      "learner",
+      "admin"
+    ],
+    "authority": "client-observed",
+    "tenantSearchability": "verified",
+    "nativeRumBackendNavigation": "unverified"
+  },
+  "screenshots": {
+    "live-homepage.png": {
+      "sha256": "297f456be7134d2770b1b53258408b1bc632866b47927a9fd1a1c208b302d287",
+      "privateLearnerData": false,
+      "source": "production Hosting alias"
+    },
+    "live-settings.png": {
+      "sha256": "493457d4a72da82827dff96d6dff71b601edf76ae42dece00dc734d7338b206c",
+      "privateLearnerData": false,
+      "source": "production admin origin"
+    },
+    "live-admin-sign-in.png": {
+      "sha256": "6ba7ba646a48b12a1b9618496b4a90889e22b068b080d000a7747f6eac7a8369",
+      "privateLearnerData": false,
+      "source": "production admin origin"
+    }
+  }
+}
