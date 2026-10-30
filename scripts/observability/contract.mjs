@@ -15,7 +15,7 @@ export const stableId = (parts) => {
   const h = createHash("sha256").update(JSON.stringify(parts)).digest("hex");
   return `${h.slice(0, 8)}-${h.slice(8, 12)}-5${h.slice(13, 16)}-a${h.slice(17, 20)}-${h.slice(20, 32)}`;
 };
-export function runIdentity(run, repository) {
+function executionIdentity(run, repository, workflow) {
   if (
     run.repository?.full_name !== repository ||
     run.head_repository?.full_name !== repository ||
@@ -25,7 +25,7 @@ export function runIdentity(run, repository) {
     !sha.test(run.head_sha) ||
     run.status !== "completed" ||
     !conclusions.has(run.conclusion) ||
-    String(run.path).split("@")[0] !== ".github/workflows/check.yml"
+    String(run.path).split("@")[0] !== workflow
   )
     throw Error("Untrusted or incomplete source workflow");
   return {
@@ -34,7 +34,58 @@ export function runIdentity(run, repository) {
     attempt: run.run_attempt,
     sha: run.head_sha,
     outcome: run.conclusion,
+    workflow,
   };
+}
+export function runIdentity(run, repository) {
+  return executionIdentity(run, repository, ".github/workflows/check.yml");
+}
+export function reviewRunIdentity(run, repository) {
+  if (run.event !== "pull_request_review")
+    throw Error("Invalid review signal source");
+  return executionIdentity(
+    run,
+    repository,
+    ".github/workflows/review-signal.yml",
+  );
+}
+export function reviewFacts(number, reviews, repository) {
+  if (
+    !Number.isSafeInteger(number) ||
+    number < 1 ||
+    !Array.isArray(reviews) ||
+    reviews.length > 100
+  )
+    throw Error("Invalid review snapshot");
+  return reviews
+    .filter((r) => r.state !== "PENDING")
+    .map((r) => {
+      if (
+        !Number.isSafeInteger(r.id) ||
+        !["APPROVED", "CHANGES_REQUESTED", "COMMENTED", "DISMISSED"].includes(
+          r.state,
+        ) ||
+        !sha.test(r.commit_id || "") ||
+        !r.submitted_at
+      )
+        throw Error("Invalid source review");
+      return {
+        kind: "review",
+        action: "observed",
+        reviewState: r.state.toLowerCase(),
+        sourceId: r.id,
+        number,
+        revision: r.commit_id,
+        occurredAt: r.state === "DISMISSED" ? null : r.submitted_at,
+        eventId: stableId([
+          repository,
+          "review",
+          r.id,
+          r.state,
+          r.submitted_at,
+        ]),
+      };
+    });
 }
 export function workflowFacts(identity, jobs) {
   if (!Array.isArray(jobs) || jobs.length > 100)

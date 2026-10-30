@@ -10,6 +10,8 @@ import { deliveryPipeline } from "./pipeline.mjs";
 import { readFileSync } from "node:fs";
 import {
   runIdentity,
+  reviewRunIdentity,
+  reviewFacts,
   workflowFacts,
   lifecycleFact,
   relationshipFacts,
@@ -62,7 +64,11 @@ if (eventName === "workflow_run") {
   const source = await github(
     `/repos/${repository}/actions/runs/${Number(event.workflow_run?.id)}/attempts/${Number(event.workflow_run?.run_attempt)}`,
   );
-  identity = runIdentity(source, repository);
+  const reviewSignal =
+    source.path?.split("@")[0] === ".github/workflows/review-signal.yml";
+  identity = reviewSignal
+    ? reviewRunIdentity(source, repository)
+    : runIdentity(source, repository);
   sourceRun = source;
   if (
     source.id !== event.workflow_run.id ||
@@ -80,6 +86,29 @@ if (eventName === "workflow_run") {
     if (page === 10) throw Error("Job pagination bound exceeded");
   }
   rows = workflowFacts(identity, jobs);
+  if (reviewSignal) {
+    const prs = source.pull_requests;
+    if (!Array.isArray(prs) || !prs.length || prs.length > 10)
+      throw Error("Review/PR association unavailable or over bound");
+    for (const pr of prs) {
+      if (!Number.isSafeInteger(pr.number) || pr.number < 1)
+        throw Error("Invalid source PR association");
+      const reviews = await github(
+        `/repos/${repository}/pulls/${pr.number}/reviews?per_page=100`,
+      );
+      if (!Array.isArray(reviews)) throw Error("Invalid review response");
+      if (
+        reviews.length === 100 &&
+        (
+          await github(
+            `/repos/${repository}/pulls/${pr.number}/reviews?per_page=100&page=2`,
+          )
+        ).length
+      )
+        throw Error("Review pagination bound exceeded");
+      rows.push(...reviewFacts(pr.number, reviews, repository));
+    }
+  }
   pipeline = deliveryPipeline(endpoint.origin, credential);
   await pipeline.workflow(source, jobs, identity);
 } else {
@@ -127,7 +156,8 @@ try {
         "github.repository": repository,
         "github.run.id": identity.runId || null,
         "github.run.attempt": identity.attempt || null,
-        "vcs.revision": identity.sha || null,
+        "vcs.revision": row.revision || identity.sha || null,
+        "github.workflow.path": identity.workflow || null,
         "github.source.id": String(row.id || row.sourceId),
         "github.outcome": row.outcome || null,
         "github.number": row.number || null,

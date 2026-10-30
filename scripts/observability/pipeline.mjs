@@ -138,6 +138,9 @@ export function deliveryPipeline(origin, credential, { local = false } = {}) {
     async workflow(run, jobs, identity) {
       const attrs = {
         "github.repository": identity.repository,
+        ...(identity.workflow
+          ? { "github.workflow.path": identity.workflow }
+          : {}),
         "github.run.id": String(identity.runId),
         "github.run.attempt": identity.attempt,
         "vcs.revision": identity.sha,

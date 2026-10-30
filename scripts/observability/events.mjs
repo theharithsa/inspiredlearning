@@ -1,7 +1,7 @@
 import { stableId } from "./contract.mjs";
 export const SCHEMA = 2;
 const fields = new Set(
-  `github.repository github.run.id github.run.attempt github.source.id github.outcome github.number github.review.state github.issue.number github.pull_request.number github.head.revision github.base.revision github.merge.revision vcs.revision release.notes.sha256 app.version app.surface deployment.environment deployment.id deployment.version.id deployment.type deployment.provider deployment.origin artifact.expected.revision artifact.expected.version artifact.manifest.sha256 artifact.correlation verification.manifest verification.api verification.anonymous_admin_denied test.suite test.report.complete test.report.status test.duration_ms test.count.tests test.count.passed test.count.failed test.count.cancelled test.count.skipped test.count.todo test.count.flaky test.count.missing`.split(
+  `github.workflow.path github.repository github.run.id github.run.attempt github.source.id github.outcome github.number github.review.state github.issue.number github.pull_request.number github.head.revision github.base.revision github.merge.revision vcs.revision release.notes.sha256 app.version app.surface deployment.environment deployment.id deployment.version.id deployment.type deployment.provider deployment.origin artifact.expected.revision artifact.expected.version artifact.manifest.sha256 artifact.correlation verification.manifest verification.api verification.anonymous_admin_denied test.suite test.report.complete test.report.status test.duration_ms test.count.tests test.count.passed test.count.failed test.count.cancelled test.count.skipped test.count.todo test.count.flaky test.count.missing`.split(
     " ",
   ),
 );

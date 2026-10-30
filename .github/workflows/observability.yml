@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       run_id:
-        description: Completed Checks run to replay (same repository)
+        description: Completed Checks or Review signal run (same repository)
         required: true
         type: string
       attempt:
@@ -16,14 +16,12 @@ on:
         default: false
         type: boolean
   workflow_run:
-    workflows: [Checks]
+    workflows: [Checks, Review signal]
     types: [completed]
   issues:
     types: [opened, closed, reopened]
   pull_request_target:
     types: [opened, closed, reopened, ready_for_review, synchronize]
-  pull_request_review:
-    types: [submitted, dismissed]
   release:
     types: [published]
 permissions:

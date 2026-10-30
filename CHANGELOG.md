@@ -2,7 +2,7 @@
 
 ## [2.2.1] - source candidate
 
-- Expand dt-obs delivery coverage with source/observation timestamps, direct review and PR revision facts, bounded issue relationships and exact-attempt replay.
+- Expand dt-obs delivery coverage with source/observation timestamps, source review and PR revision facts, bounded issue relationships and exact-attempt replay.
 - Move structured test ingestion into the trusted observer; exclude PR artifacts, validate bounded data-only ZIP summaries and preserve sanitized retry state. Add per-signal OTel SDK outcome diagnostics and current reporter version.
 - Capture real Firebase Hosting deployment/rollback facts separately from live manifest/API/access verification, with optional verified native deployment markers.
 - Add redacted browser route, callable/REST duration, request-ID and rejection/failure context with account-switch isolation. Keep canonical learner events unchanged.

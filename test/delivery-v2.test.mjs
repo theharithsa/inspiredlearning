@@ -485,6 +485,16 @@ test("privileged reporting keeps production credentials out of source Checks and
   assert.ok(observer.includes("--ignore-scripts"));
   assert.ok(observer.includes("name: Production"));
   assert.ok(observer.includes("deployment: false"));
+  assert.ok(!observer.includes("  pull_request_review:"));
+  assert.ok(observer.includes("workflows: [Checks, Review signal]"));
+  const signal = readFileSync(
+    new URL("../.github/workflows/review-signal.yml", import.meta.url),
+    "utf8",
+  );
+  assert.ok(signal.includes("permissions: {}"));
+  assert.ok(!signal.includes("uses:"));
+  assert.ok(!signal.includes("secrets."));
+  assert.ok(!signal.includes("environment:"));
   assert.ok(observer.includes("retention-days: 14"));
   assert.ok(!observer.includes("id-token: write"));
 });
@@ -518,5 +528,51 @@ test("reviewed deployment replay preserves original provider/probe times and rej
         manifest: { ...receipts[1].manifest, revision: "b".repeat(40) },
       },
     ]),
+  );
+});
+
+test("review signals are API-validated observations, not privileged PR workflow execution", async () => {
+  const { reviewRunIdentity, reviewFacts } = await import(
+    "../scripts/observability/contract.mjs"
+  );
+  const run = {
+    repository: { full_name: "fixture/app" },
+    head_repository: { full_name: "fixture/app" },
+    id: 1,
+    run_attempt: 1,
+    head_sha: sha,
+    status: "completed",
+    conclusion: "success",
+    event: "pull_request_review",
+    path: ".github/workflows/review-signal.yml",
+  };
+  assert.equal(
+    reviewRunIdentity(run, "fixture/app").workflow,
+    ".github/workflows/review-signal.yml",
+  );
+  assert.throws(() =>
+    reviewRunIdentity({ ...run, event: "pull_request" }, "fixture/app"),
+  );
+  assert.throws(() =>
+    reviewRunIdentity(
+      { ...run, path: ".github/workflows/untrusted.yml" },
+      "fixture/app",
+    ),
+  );
+  const review = {
+    id: 1,
+    state: "APPROVED",
+    commit_id: sha,
+    submitted_at: time,
+    body: "PRIVATE",
+  };
+  const row = reviewFacts(78, [review], "fixture/app")[0];
+  assert.equal(row.reviewState, "approved");
+  assert.equal(row.revision, sha);
+  assert.ok(!JSON.stringify(row).includes("PRIVATE"));
+  assert.equal(
+    reviewFacts(78, [{ ...review, state: "DISMISSED" }], "fixture/app")[0]
+      .occurredAt,
+    null,
   );
 });
