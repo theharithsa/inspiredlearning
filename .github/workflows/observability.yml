@@ -1,12 +1,24 @@
 name: Delivery observability
 on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: Completed Checks run to replay (same repository)
+        required: true
+        type: string
+      attempt:
+        description: Exact source run attempt
+        required: true
+        type: string
   workflow_run:
     workflows: [Checks]
     types: [completed]
   issues:
     types: [opened, closed, reopened]
   pull_request_target:
-    types: [opened, closed, reopened, ready_for_review]
+    types: [opened, closed, reopened, ready_for_review, synchronize]
+  pull_request_review:
+    types: [submitted, dismissed]
   release:
     types: [published]
 permissions:
@@ -36,3 +48,12 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           DYNATRACE_CI_TOKEN: ${{ secrets.DYNATRACE_CI_TOKEN }}
           DYNATRACE_ENDPOINT: https://indiacs.live.dynatrace.com
+      - name: Preserve sanitized retry state
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: telemetry-spool-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .observability/spool
+          include-hidden-files: true
+          if-no-files-found: ignore
+          retention-days: 14

@@ -83,3 +83,7 @@ Browser session metadata now includes `app.version` from the frontend package an
 ## Asynchronous RUM source candidate (#14)
 
 The candidate tag loads asynchronously. Identity and application observations have a five-second, 32-event in-memory readiness buffer cleared on account change/page hide; blocked agents remain best effort. Browser observations retain client-observed authority and the existing email attribution policy. Early native timings/actions may be absent; no native cross-signal linkage follows from queue delivery. See [Hosting security verification](SECURITY-HOSTING-HARDENING.md) for local evidence and outstanding production gates.
+
+## 2.2.1 telemetry extension (source)
+
+Read [coverage and activation evidence](OBSERVABILITY-2.2.1.md) for new route/outcome observations, independent CI test reporting, provider-confirmed deployment capture and sanitized retries. No runtime deployment, dedicated CI credential binding or tenant visibility follows from source implementation.

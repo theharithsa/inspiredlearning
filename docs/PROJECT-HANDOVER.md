@@ -106,3 +106,7 @@ Production remains app 2.1.2 / Functions 2.0.0 until a separately approved relea
 ## 2.1.3 deployed — 29 October 2026
 
 Revision 42b2efb5b6a85f1bef8926022b2aaaa5c07e71d4 is live on both origins; all nine Functions are ACTIVE. Production SHARED_RATE_LIMITS=true is approved for authenticated UID/token keys; public keys remain local. Enforced CSP, SPA revalidation, async RUM and the layout corrections are deployed. Published GMU0810 projections match before/after. Read RELEASE-2.1.3.md before making claims about signals/session checks; native linkage and the unbound CI observer are not verified. #9 remains deferred and #17 held. The Discord draft/images are prepared, not posted. Future source changes and deployments still follow the repository workflow.
+
+## 2.2.1 observability source — #77
+
+Current source candidate expands dt-obs browser and delivery coverage. Read [OBSERVABILITY-2.2.1.md](OBSERVABILITY-2.2.1.md) before activation/replay. Production remains 2.2.0; Functions/API/MCP are unchanged. CI needs dedicated secure credential binding and separate tenant verification; no token from chat is copied. Four provider/probe events for existing 2.2.0 releases were queued locally, not ingested. #9 alerts remain deferred and #17 migration held.

@@ -1,3 +1,5 @@
+import { execFileSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 const require = createRequire(
   new URL("../../functions/package.json", import.meta.url),
@@ -39,29 +41,63 @@ export function deliveryPipeline(origin, credential, { local = false } = {}) {
     timeoutMillis: 10000,
     compression: "gzip",
   });
+  const exports = {};
+  function observedExporter(exporter, signal) {
+    const state = (exports[signal] = {
+      attempted: 0,
+      sdkSuccess: 0,
+      sdkFailure: 0,
+    });
+    const original = exporter.export.bind(exporter);
+    exporter.export = (items, callback) => {
+      state.attempted++;
+      original(items, (result) => {
+        if (result.code === 0) state.sdkSuccess++;
+        else state.sdkFailure++;
+        callback(result);
+      });
+    };
+    return exporter;
+  }
+  let observerRevision;
+  try {
+    const value = execFileSync("git", ["rev-parse", "HEAD"], {
+      encoding: "utf8",
+    }).trim();
+    if (/^[a-f0-9]{40}$/.test(value)) observerRevision = value;
+  } catch {}
   const sdk = new NodeSDK({
     resource: resourceFromAttributes({
       "service.name": "inspiredlearning-delivery",
       "service.namespace": "inspiredlearning",
-      "service.version": "2.0.0",
+      "service.version": JSON.parse(
+        readFileSync(new URL("../../package.json", import.meta.url)),
+      ).version,
       "deployment.environment.name": "ci",
+      ...(observerRevision ? { "build.commit": observerRevision } : {}),
     }),
     spanProcessors: [
       new BatchSpanProcessor({
-        exporter: new OTLPTraceExporter(config("traces")),
+        exporter: observedExporter(
+          new OTLPTraceExporter(config("traces")),
+          "traces",
+        ),
       }),
     ],
     logRecordProcessors: [
       new BatchLogRecordProcessor({
-        exporter: new OTLPLogExporter(config("logs")),
+        exporter: observedExporter(new OTLPLogExporter(config("logs")), "logs"),
       }),
     ],
     metricReaders: [
       new PeriodicExportingMetricReader({
-        exporter: new OTLPMetricExporter({
-          ...config("metrics"),
-          temporalityPreference: AggregationTemporality.DELTA,
-        }),
+        exporter: observedExporter(
+          new OTLPMetricExporter({
+            ...config("metrics"),
+            temporalityPreference: AggregationTemporality.DELTA,
+          }),
+          "metrics",
+        ),
         exportIntervalMillis: 60000,
       }),
     ],
@@ -106,11 +142,16 @@ export function deliveryPipeline(origin, credential, { local = false } = {}) {
         "vcs.revision": identity.sha,
         "github.outcome": identity.outcome,
       };
+      const completions = jobs
+        .map((job) => Date.parse(job.completed_at))
+        .filter(Number.isFinite);
       const root = span(
         "ci.workflow",
         attrs,
         run.run_started_at,
-        run.updated_at,
+        completions.length
+          ? new Date(Math.max(...completions)).toISOString()
+          : undefined,
       );
       const rootContext = root
         ? trace.setSpan(context.active(), root)
@@ -150,6 +191,11 @@ export function deliveryPipeline(origin, credential, { local = false } = {}) {
     },
     async close() {
       await sdk.shutdown();
+      return {
+        signals: exports,
+        evidence:
+          "SDK callback results; partial acceptance and tenant visibility require separate verification",
+      };
     },
   };
 }

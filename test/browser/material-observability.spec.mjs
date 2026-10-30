@@ -43,6 +43,7 @@ test("Material shadow clicks retain versioned client metadata without capturing 
         "event.provider",
         "event.source",
         "transaction.id",
+        "ui.route",
         "user.email",
         "user.id",
       ].sort(),
@@ -81,4 +82,114 @@ test("Material community links retain the allowlisted client action across their
   expect(events[0].data["event.authority"]).toBe("client-observed");
   expect(events[0].data["app.version"]).toBe(packageJson.version);
   expect(Object.keys(events[0].data)).not.toContain("text");
+});
+
+test("REST observations preserve status/request joins and exclude sensitive URLs and response text", async ({
+  page,
+}) => {
+  await page.route("https://**dynatrace.com/**", (route) => route.abort());
+  await page.goto("/");
+  await page.evaluate(() =>
+    import("/test/browser-auth.ts").then((m) =>
+      m.login("rest-telemetry@example.invalid"),
+    ),
+  );
+  await page.getByRole("link", { name: "Profile", exact: true }).click();
+  await page.evaluate(() => {
+    window.__materialEvents = [];
+    window.dynatrace = {
+      sendBizEvent: (type, data) =>
+        window.__materialEvents.push({ type, data }),
+    };
+  });
+  await page.route(
+    "**/api/v1/students/PRIVATE/certificates?secret=SECRET",
+    (route) =>
+      route.fulfill({
+        status: 403,
+        contentType: "application/json",
+        headers: { "X-Request-Id": "11111111-1111-4111-a111-111111111111" },
+        body: JSON.stringify({ error: { message: "PRIVATE_RESPONSE" } }),
+      }),
+  );
+  await page.evaluate(async () => {
+    const { apiFetch } = await import("/src/api.ts");
+    try {
+      await apiFetch("/api/v1/students/PRIVATE/certificates?secret=SECRET");
+    } catch {}
+  });
+  const rows = await page.evaluate(() =>
+    window.__materialEvents.filter(
+      (e) =>
+        e.type === "com.inspiredlearning.rum.api.request.completed" &&
+        e.data["http.route"] === "/students/{studentId}/certificates",
+    ),
+  );
+  expect(rows).toHaveLength(1);
+  expect(rows[0].data).toMatchObject({
+    "http.route": "/students/{studentId}/certificates",
+    "ui.route": "/profile",
+    "http.response.status_code": 403,
+    "request.id": "11111111-1111-4111-a111-111111111111",
+    outcome: "rejected",
+    "event.authority": "client-observed",
+  });
+  expect(JSON.stringify(rows)).not.toMatch(/PRIVATE|SECRET/);
+});
+
+test("a pending REST completion is not attributed after sign-out", async ({
+  page,
+}) => {
+  await page.route("https://**dynatrace.com/**", (r) => r.abort());
+  await page.goto("/");
+  await page.evaluate(() =>
+    import("/test/browser-auth.ts").then((m) =>
+      m.login("rest-switch@example.invalid"),
+    ),
+  );
+  await page.getByRole("link", { name: "Profile", exact: true }).click();
+  await page.evaluate(() => {
+    window.__materialEvents = [];
+    window.dynatrace = {
+      sendBizEvent: (type, data) =>
+        window.__materialEvents.push({ type, data }),
+    };
+  });
+  let arrive, release;
+  const arrived = new Promise((resolve) => {
+      arrive = resolve;
+    }),
+    gate = new Promise((resolve) => {
+      release = resolve;
+    });
+  await page.route("**/api/v1/students/SWITCH/scores", async (route) => {
+    arrive();
+    await gate;
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: "{}",
+    });
+  });
+  const request = page.evaluate(async () => {
+    try {
+      await (
+        await import("/src/api.ts")
+      ).apiFetch("/api/v1/students/SWITCH/scores");
+    } catch {}
+  });
+  await arrived;
+  await page.evaluate(() =>
+    import("/test/browser-auth.ts").then((m) => m.logout()),
+  );
+  release();
+  await request;
+  const rows = await page.evaluate(() =>
+    window.__materialEvents.filter(
+      (e) =>
+        e.type === "com.inspiredlearning.rum.api.request.completed" &&
+        e.data["http.route"] === "/students/{studentId}/scores",
+    ),
+  );
+  expect(rows).toHaveLength(0);
 });

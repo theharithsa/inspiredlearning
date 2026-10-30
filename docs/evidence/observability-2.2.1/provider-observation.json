@@ -1,0 +1,187 @@
+{
+  "evidence": "Read-only provider and public-probe observation; queued locally, not ingested",
+  "receipts": [
+    {
+      "schema": 1,
+      "provider": "firebase-hosting",
+      "surface": "admin",
+      "releaseId": "sites/inspiredlearning-admin-vh/releases/1793340034178000",
+      "observedAt": "2026-10-30T13:03:02.267Z",
+      "manifest": {
+        "version": "2.2.0",
+        "revision": "6b18944592632dcca5a0f0876b41ba09de16d478",
+        "sourceState": "clean",
+        "environment": "production",
+        "surface": "admin",
+        "apiContract": "1.5.0"
+      },
+      "source": {
+        "name": "sites/inspiredlearning-admin-vh/releases/1793340034178000",
+        "type": "DEPLOY",
+        "releaseTime": "2026-10-30T06:00:34.178Z",
+        "version": {
+          "name": "sites/inspiredlearning-admin-vh/versions/d858b41a07625334",
+          "status": "FINALIZED"
+        }
+      },
+      "verification": "passed",
+      "events": [
+        {
+          "specversion": "1.0",
+          "id": "3070e15b-fd8d-54cc-ab3d-54ed739f5711",
+          "source": "inspiredlearning:firebase-hosting",
+          "type": "com.inspiredlearning.sdlc.deployment.completed",
+          "time": "2026-10-30T06:00:34.178Z",
+          "data": {
+            "github.repository": "theharithsa/inspiredlearning",
+            "vcs.revision": "6b18944592632dcca5a0f0876b41ba09de16d478",
+            "app.version": "2.2.0",
+            "app.surface": "admin",
+            "deployment.environment": "production",
+            "deployment.id": "sites/inspiredlearning-admin-vh/releases/1793340034178000",
+            "deployment.version.id": "sites/inspiredlearning-admin-vh/versions/d858b41a07625334",
+            "deployment.type": "DEPLOY",
+            "deployment.provider": "firebase-hosting",
+            "deployment.origin": "https://admin.inspi.in",
+            "artifact.manifest.sha256": "36f94fece3ccbf9baed4c58cc96085b25c19d4fb182bd52d79b0a8ae55b62d85",
+            "artifact.correlation": "verified",
+            "event.id": "3070e15b-fd8d-54cc-ab3d-54ed739f5711",
+            "sdlc.event.id": "3070e15b-fd8d-54cc-ab3d-54ed739f5711",
+            "event.provider": "inspiredlearning-delivery",
+            "event.authority": "provider-confirmed",
+            "sdlc.schema.version": 2,
+            "sdlc.source": "firebase-hosting",
+            "sdlc.status": "deployed",
+            "sdlc.observed_at": "2026-10-30T13:03:02.267Z",
+            "sdlc.occurred_at": "2026-10-30T06:00:34.178Z",
+            "sdlc.time.kind": "source"
+          }
+        },
+        {
+          "specversion": "1.0",
+          "id": "0151b9b6-a1d7-5d44-ad6d-7403f9c2bdd4",
+          "source": "inspiredlearning:runtime-probe",
+          "type": "com.inspiredlearning.sdlc.runtime.verified",
+          "time": "2026-10-30T13:03:02.267Z",
+          "data": {
+            "github.repository": "theharithsa/inspiredlearning",
+            "vcs.revision": "6b18944592632dcca5a0f0876b41ba09de16d478",
+            "app.version": "2.2.0",
+            "app.surface": "admin",
+            "deployment.environment": "production",
+            "deployment.id": "sites/inspiredlearning-admin-vh/releases/1793340034178000",
+            "deployment.version.id": "sites/inspiredlearning-admin-vh/versions/d858b41a07625334",
+            "deployment.type": "DEPLOY",
+            "deployment.provider": "firebase-hosting",
+            "deployment.origin": "https://admin.inspi.in",
+            "artifact.manifest.sha256": "36f94fece3ccbf9baed4c58cc96085b25c19d4fb182bd52d79b0a8ae55b62d85",
+            "verification.manifest": true,
+            "verification.api": true,
+            "verification.anonymous_admin_denied": true,
+            "event.id": "0151b9b6-a1d7-5d44-ad6d-7403f9c2bdd4",
+            "sdlc.event.id": "0151b9b6-a1d7-5d44-ad6d-7403f9c2bdd4",
+            "event.provider": "inspiredlearning-delivery",
+            "event.authority": "verification-observed",
+            "sdlc.schema.version": 2,
+            "sdlc.source": "runtime-probe",
+            "sdlc.status": "passed",
+            "sdlc.observed_at": "2026-10-30T13:03:02.267Z",
+            "sdlc.occurred_at": "2026-10-30T13:03:02.267Z",
+            "sdlc.time.kind": "source"
+          }
+        }
+      ]
+    },
+    {
+      "schema": 1,
+      "provider": "firebase-hosting",
+      "surface": "learner",
+      "releaseId": "sites/inspiredlearning-vh/releases/1793340066263000",
+      "observedAt": "2026-10-30T13:02:57.957Z",
+      "manifest": {
+        "version": "2.2.0",
+        "revision": "6b18944592632dcca5a0f0876b41ba09de16d478",
+        "sourceState": "clean",
+        "environment": "production",
+        "surface": "learner",
+        "apiContract": "1.5.0"
+      },
+      "source": {
+        "name": "sites/inspiredlearning-vh/releases/1793340066263000",
+        "type": "DEPLOY",
+        "releaseTime": "2026-10-30T06:01:06.263Z",
+        "version": {
+          "name": "sites/inspiredlearning-vh/versions/7a60990658b3e00b",
+          "status": "FINALIZED"
+        }
+      },
+      "verification": "passed",
+      "events": [
+        {
+          "specversion": "1.0",
+          "id": "a14a3ad5-15ad-5491-a434-ea62d460cced",
+          "source": "inspiredlearning:firebase-hosting",
+          "type": "com.inspiredlearning.sdlc.deployment.completed",
+          "time": "2026-10-30T06:01:06.263Z",
+          "data": {
+            "github.repository": "theharithsa/inspiredlearning",
+            "vcs.revision": "6b18944592632dcca5a0f0876b41ba09de16d478",
+            "app.version": "2.2.0",
+            "app.surface": "learner",
+            "deployment.environment": "production",
+            "deployment.id": "sites/inspiredlearning-vh/releases/1793340066263000",
+            "deployment.version.id": "sites/inspiredlearning-vh/versions/7a60990658b3e00b",
+            "deployment.type": "DEPLOY",
+            "deployment.provider": "firebase-hosting",
+            "deployment.origin": "https://inspi.in",
+            "artifact.manifest.sha256": "1f5302d64ebbffec0e46c4259daf365a3e60a6107426a2172fb5e77b8eb0e3be",
+            "artifact.correlation": "verified",
+            "event.id": "a14a3ad5-15ad-5491-a434-ea62d460cced",
+            "sdlc.event.id": "a14a3ad5-15ad-5491-a434-ea62d460cced",
+            "event.provider": "inspiredlearning-delivery",
+            "event.authority": "provider-confirmed",
+            "sdlc.schema.version": 2,
+            "sdlc.source": "firebase-hosting",
+            "sdlc.status": "deployed",
+            "sdlc.observed_at": "2026-10-30T13:02:57.957Z",
+            "sdlc.occurred_at": "2026-10-30T06:01:06.263Z",
+            "sdlc.time.kind": "source"
+          }
+        },
+        {
+          "specversion": "1.0",
+          "id": "15afdfba-f095-5d81-a8a9-92fa98d2565d",
+          "source": "inspiredlearning:runtime-probe",
+          "type": "com.inspiredlearning.sdlc.runtime.verified",
+          "time": "2026-10-30T13:02:57.957Z",
+          "data": {
+            "github.repository": "theharithsa/inspiredlearning",
+            "vcs.revision": "6b18944592632dcca5a0f0876b41ba09de16d478",
+            "app.version": "2.2.0",
+            "app.surface": "learner",
+            "deployment.environment": "production",
+            "deployment.id": "sites/inspiredlearning-vh/releases/1793340066263000",
+            "deployment.version.id": "sites/inspiredlearning-vh/versions/7a60990658b3e00b",
+            "deployment.type": "DEPLOY",
+            "deployment.provider": "firebase-hosting",
+            "deployment.origin": "https://inspi.in",
+            "artifact.manifest.sha256": "1f5302d64ebbffec0e46c4259daf365a3e60a6107426a2172fb5e77b8eb0e3be",
+            "verification.manifest": true,
+            "verification.api": true,
+            "verification.anonymous_admin_denied": true,
+            "event.id": "15afdfba-f095-5d81-a8a9-92fa98d2565d",
+            "sdlc.event.id": "15afdfba-f095-5d81-a8a9-92fa98d2565d",
+            "event.provider": "inspiredlearning-delivery",
+            "event.authority": "verification-observed",
+            "sdlc.schema.version": 2,
+            "sdlc.source": "runtime-probe",
+            "sdlc.status": "passed",
+            "sdlc.observed_at": "2026-10-30T13:02:57.957Z",
+            "sdlc.occurred_at": "2026-10-30T13:02:57.957Z",
+            "sdlc.time.kind": "source"
+          }
+        }
+      ]
+    }
+  ]
+}

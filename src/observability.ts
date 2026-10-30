@@ -1,3 +1,4 @@
+import { browserRoute, outcome, registerTelemetry } from "./browser-telemetry";
 import { createRumReadiness } from "./rum-readiness";
 import packageJson from "../package.json" with { type: "json" };
 import { cancelConfirmations } from "./ui/Confirm";
@@ -73,6 +74,7 @@ export function rum(name: string, fields: Record<string, unknown> = {}) {
       "event.source": "browser",
       "app.surface": isAdminApp ? "admin" : "learner",
       "app.version": packageJson.version,
+      "ui.route": browserRoute(),
       "event.id": crypto.randomUUID(),
       "transaction.id": crypto.randomUUID(),
       ...(auth.currentUser?.email
@@ -85,6 +87,7 @@ export function rum(name: string, fields: Record<string, unknown> = {}) {
     });
   } catch {}
 }
+registerTelemetry((name, fields) => rum(name, fields));
 export function interaction(name: string, sid?: string) {
   if (!safeNames.has(name)) return;
   rum(name, { ...(sid ? { "workshop.session.id": sid } : {}) });
@@ -94,6 +97,21 @@ export async function call<T>(
   payload: Record<string, unknown>,
 ) {
   const transactionId = crypto.randomUUID();
+  const actor = auth.currentUser?.uid;
+  const uiRoute = browserRoute();
+  const started = performance.now();
+  const complete = (error?: unknown) => {
+    if (auth.currentUser?.uid !== actor) return;
+    const result = outcome(error);
+    rum("operation.completed", {
+      "transaction.id": transactionId,
+      operation: endpoint,
+      "ui.route": uiRoute,
+      outcome: result.outcome,
+      "error.kind": result.errorKind,
+      "duration.ms": Math.round(performance.now() - started),
+    });
+  };
   try {
     if (
       isAdminApp &&
@@ -119,18 +137,10 @@ export async function call<T>(
       endpoint,
       { timeout: 540000 },
     )({ ...payload, transactionId });
-    rum("operation.completed", {
-      "transaction.id": transactionId,
-      operation: endpoint,
-      outcome: "success",
-    });
+    complete();
     return response.data;
   } catch (error) {
-    rum("operation.completed", {
-      "transaction.id": transactionId,
-      operation: endpoint,
-      outcome: "failure",
-    });
+    complete(error);
     throw error;
   }
 }

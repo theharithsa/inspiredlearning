@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.2.1] - source candidate
+
+- Expand dt-obs delivery coverage with source/observation timestamps, direct review and PR revision facts, bounded issue relationships and exact-attempt replay.
+- Move structured test ingestion into the trusted observer; exclude PR artifacts, validate bounded data-only ZIP summaries and preserve sanitized retry state. Add per-signal OTel SDK outcome diagnostics and current reporter version.
+- Capture real Firebase Hosting deployment/rollback facts separately from live manifest/API/access verification, with optional verified native deployment markers.
+- Add redacted browser route, callable/REST duration, request-ID and rejection/failure context with account-switch isolation. Keep canonical learner events unchanged.
+- [Coverage, recovery, local evidence and activation/deployment gates](docs/OBSERVABILITY-2.2.1.md). No 2.2.1 production deployment or CI credential binding is certified.
+
 ## [2.2.0] - 2026-10-30
 
 - Recompose the public landing page with original cartoon learning-world and notebook-companion illustrations, a clear Google entry, expressive type/shape hierarchy and responsive learning-story/community sections.

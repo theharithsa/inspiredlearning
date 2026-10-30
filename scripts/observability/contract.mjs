@@ -25,7 +25,7 @@ export function runIdentity(run, repository) {
     !sha.test(run.head_sha) ||
     run.status !== "completed" ||
     !conclusions.has(run.conclusion) ||
-    !String(run.path).split("@")[0].endsWith(".github/workflows/check.yml")
+    String(run.path).split("@")[0] !== ".github/workflows/check.yml"
   )
     throw Error("Untrusted or incomplete source workflow");
   return {
@@ -40,7 +40,12 @@ export function workflowFacts(identity, jobs) {
   if (!Array.isArray(jobs) || jobs.length > 100)
     throw Error("Invalid job count");
   const rows = [
-    { kind: "workflow", id: identity.runId, outcome: identity.outcome },
+    {
+      kind: "workflow",
+      id: identity.runId,
+      outcome: identity.outcome,
+      occurredAt: null,
+    },
   ];
   for (const job of jobs) {
     if (
@@ -52,7 +57,12 @@ export function workflowFacts(identity, jobs) {
       !conclusions.has(job.conclusion)
     )
       throw Error("Job/source mismatch");
-    rows.push({ kind: "job", id: job.id, outcome: job.conclusion });
+    rows.push({
+      kind: "job",
+      id: job.id,
+      outcome: job.conclusion,
+      occurredAt: job.completed_at || null,
+    });
     if (!Array.isArray(job.steps) || job.steps.length > 100)
       throw Error("Invalid steps");
     for (const step of job.steps) {
@@ -66,6 +76,7 @@ export function workflowFacts(identity, jobs) {
         kind: "step",
         id: job.id + ":" + step.number,
         outcome: step.conclusion,
+        occurredAt: step.completed_at || null,
       });
     }
   }
@@ -117,7 +128,13 @@ export function lifecycleFact(type, event, repository) {
     throw Error("Repository mismatch");
   const allowed = {
     issues: ["opened", "closed", "reopened"],
-    pull_request_target: ["opened", "closed", "reopened", "ready_for_review"],
+    pull_request_target: [
+      "opened",
+      "closed",
+      "reopened",
+      "ready_for_review",
+      "synchronize",
+    ],
     pull_request_review: ["submitted", "dismissed"],
     release: ["published"],
   };
@@ -129,12 +146,40 @@ export function lifecycleFact(type, event, repository) {
     type === "pull_request_target" &&
     event.action === "closed" &&
     entity.merged === true;
-  const revision = merged ? entity.merge_commit_sha : entity.head?.sha;
+  const revision =
+    type === "pull_request_review"
+      ? event.review?.commit_id
+      : merged
+        ? entity.merge_commit_sha
+        : entity.head?.sha;
   if (revision && !sha.test(revision)) throw Error("Invalid revision");
+  let occurredAt;
+  if (type === "pull_request_review")
+    occurredAt =
+      event.action === "submitted" ? event.review?.submitted_at : null;
+  else if (event.action === "opened") occurredAt = entity.created_at;
+  else if (merged) occurredAt = entity.merged_at;
+  else if (event.action === "closed") occurredAt = entity.closed_at;
+  else if (type === "release") occurredAt = entity.published_at;
+  // updated_at is a snapshot time, not proof of a specific reopen/synchronize time.
+  if (
+    type === "pull_request_review" &&
+    (!Number.isSafeInteger(event.review?.id) ||
+      !["approved", "changes_requested", "commented", "dismissed"].includes(
+        String(event.review?.state).toLowerCase(),
+      ))
+  )
+    throw Error("Invalid review state");
   return {
+    reviewState:
+      type === "pull_request_review" ? event.review.state.toLowerCase() : null,
+    occurredAt: occurredAt || null,
+    headRevision: sha.test(entity.head?.sha || "") ? entity.head.sha : null,
+    baseRevision: sha.test(entity.base?.sha || "") ? entity.base.sha : null,
+    mergeRevision: merged ? revision : null,
     kind: type === "pull_request_target" ? "pull_request" : type,
     action: merged ? "merged" : event.action,
-    sourceId: entity.id,
+    sourceId: event.review?.id || entity.id,
     number: entity.number || null,
     revision: revision || null,
     eventId: stableId([
@@ -145,4 +190,33 @@ export function lifecycleFact(type, event, repository) {
       event.review?.id || entity.updated_at || entity.published_at,
     ]),
   };
+}
+
+export function relationshipFacts(pr, issues, repository) {
+  if (
+    !Number.isSafeInteger(pr?.number) ||
+    !sha.test(pr.head?.sha || "") ||
+    !Array.isArray(issues) ||
+    issues.length > 100
+  )
+    throw Error("Invalid relationship snapshot");
+  return issues.map((issue) => {
+    if (
+      issue.repository?.nameWithOwner !== repository ||
+      !Number.isSafeInteger(issue.number)
+    )
+      throw Error("Cross-repository relationship");
+    return {
+      pr: pr.number,
+      issue: issue.number,
+      revision: pr.head.sha,
+      eventId: stableId([
+        repository,
+        "closing-reference",
+        pr.number,
+        pr.head.sha,
+        issue.number,
+      ]),
+    };
+  });
 }
