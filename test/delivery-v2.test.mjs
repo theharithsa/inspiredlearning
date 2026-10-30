@@ -576,3 +576,35 @@ test("review signals are API-validated observations, not privileged PR workflow 
     null,
   );
 });
+
+test("merged review runs recover only exact source commit/branch/repository associations", async () => {
+  const { reviewAssociations } = await import(
+    "../scripts/observability/contract.mjs"
+  );
+  const source = { pull_requests: [], head_sha: sha, head_branch: "feature" };
+  const pr = {
+    number: 78,
+    state: "closed",
+    base: { repo: { full_name: "fixture/app" } },
+    head: { repo: { full_name: "fixture/app" }, sha, ref: "feature" },
+  };
+  assert.deepEqual(reviewAssociations(source, [pr], "fixture/app"), [78]);
+  assert.deepEqual(
+    reviewAssociations(
+      { ...source, pull_requests: [{ number: 78 }] },
+      [],
+      "fixture/app",
+    ),
+    [78],
+  );
+  for (const head of [
+    { ...pr.head, sha: "b".repeat(40) },
+    { ...pr.head, ref: "other" },
+    { ...pr.head, repo: { full_name: "fork/app" } },
+  ])
+    assert.throws(() =>
+      reviewAssociations(source, [{ ...pr, head }], "fixture/app"),
+    );
+  assert.throws(() => reviewAssociations(source, [pr, pr], "fixture/app"));
+  assert.throws(() => reviewAssociations(source, [], "fixture/app"));
+});

@@ -110,3 +110,7 @@ Revision 42b2efb5b6a85f1bef8926022b2aaaa5c07e71d4 is live on both origins; all n
 ## 2.2.1 observability source — #77
 
 Current source candidate expands dt-obs browser and delivery coverage. Read [OBSERVABILITY-2.2.1.md](OBSERVABILITY-2.2.1.md) before activation/replay. Production remains 2.2.0; Functions/API/MCP are unchanged. The owner supplied Production/DYNATRACE_CI_TOKEN through GitHub; the workflow references it without deployment tracking. Enablement and tenant verification remain pending; no token value from chat is copied. Four provider/probe events for existing 2.2.0 releases were queued locally, not ingested. #9 alerts remain deferred and #17 migration held.
+
+## Delivery telemetry activated — 30 October 2026
+
+PR #78 is merged (cdaa9d9); DYNATRACE_CI_ENABLED=true uses the securely supplied Production environment secret with deployment:false. Read [activation evidence and remaining review/main-report gates](OBSERVABILITY-ACTIVATION-2026-10-30.md): 37 accepted/searchable events include four existing 2.2.0 deployment/probe facts; native CI spans/logs/metrics are searchable and their CI parent/log IDs match. One review replay failed before ingestion because GitHub cleared PR association after merge; its bounded exact-commit fallback is under separate validation. Production Hosting remains 2.2.0; no new site/backend deployment, alert or migration is included.
