@@ -1,5 +1,7 @@
 # Observability 2.2.1 source candidate — #77
 
+**Status reconciliation — 31 October 2026:** CI delivery reporting was activated after this source plan; see [activation evidence](OBSERVABILITY-ACTIVATION-2026-10-30.md) and the [current acceptance matrix](V2-ACCEPTANCE-2026-10-31.md). The disabled/unbound and queued-only statements below describe the pre-activation stage. Browser 2.2.1 remains undeployed; native RUM/backend navigation and #79 platform SDLC ingestion are not established by the existing deployment BizEvents.
+
 App 2.2.1 adds browser observations and delivery tooling. Functions 2.0.1, API 1.5.0 and MCP 1.0.1 are unchanged. Production remains 2.2.0 until a separately approved Hosting release. No alert activation (#9), membership migration (#17), retention, email attribution, capacity or learner data changes are included.
 
 | Journey / owner | New capture | Authority / limits |

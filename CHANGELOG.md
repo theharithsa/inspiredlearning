@@ -2,6 +2,8 @@
 
 ## [2.2.1] - source candidate
 
+- Bring the Integrations token form into the short viewport: replace repeated introductions with one compact task heading and Material documentation action; group token name/expiry without changing permissions or reauthentication (#63/#34).
+- Document independent Hosting/compatible Functions/Auth/DNS recovery and reconcile the v2 acceptance/CI activation gates.
 - Expand dt-obs delivery coverage with source/observation timestamps, source review and PR revision facts, bounded issue relationships and exact-attempt replay.
 - Move structured test ingestion into the trusted observer; exclude PR artifacts, validate bounded data-only ZIP summaries and preserve sanitized retry state. Add per-signal OTel SDK outcome diagnostics and current reporter version.
 - Capture real Firebase Hosting deployment/rollback facts separately from live manifest/API/access verification, with optional verified native deployment markers.

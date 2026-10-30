@@ -37,7 +37,7 @@ test("administrator can create a scoped credential, copy it once, use it and rev
   await page.goto("/admin.html#/integrations");
   await page.reload();
   await expect(
-    page.getByRole("heading", { name: "API tokens", exact: true }),
+    page.getByRole("heading", { name: "Create API token", exact: true }),
   ).toBeVisible();
   await expect(
     page.getByRole("checkbox", {

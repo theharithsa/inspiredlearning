@@ -232,3 +232,48 @@ test("captain roster uses the existing region boundary with responsive Material 
     await db.recursiveDelete(db.doc(`sessions/${sid}`));
   }
 });
+
+test("integration creation starts within the short viewport with compact, distinct headings", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await login(page, adminEmail, true, "/integrations");
+  await expect(
+    page.getByRole("heading", { level: 1, name: "API access", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", {
+      level: 2,
+      name: "Create API token",
+      exact: true,
+    }),
+  ).toBeVisible();
+  const name = page.getByLabel("Token name", { exact: true }),
+    expiry = page.getByRole("combobox", { name: "Expires after", exact: true });
+  await expect(name).toBeEnabled();
+  await expect(page.getByText("No API tokens created yet.", { exact: true })).toBeVisible();
+  await page.evaluate(() => document.fonts.ready);
+  await expect(expiry).toBeVisible();
+  const [n, e] = await Promise.all([
+    page.locator(".token-identity-fields > md-outlined-text-field").boundingBox(),
+    page.locator(".token-identity-fields > md-outlined-select").boundingBox(),
+  ]);
+  expect(n.y + n.height).toBeLessThanOrEqual(720 * 2 / 3);
+  expect(Math.abs(n.y - e.y)).toBeLessThan(2);
+  await expect(
+    page.getByRole("link", { name: "API documentation", exact: true }),
+  ).toBeVisible();
+  await page.screenshot({
+    path: "test-results/route-review/admin-integrations-short.png",
+    animations: "disabled",
+  });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(name).toBeVisible();
+  await page.screenshot({ path: "test-results/route-review/admin-integrations-mobile.png", animations: "disabled" });
+  const geometry = await page.evaluate(() => ({
+    width: innerWidth,
+    scroll: document.documentElement.scrollWidth,
+  }));
+  expect(geometry.scroll).toBeLessThanOrEqual(geometry.width + 1);
+});

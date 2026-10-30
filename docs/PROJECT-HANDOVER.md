@@ -114,3 +114,7 @@ Current source candidate expands dt-obs browser and delivery coverage. Read [OBS
 ## Delivery telemetry activated — 30 October 2026
 
 PR #78 is merged (cdaa9d9); DYNATRACE_CI_ENABLED=true uses the securely supplied Production environment secret with deployment:false. Read [activation evidence and remaining review/Hosting gates](OBSERVABILITY-ACTIVATION-2026-10-30.md): 37 accepted/searchable events include four existing 2.2.0 deployment/probe facts; native CI spans/logs/metrics are searchable and their CI parent/log IDs match. One review replay failed before ingestion because GitHub cleared PR association after merge; its bounded exact-commit fallback is under separate validation. Production Hosting remains 2.2.0; no new site/backend deployment, alert or migration is included.
+
+## v2 acceptance reconciliation — 31 October 2026
+
+Read [current acceptance matrix](V2-ACCEPTANCE-2026-10-31.md) and [independent recovery runbook](V2-RECOVERY-RUNBOOK.md) for #34/#63. Fresh manifests still report production 2.2.0; 2.2.1 remains a source candidate. The CI observer is active; earlier unbound/queued-only notes are historical. Integrations composition is corrected in this candidate; source checks, merge and rollout remain distinct. Native browser RUM/backend navigation and #79 platform SDLC ingestion remain separate unfinished evidence. #9 is deferred and #17 held. No production deployment, rollback or data mutation is authorized by this audit.

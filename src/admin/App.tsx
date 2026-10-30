@@ -283,7 +283,7 @@ function Workspace() {
                 <>
                   <RouteHeading
                     title="API access"
-                    copy="Manage scoped integrations. Keep credentials limited to their intended work."
+                    copy="Create scoped credentials and manage your integrations."
                   />
                   <Tokens />
                 </>
