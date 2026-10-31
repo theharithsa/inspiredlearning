@@ -1,6 +1,6 @@
 # InspiredLearning agent guidance
 
-Deployment update (31 October): app 2.2.2 / Functions 2.0.2 is live from `298cc4f`; see [release evidence](../../docs/RELEASE-2.2.2.md). The audit below is historical; broader visual and native RUM acceptance gates remain open.
+Deployment update (31 October): app 2.2.2 / Functions 2.0.2 is live from `298cc4f`; see [release evidence](../docs/RELEASE-2.2.2.md). The audit below is historical; broader visual and native RUM acceptance gates remain open.
 
 | Skill | Use for |
 | --- | --- |
