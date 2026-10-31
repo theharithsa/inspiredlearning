@@ -1,0 +1,17 @@
+{
+  "comparisonNormalization": "unordered eventTrigger.eventFilters only",
+  "time": "2026-10-31T07:58:18.357Z",
+  "preserve": {
+    "certificates": true,
+    "workshopCreditsAndStatus": true,
+    "authDomains": true,
+    "unrelatedFunctions": true,
+    "unrelatedHosting": true,
+    "functionPolicy": true
+  },
+  "artifactFilesVerified": 121,
+  "publicOptedInCertificates": 3,
+  "missingCertificatePrivacy": true,
+  "headersAndPublicApi": true,
+  "privateOAuth": "separate browser verification"
+}

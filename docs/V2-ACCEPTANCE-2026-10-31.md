@@ -1,5 +1,7 @@
 # v2 acceptance audit — #34
 
+Deployment update (31 October): app 2.2.2 / Functions 2.0.2 is live from `298cc4f`; see [release evidence](RELEASE-2.2.2.md). The audit below is historical; broader visual and native RUM acceptance gates remain open.
+
 Audit date: 31 October 2026 (Asia/Kolkata). Baseline source `d144094aee623eebafaf366c1eca6d132a54c4ca`; current source candidate app 2.2.1. Fresh read-only public manifest checks found app 2.2.0 at revision `6b18944592632dcca5a0f0876b41ba09de16d478` on both learner/admin origins, API 1.5.0. No production deployment or data mutation is included in this audit.
 
 ## Checklist reconciliation
