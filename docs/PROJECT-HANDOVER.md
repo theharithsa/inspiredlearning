@@ -118,3 +118,7 @@ PR #78 is merged (cdaa9d9); DYNATRACE_CI_ENABLED=true uses the securely supplied
 ## v2 acceptance reconciliation — 31 October 2026
 
 Read [current acceptance matrix](V2-ACCEPTANCE-2026-10-31.md) and [independent recovery runbook](V2-RECOVERY-RUNBOOK.md) for #34/#63. Fresh manifests still report production 2.2.0; 2.2.1 remains a source candidate. The CI observer is active; earlier unbound/queued-only notes are historical. Integrations composition is corrected in this candidate; source checks, merge and rollout remain distinct. Native browser RUM/backend navigation and #79 platform SDLC ingestion remain separate unfinished evidence. #9 is deferred and #17 held. No production deployment, rollback or data mutation is authorized by this audit.
+
+## Dependency backlog source — 31 October 2026
+
+[#82 dependency matrix](DEPENDENCY-BACKLOG-2026-10-31.md) accounts for all 18 Dependabot PRs. Candidate app 2.2.2 / Functions 2.0.2 / MCP 1.0.2 retains API 1.5.0 and is not deployed. SDK 3 uses API 1.10 logs and CommonJS SDK startup to preserve early Firebase/Firestore proxies; native decoded-wire regressions remain required. Production audits are zero; nine moderate Firebase CLI development nodes remain in #83, superseding historical zero-audit snapshots. Original PRs may be closed only after replacement merge and exact-head checks. #34/#63/#77/#79 release/tenant gates and #9/#17 holds remain unchanged.
