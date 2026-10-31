@@ -2,6 +2,8 @@ import { defaults } from "./config.js";
 import { errorOutcome, boundedFlush } from "./telemetry-policy.js";
 import {
   context,
+  logs,
+  SeverityNumber,
   trace,
   ROOT_CONTEXT,
   SpanKind,
@@ -9,21 +11,24 @@ import {
   metrics,
   createContextKey,
 } from "@opentelemetry/api";
-import { logs, SeverityNumber } from "@opentelemetry/api-logs";
-import { NodeSDK } from "@opentelemetry/sdk-node";
-import { resourceFromAttributes } from "@opentelemetry/resources";
-import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-proto";
-import { OTLPMetricExporter } from "@opentelemetry/exporter-metrics-otlp-proto";
-import { OTLPLogExporter } from "@opentelemetry/exporter-logs-otlp-proto";
-import { BatchSpanProcessor } from "@opentelemetry/sdk-trace";
-import { BatchLogRecordProcessor } from "@opentelemetry/sdk-logs";
-import {
-  PeriodicExportingMetricReader,
-  AggregationTemporality,
-} from "@opentelemetry/sdk-metrics";
+import { createRequire } from "node:module";
 import { defineSecret } from "firebase-functions/params";
 import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
+// Firebase Admin/Firestore creates CommonJS tracer proxies before the first request.
+// Use the same SDK entrypoints so startup delegates those existing proxies in v3.
+const require = createRequire(import.meta.url);
+const { NodeSDK } = require("@opentelemetry/sdk-node"),
+  { resourceFromAttributes } = require("@opentelemetry/resources"),
+  { OTLPTraceExporter } = require("@opentelemetry/exporter-trace-otlp-proto"),
+  { OTLPMetricExporter } = require("@opentelemetry/exporter-metrics-otlp-proto"),
+  { OTLPLogExporter } = require("@opentelemetry/exporter-logs-otlp-proto"),
+  { BatchSpanProcessor } = require("@opentelemetry/sdk-trace"),
+  { BatchLogRecordProcessor } = require("@opentelemetry/sdk-logs"),
+  {
+    PeriodicExportingMetricReader,
+    AggregationTemporality,
+  } = require("@opentelemetry/sdk-metrics");
 export const token = defineSecret("DYNATRACE_PLATFORM_TOKEN");
 const local = () => process.env.FUNCTIONS_EMULATOR === "true";
 // Override per environment in functions/.env (e.g. DYNATRACE_ENDPOINT=https://abc123.live.dynatrace.com).

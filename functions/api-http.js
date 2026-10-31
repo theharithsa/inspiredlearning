@@ -7,6 +7,7 @@ import { authenticateApiToken, manageTokens } from "./api-tokens.js";
 import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
+import { basename, dirname } from "node:path";
 import { googleActor, readApi } from "./api.js";
 import { log, httpRequest, instrumentAuth } from "./monitor.js";
 const require = createRequire(import.meta.url);
@@ -98,10 +99,12 @@ export function apiHandler({ db, auth, rate, measured, audit }) {
       ["/api/docs/swagger-ui.css", "/api/docs/swagger-ui-bundle.js"].includes(
         req.path,
       )
-    )
-      return res.sendFile(
-        require.resolve("swagger-ui-dist/" + req.path.split("/").at(-1)),
-      );
+    ) {
+      const asset = require.resolve("swagger-ui-dist/" + req.path.split("/").at(-1));
+      // Confine serving to the package directory; keep default dotfile denial
+      // inside that root even when the deployment's parent directory is hidden.
+      return res.sendFile(basename(asset), { root: dirname(asset) });
+    }
     try {
       await rate("api-ip:" + req.ip, publicVerify ? 60 : 120);
       if (publicVerify) {

@@ -26,8 +26,9 @@ export function deliveryPipeline(origin, credential, { local = false } = {}) {
       PeriodicExportingMetricReader,
       AggregationTemporality,
     } = require("@opentelemetry/sdk-metrics"),
-    { trace, context, metrics, SpanStatusCode } = require("@opentelemetry/api"),
-    { logs } = require("@opentelemetry/api-logs");
+    { trace, context, metrics, SpanStatusCode, logs } = require(
+      "@opentelemetry/api",
+    );
   const headers = credential
     ? {
         Authorization:
