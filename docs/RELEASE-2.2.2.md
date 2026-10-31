@@ -55,7 +55,7 @@ Follow [independent recovery runbook](V2-RECOVERY-RUNBOOK.md). Previous Hosting 
 
 ## Public screenshots
 
-Captured 31 October 2026 from `https://inspiredlearning-vh.web.app/`, verified revision above, system dark mode, Material violet/Roboto. Desktop viewport 1265×711; compact viewport 390×844. These browser screenshots are not physical-device certification.
+Captured 31 October 2026 from `https://inspiredlearning-vh.web.app/`, verified revision above, system dark mode, Material violet/Roboto. Desktop screenshot files are 1265×712 pixels. The compact check requested a 390×844 viewport (DOM innerWidth 390; document scrollWidth 375); the browser returned a 375×812 screenshot file. Capture dimensions and requested viewport are recorded separately. These browser screenshots are not physical-device certification.
 
 ![Deployed public landing](evidence/v2.2.2/landing-desktop.jpg)
 
