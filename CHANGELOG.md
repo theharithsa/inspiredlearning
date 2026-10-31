@@ -1,15 +1,15 @@
 # Changelog
 
-## [2.2.2] - source candidate
+## [2.2.2] - 2026-10-31
 
 - Upgrade the independent test-only OTLP protobuf decoder to protobufjs 8.8.1; retain compatible 7.x copies in Firebase/gRPC/Functions dependencies and verify decoded wire regressions (#85).
 
 - Resolve the 18-PR dependency backlog with aligned React/React DOM 19.3.1, TypeScript 7.0.2, Vite 8.3.5, Playwright 1.64.1, Swagger 5.34.x and MCP SDK/Zod/transitive updates (#82).
 - Migrate Functions 2.0.2 and trusted delivery reporting to OpenTelemetry SDK 3.0 / Node SDK and exporters 0.300 / API 1.10, moving logs into the main API. Remove unused browser OTel dependencies; retain native RUM. API 1.5.0 is unchanged; MCP is independently versioned 1.0.2.
 - Pin verified upstream Actions releases and group future React/OTel updates. Select unaffected transitive security resolutions within existing ranges, with compatibility checks. Production dependency audits are clean; remaining Firebase CLI development advisories are tracked in #83.
-- This is source maintenance, not a Hosting/Functions deployment or proof of native RUM/backend linkage. The separate 2.2.1 release/acceptance gates remain in their dated evidence.
+- Deployed both Hosting sites and all nine dedicated Functions from `298cc4f`. Live artifact, API/security, Google admin sign-in and scoped record preservation checks passed. Backend logs/metrics/spans and both browser surfaces are searchable. Native RUM-to-backend navigation remains unverified. [Release evidence](docs/RELEASE-2.2.2.md).
 
-## [2.2.1] - source candidate
+## [2.2.1] - source changes included in 2.2.2
 
 - Bring the Integrations token form into the short viewport: replace repeated introductions with one compact task heading and Material documentation action; group token name/expiry without changing permissions or reauthentication (#63/#34).
 - Document independent Hosting/compatible Functions/Auth/DNS recovery and reconcile the v2 acceptance/CI activation gates.
@@ -18,7 +18,7 @@
 - Capture real Firebase Hosting deployment/rollback facts separately from live manifest/API/access verification, with optional verified native deployment markers.
 - Add redacted browser route, callable/REST duration, request-ID and rejection/failure context with account-switch isolation. Keep canonical learner events unchanged.
 - Activate approved delivery reporting with verified business events and native CI signals; recover merged-review PR associations from exact source commit metadata. [Activation evidence](docs/OBSERVABILITY-ACTIVATION-2026-10-30.md).
-- [Coverage, recovery, local evidence and activation/deployment gates](docs/OBSERVABILITY-2.2.1.md). Production Hosting remains 2.2.0; browser telemetry rollout remains gated. Delivery reporting activation is recorded separately.
+- [Coverage, recovery, local evidence and activation/deployment gates](docs/OBSERVABILITY-2.2.1.md). These source changes are deployed with 2.2.2; 2.2.1 was not separately deployed. Delivery reporting activation is recorded separately.
 
 ## [2.2.0] - 2026-10-30
 

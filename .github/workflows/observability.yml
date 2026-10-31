@@ -11,7 +11,7 @@ on:
         required: true
         type: string
       replay_hosting_observation:
-        description: Replay reviewed 30 October Hosting facts (original times; no deploy)
+        description: Replay reviewed 2.2.2 Hosting facts (original times; no deploy)
         required: false
         default: false
         type: boolean

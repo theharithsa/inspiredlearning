@@ -272,7 +272,7 @@ try {
     // never restamp the historical deployment or its original probe time.
     const raw = readFileSync(
       new URL(
-        "../../docs/evidence/observability-2.2.1/provider-observation.json",
+        "../../docs/evidence/v2.2.2/provider-observation.json",
         import.meta.url,
       ),
       "utf8",

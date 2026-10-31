@@ -519,6 +519,18 @@ test("reviewed deployment replay preserves original provider/probe times and rej
     ),
   );
   assert.equal(recordedDeploymentEvents(actual.receipts).length, 4);
+  const current = JSON.parse(
+    readFileSync(
+      new URL("../docs/evidence/v2.2.2/provider-observation.json", import.meta.url),
+      "utf8",
+    ),
+  );
+  assert.equal(recordedDeploymentEvents(current.receipts).length, 4);
+  assert.ok(current.receipts.every(r =>
+    r.manifest.version === "2.2.2" &&
+    r.manifest.revision === "298cc4f5db4bc692d612ded84a4c4cb7b3907b6e",
+  ));
+
   assert.throws(() => recordedDeploymentEvents([receipts[0]]));
   assert.throws(() =>
     recordedDeploymentEvents([
