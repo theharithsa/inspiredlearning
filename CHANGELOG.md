@@ -2,6 +2,8 @@
 
 ## [2.2.2] - source candidate
 
+- Upgrade the independent test-only OTLP protobuf decoder to protobufjs 8.8.1; retain compatible 7.x copies in Firebase/gRPC/Functions dependencies and verify decoded wire regressions (#85).
+
 - Resolve the 18-PR dependency backlog with aligned React/React DOM 19.3.1, TypeScript 7.0.2, Vite 8.3.5, Playwright 1.64.1, Swagger 5.34.x and MCP SDK/Zod/transitive updates (#82).
 - Migrate Functions 2.0.2 and trusted delivery reporting to OpenTelemetry SDK 3.0 / Node SDK and exporters 0.300 / API 1.10, moving logs into the main API. Remove unused browser OTel dependencies; retain native RUM. API 1.5.0 is unchanged; MCP is independently versioned 1.0.2.
 - Pin verified upstream Actions releases and group future React/OTel updates. Select unaffected transitive security resolutions within existing ranges, with compatibility checks. Production dependency audits are clean; remaining Firebase CLI development advisories are tracked in #83.
